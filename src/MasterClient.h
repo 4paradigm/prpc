@@ -1,0 +1,299 @@
+#ifndef PARADIGM4_PICO_COMMON_MASTER_CLIENT_H
+#define PARADIGM4_PICO_COMMON_MASTER_CLIENT_H
+
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+#include <list>
+#include <utility>
+
+#include "zookeeper/zookeeper.h"
+
+#include "common/include/Archive.h"
+#include "common/include/Master.h"
+#include "common/include/pico_lexical_cast.h"
+#include "common/include/TcpSocket.h"
+#include "common/include/AsyncReturn.h"
+#include "common/include/AsyncWatcher.h"
+#include "common/include/SpinLock.h"
+#include "common/include/pico_env_configure.h"
+#include "common/include/RpcChannel.h"
+
+namespace paradigm4 {
+namespace pico {
+
+class WatcherTable {
+public:
+    class WatcherHandle {
+        friend WatcherTable;
+    private:
+        WatcherTable* _table = nullptr;
+        std::string _key = "";
+        std::list<std::function<void()>>::iterator _cb;   
+    };
+
+    ~WatcherTable();
+    void invoke(const std::string& key);
+    WatcherHandle insert(const std::string& key, std::function<void()> cb);
+    void erase(WatcherHandle h);
+
+private:
+    std::mutex _mu;
+    std::unordered_map<std::string, std::list<std::function<void()>>> _cbs;
+};
+
+typedef WatcherTable::WatcherHandle WatcherHandle;
+
+class AsyncWatcher;
+
+class MasterClient {
+public:
+    MasterClient(const std::string& root_path);
+    virtual ~MasterClient();
+
+    virtual bool initialize();
+    virtual void finalize();
+    virtual std::string endpoint() = 0;
+    virtual bool connected() = 0;
+    virtual bool reconnect() = 0;
+ 
+    void initialize_paths();
+    void clear_master();
+    void set_task_ready();
+    bool get_task_ready();
+    bool set_task_failed(const std::string& message);
+    bool get_task_failed(std::string& message);
+
+    void register_node(const CommInfo& info);
+    bool get_comm_info(std::vector<CommInfo>&);
+    bool get_comm_info(comm_rank_t g_rank, CommInfo&);
+
+    void register_rpc_service(const std::string& rpc_service_api,
+          const std::string& rpc_name,
+          int& rpc_id);
+
+
+    bool deregister_rpc_service(const std::string& rpc_service_api,
+          const std::string& rpc_name);
+
+    bool del_rpc_service_info(const std::string& rpc_service_api,
+          const std::string& rpc_name);
+
+    // XXX
+    bool register_server(const std::string& rpc_service_api,
+          const std::string& rpc_name,
+          int global_rank,
+          int &rpc_id,
+          int &server_id);
+
+    // XXX
+    bool deregister_server(const std::string& rpc_service_api,
+          const std::string& rpc_name,
+          int server_id);
+
+    // XXX
+    bool get_rpc_service_info(const std::string& rpc_service_api, std::vector<RpcServiceInfo>& out);
+    bool get_rpc_service_info(const std::string& rpc_service_api,
+          const std::string& rpc_name,
+          RpcServiceInfo& out);
+    WatcherHandle watch_rpc_service_info(const std::string& rpc_service_api, std::function<void()>);
+
+    size_t generate_id(const std::string& key);
+    void reset_generate_id(const std::string& key);
+
+    void wait_task_ready();
+    WatcherHandle watch_task(std::function<void(const std::string&)>);
+    //WatcherHandle watch_node(comm_rank_t g_rank, std::function<void()>);
+    //WatcherHandle watch_nodes(AsyncWatcher&);
+
+    void alloc_role_rank(const std::string& role,
+          size_t role_num,
+          comm_rank_t& r_rank,
+          std::vector<comm_rank_t>& all);
+
+    void barrier(const std::string& barrier_name, size_t number);
+    void acquire_lock(const std::string& lock_name);
+    void release_lock(const std::string& lock_name);
+ 
+    bool add_context(int32_t storage_id, const std::string& context);
+    bool set_context(int32_t storage_id, const std::string& context);
+    bool get_context(int32_t storage_id, std::string& context);
+    bool delete_storage(int32_t storage_id);
+    std::vector<int32_t> get_storage_list();
+
+    bool add_model(const std::string& name, const std::string& model);
+    bool set_model(const std::string& name, const std::string& model);
+    bool get_model(const std::string& name, std::string& model);
+    bool del_model(const std::string& name);
+    std::vector<std::string> get_model_names();
+    WatcherHandle watch_model(const std::string& name, std::function<void()>);
+    
+    bool get_snapshot(PicoJsonNode& json);
+
+    void cancle_watch(WatcherHandle);
+
+    
+protected:
+    void notify_watchers(const std::string& path);
+    virtual MasterStatus master_gen(const std::string& path, 
+          const std::string& value, std::string& gen, bool ephemeral) = 0;
+    virtual MasterStatus master_add(const std::string& path, const std::string& value, bool ephemeral) = 0;
+    virtual MasterStatus master_set(const std::string& path, const std::string& value) = 0;
+    virtual MasterStatus master_get(const std::string& path, std::string& value) = 0;
+    virtual MasterStatus master_get(const std::string& path) = 0;
+    virtual MasterStatus master_del(const std::string& path) = 0;
+    virtual MasterStatus master_sub(const std::string& path, std::vector<std::string>& children) = 0;
+
+private:
+    std::string tree_node_gen(const std::string& path, const std::string& value = "", bool ephemeral = false);
+    void tree_clear_path(const std::string& path);
+    bool tree_node_add(const std::string& path, const std::string& value = "", bool ephemeral = false);
+    bool tree_node_set(const std::string& path, const std::string& value);
+    bool tree_node_get(const std::string& path, std::string& value);
+    bool tree_node_get(const std::string& path);
+    bool tree_node_del(const std::string& path);
+    bool tree_node_sub(const std::string& path, std::vector<std::string>& children);
+    WatcherHandle tree_watch(const std::string& path, std::function<void()>);
+
+    std::string _root_path;
+    WatcherTable _table;
+
+    std::mutex _client_mtx;
+    std::unordered_map<std::string, std::string> _acquired_lock;
+
+    static const char *PATH_NODE;
+    static const char *PATH_TASK_STATE;
+    static const char *PATH_GENERATE_ID;
+    static const char *PATH_LOCK;
+    static const char *PATH_BARRIER;
+    static const char *PATH_RPC;
+    static const char *PATH_CONTEXT;
+    static const char *PATH_MODEL;
+};
+
+
+class ZkMasterClient : public MasterClient {
+public:
+    ZkMasterClient(const std::string& root_path, const std::string& hosts, int recv_timeout_ms, int disconnect_timeout_sec);
+    ~ZkMasterClient() override;
+
+    bool initialize() override;
+    void finalize() override;
+
+    std::string endpoint() override;
+    bool connected() override;
+    bool reconnect() override;
+
+protected:
+    virtual MasterStatus master_gen(const std::string& path,
+          const std::string& value, std::string& gen, bool ephemeral);
+    virtual MasterStatus master_add(const std::string& path, const std::string& value, bool ephemeral);
+    virtual MasterStatus master_set(const std::string& path, const std::string& value);
+    virtual MasterStatus master_get(const std::string& path, std::string& value);
+    virtual MasterStatus master_get(const std::string& path);
+    virtual MasterStatus master_del(const std::string& path);
+    virtual MasterStatus master_sub(const std::string& path, std::vector<std::string>& children);
+
+private:
+    static void handle_event_wrapper(zhandle_t* zh, int type, int state, const char* path, void* watcher_ctx);
+    void handle_event(int type, int state, const char* path);
+    MasterStatus check_zk_add(int ret);
+    MasterStatus check_zk_del(int ret);
+    MasterStatus check_zk_set(int ret);
+    const char* state2string(int state);
+    const char* event2string(int ev);
+
+    std::string _hosts;
+    int32_t _recv_timeout;
+    int32_t _disconnect_timeout_sec;
+    bool _connected = false;
+    std::string _endpoint;
+    zhandle_t* _zh = nullptr;
+
+    std::mutex _mu;
+    std::condition_variable _cv;
+};
+
+class TcpMasterClient : public MasterClient {
+public:
+    TcpMasterClient(const std::string& master_ep);
+    ~TcpMasterClient() override;
+
+    bool initialize() override;
+    void finalize() override;
+
+    std::string endpoint() override;
+    bool connected() override;
+    bool reconnect() override;
+
+protected:
+    virtual MasterStatus master_gen(const std::string& path,
+          const std::string& value, std::string& gen, bool ephemeral);
+    virtual MasterStatus master_add(const std::string& path, const std::string& value, bool ephemeral);
+    virtual MasterStatus master_set(const std::string& path, const std::string& value);
+    virtual MasterStatus master_get(const std::string& path, std::string& value);
+    virtual MasterStatus master_get(const std::string& path);
+    virtual MasterStatus master_del(const std::string& path);
+    virtual MasterStatus master_sub(const std::string& path, std::vector<std::string>& children);
+
+private:
+    void listening();
+    void run_cb();
+    AsyncReturnV<RpcResponse> send_request(RpcRequest&& msg);
+
+    std::unique_ptr<TcpSocket> _tcp_socket;
+    std::string _master_ep;
+    int _exit_fd;
+    std::mutex _lk;
+
+    std::thread _listening_th;
+
+    RpcChannel<std::function<void()>> _cb_ch;
+    std::thread _cb_th;
+
+    std::unordered_map<int, AsyncReturnV<RpcResponse>> _as_ret;
+    std::atomic<int32_t> _id_gen;
+
+};
+
+class MasterUniqueLock {
+public:
+    MasterUniqueLock(MasterClient* client, const std::string& lock_name) :
+        _client(client),_lock_name(lock_name) {
+        _client->acquire_lock(_lock_name);
+    }
+
+    MasterUniqueLock(std::shared_ptr<MasterClient> client, const std::string& lock_name) :
+        _client(client.get()),_lock_name(lock_name) {
+        _client->acquire_lock(_lock_name);
+    }
+
+    ~MasterUniqueLock() {
+        _client->release_lock(_lock_name);
+    }
+private:
+    MasterClient* _client;
+    std::string _lock_name;
+};
+
+inline std::unique_ptr<MasterClient> pico_new_master_client(const MASTER& master) {
+    if (master.type == "pico") {
+        std::string endpoint = master.pico.endpoint;
+        auto tcp_master_client = std::make_unique<TcpMasterClient>(endpoint);
+        return tcp_master_client;
+    } else if (master.type == "zk") {
+        auto zk_master_client = std::make_unique<ZkMasterClient>(
+                master.zk.rootpath,
+                master.zk.endpoint,
+                master.zk.recv_timeout,
+                master.zk.disconnect_timeout);
+        return zk_master_client;
+    }
+    return nullptr;
+}
+
+} // namespace pico
+} // namespace paradigm4
+
+#endif // PARADIGM4_PICO_COMMON_MASTER_CLIENT_H

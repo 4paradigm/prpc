@@ -1,0 +1,10 @@
+include(common)
+
+find_lib(PicoCommonDep_LIBRARIES STATIC LIBS glog gflags boost_regex yaml-cpp boost_iostreams boost_system boost_thread zookeeper_mt)
+if(NOT APPLE)
+    find_lib(PicoCommonDep_LIBRARIES STATIC LIBS  unwind lzma)
+endif()
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(PicoCommonDep DEFAULT_MSG PicoCommonDep_LIBRARIES)
+mark_as_advanced(PicoCommonDep_LIBRARIES)
