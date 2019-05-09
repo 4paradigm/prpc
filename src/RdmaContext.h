@@ -4,13 +4,25 @@
 #include "PicoJsonNode.h"
 #include "SpinLock.h"
 #include "flags.h"
-#include "common/include/pico_env_configure.h"
 #include <map>
 #include <rdma/rdma_cma.h>
 #include <rdma/rdma_verbs.h>
 
 namespace paradigm4 {
 namespace pico {
+
+struct RdmaConfig {
+    std::string ib_devname;
+    int gid_index;
+    int ib_port;
+    int traffic_class;
+    int sl;
+    int mtu;
+    int pkey_index;
+    int min_rnr_timer;
+    int retry_cnt;
+    int timeout;
+};
 
 struct mr_t {
     // 没有内存所有权，只有mr所有权

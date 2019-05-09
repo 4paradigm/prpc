@@ -18,11 +18,10 @@
 #include <boost/regex.hpp>
 #include <boost/format.hpp>
 
-#include "common/include/common.h"
-#include "common/include/defs.h"
-#include "common/include/macro.h"
-#include "common/include/pico_error_code.h"
-#include "common/include/pico_log.h"
+#include "common.h"
+#include "defs.h"
+#include "macro.h"
+#include "pico_log.h"
 
 namespace paradigm4 {
 namespace pico {
@@ -115,13 +114,13 @@ bool guess_local_ip(std::string& name) {
         return true;
     }
 
-    RLOG(WARNING) << "Guess ip from hostname failed. Trying to guess from ioctl...";
+    SLOG(WARNING) << "Guess ip from hostname failed. Trying to guess from ioctl...";
 
     if (get_local_ip_by_ioctl(name)) {
         return true;
     }
 
-    RLOG(WARNING) << "Sorry, guess local ip failed.";
+    SLOG(WARNING) << "Sorry, guess local ip failed.";
 
     return false;
 }
@@ -242,7 +241,7 @@ bool fetch_ip(const std::string& user_set_ip, std::string* ip) {
 
     if (user_set_ip == "") {
         if (!guess_local_ip(*ip)) {
-            RLOG(WARNING) << "guess local ip failed. user may configure it";
+            SLOG(WARNING) << "guess local ip failed. user may configure it";
             return false;
         }
     } else {
@@ -255,12 +254,12 @@ bool fetch_ip(const std::string& user_set_ip, std::string* ip) {
     }
 
     if (!ipv4_format_validator(*ip)) {
-        RLOG(WARNING) << "ip format error: [ " << *ip << " ]" << user_set_ip;
+        SLOG(WARNING) << "ip format error: [ " << *ip << " ]" << user_set_ip;
         return false;
     }
 
     if (!is_local_ipv4_by_ioctl(*ip)) {
-        RLOG(WARNING) << "ip is not local ip: [ " << *ip << " ]" << user_set_ip;
+        SLOG(WARNING) << "ip is not local ip: [ " << *ip << " ]" << user_set_ip;
         return false;
     }
     return true;

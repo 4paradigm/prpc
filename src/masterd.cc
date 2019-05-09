@@ -1,13 +1,11 @@
 #include <csignal>
 #include <sys/prctl.h>
 
-#include "common/include/Configure.h"
-#include "common/include/Master.h"
-#include "common/include/pico_framework_configure.h"
-#include "common/include/pico_env_configure.h"
-#include "common/include/PicoContext.h"
+#include "Master.h"
 
 using namespace paradigm4::pico;
+
+DEFINE_string(endpoint, "127.0.0.1", "ip or ip:port");
 
 void show_flags_info() {
     std::vector<google::CommandLineFlagInfo> flag_infos;
@@ -47,13 +45,11 @@ int main(int argc, char* argv[]) {
     //    std::signal(SIGTERM, signal_handler);
 
     google::InstallFailureSignalHandler();
-    pico_context().initialize_config(argc, argv);
-    //google::InitGoogleLogging(argv[0]);
-    //google::AllowCommandLineReparsing();
-    //google::ParseCommandLineFlags(&argc, &argv, false);
+    google::InitGoogleLogging(argv[0]);
+    google::AllowCommandLineReparsing();
+    google::ParseCommandLineFlags(&argc, &argv, false);
     //FLAGS_logtostderr = 1;
     //LogReporter::initialize();
-    LogReporter::set_id("MASTERD", 0);
     //Configure config;
 
     //if (FLAGS_config_file != "") {
@@ -74,8 +70,7 @@ int main(int argc, char* argv[]) {
     //conn_config.to_json_node().save(jstr);
     //SLOG(INFO) << "Connection Configure\n" << jstr;
 
-    auto& env = pico_context().env_config();
-    Master master(env.rpc.wrapper_ip);
+    Master master(FLAGS_endpoint);
     master.initialize();
     sigint_handler = [&master](int) { master.exit(); };
     master.finalize();

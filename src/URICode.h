@@ -6,7 +6,7 @@
 #include <sstream>
 #include <iomanip>
 
-#include "common/include/pico_log.h"
+#include "pico_log.h"
 
 namespace paradigm4 {
 namespace pico {

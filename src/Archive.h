@@ -23,6 +23,7 @@
 #include "macro.h"
 #include "ArenaAllocator.h"
 #include "pico_log.h"
+#include "throwable_shared_ptr.h"
 
 namespace paradigm4 {
 namespace pico {
@@ -76,7 +77,7 @@ public:
 
     explicit FileArchive(const std::string& file_name, const std::string& mode) {
         FILE* file = fopen(file_name.c_str(), mode.c_str());
-        RCHECK(file) << "open " << file_name << " failed.";
+        SCHECK(file) << "open " << file_name << " failed.";
         _file.reset(file, [](FILE* file) {fclose(file);});
     }
 
@@ -124,7 +125,7 @@ public:
 
     void reset(const std::string& file_name, const std::string& mode) {
         FILE* file = fopen(file_name.c_str(), mode.c_str());
-        RCHECK(file) << "open " << file_name << " failed.";
+        SCHECK(file) << "open " << file_name << " failed.";
         _file.reset(file, [](FILE* file) {fclose(file);});
     }
 
@@ -167,7 +168,7 @@ public:
     PICO_DEPRECATED("")
     void read_raw(void* p, size_t len) {
         if (likely(len > 0)) {
-            RCHECK(fread(p, sizeof(char), len, &*_file) == len) << "read failed";
+            SCHECK(fread(p, sizeof(char), len, &*_file) == len) << "read failed";
         }
     }
 
@@ -181,7 +182,7 @@ public:
     PICO_DEPRECATED("")
     void write_raw(const void* p, size_t len) {
         if (likely(len > 0)) {
-            RCHECK(fwrite(p, sizeof(char), len, &*_file) == len) << "write failed";
+            SCHECK(fwrite(p, sizeof(char), len, &*_file) == len) << "write failed";
         }
     }
 
@@ -197,7 +198,7 @@ public:
             std::fpos_t pos;
             PSCHECK(fgetpos(&*_file, &pos) == 0);
             SCHECK(fseek(&*_file, -len, SEEK_END) == 0) << "seek failed";
-            RCHECK(fread(p, sizeof(char), len, &*_file) == len) << "read failed";
+            SCHECK(fread(p, sizeof(char), len, &*_file) == len) << "read failed";
             PSCHECK(fsetpos(&*_file, &pos) == 0);
         }
     }

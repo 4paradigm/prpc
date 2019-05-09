@@ -8,10 +8,16 @@
 #include "fetch_ip.h"
 #include "RpcSocket.h"
 #include "RpcMessage.h"
-#include "pico_env_configure.h"
 
 namespace paradigm4 {
 namespace pico {
+
+struct TcpConfig {
+    int keepalive_time;
+    int keepalive_intvl;
+    int keepalive_probes;
+    int connect_timeout;
+};
 
 class TcpSocket : public RpcSocket {
 public:

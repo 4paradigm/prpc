@@ -1,7 +1,6 @@
 #ifndef PARADIGM4_PICO_COMMON_RPC_MESSAGE_H
 #define PARADIGM4_PICO_COMMON_RPC_MESSAGE_H
 
-#include "ThreadedTimer.h"
 #include "Archive.h"
 #include "LazyArchive.h"
 #include "common.h"

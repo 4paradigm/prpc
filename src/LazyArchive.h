@@ -3,10 +3,9 @@
 
 #include <typeindex>
 #include "Archive.h"
-#include "ThreadedTimer.h"
 
 #ifdef USE_RDMA
-#include "common/include/RdmaContext.h"
+#include "RdmaContext.h"
 #endif
 
 namespace paradigm4 {

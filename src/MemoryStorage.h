@@ -10,10 +10,10 @@
 #include <boost/tokenizer.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "common/include/common.h"
-#include "common/include/PicoContext.h"
-#include "common/include/pico_log.h"
-#include "common/include/URIConfig.h"
+#include "common.h"
+#include "PicoContext.h"
+#include "pico_log.h"
+#include "URIConfig.h"
 
 namespace paradigm4 {
 namespace pico {

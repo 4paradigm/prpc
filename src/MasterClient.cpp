@@ -3,8 +3,8 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "common/include/AsyncWatcher.h"
-#include "common/include/MasterClient.h"
+#include "AsyncWatcher.h"
+#include "MasterClient.h"
 #include "pico_log.h"
 
 namespace paradigm4 {

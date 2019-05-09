@@ -24,6 +24,16 @@
 namespace paradigm4 {
 namespace pico {
 
+struct RpcConfig {
+    std::string bind_ip = "127.0.0.1";
+    size_t io_thread_num = 1;
+    std::string protocol = "tcp";
+#ifdef USE_RDMA
+    RdmaConfig rdma;
+#endif
+    TcpConfig tcp;
+};
+
 class Dealer;
 class RpcServer;
 

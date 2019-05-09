@@ -1,6 +1,5 @@
 #ifdef USE_RDMA
-#include "common/include/RdmaSocket.h"
-#include "common/include/ThreadedTimer.h"
+#include "RdmaSocket.h"
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>

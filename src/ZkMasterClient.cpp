@@ -1,9 +1,9 @@
-#include "common/include/MasterClient.h"
+#include "MasterClient.h"
 
 #include <algorithm>
 
-#include "common/include/PicoJsonNode.h"
-#include "common/include/pico_lexical_cast.h"
+#include "PicoJsonNode.h"
+#include "pico_lexical_cast.h"
 
 namespace paradigm4 {
 namespace pico {

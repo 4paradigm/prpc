@@ -10,15 +10,14 @@
 
 #include "zookeeper/zookeeper.h"
 
-#include "common/include/Archive.h"
-#include "common/include/Master.h"
-#include "common/include/pico_lexical_cast.h"
-#include "common/include/TcpSocket.h"
-#include "common/include/AsyncReturn.h"
-#include "common/include/AsyncWatcher.h"
-#include "common/include/SpinLock.h"
-#include "common/include/pico_env_configure.h"
-#include "common/include/RpcChannel.h"
+#include "Archive.h"
+#include "Master.h"
+#include "pico_lexical_cast.h"
+#include "TcpSocket.h"
+#include "AsyncReturn.h"
+#include "AsyncWatcher.h"
+#include "SpinLock.h"
+#include "RpcChannel.h"
 
 namespace paradigm4 {
 namespace pico {
@@ -276,22 +275,6 @@ private:
     MasterClient* _client;
     std::string _lock_name;
 };
-
-inline std::unique_ptr<MasterClient> pico_new_master_client(const MASTER& master) {
-    if (master.type == "pico") {
-        std::string endpoint = master.pico.endpoint;
-        auto tcp_master_client = std::make_unique<TcpMasterClient>(endpoint);
-        return tcp_master_client;
-    } else if (master.type == "zk") {
-        auto zk_master_client = std::make_unique<ZkMasterClient>(
-                master.zk.rootpath,
-                master.zk.endpoint,
-                master.zk.recv_timeout,
-                master.zk.disconnect_timeout);
-        return zk_master_client;
-    }
-    return nullptr;
-}
 
 } // namespace pico
 } // namespace paradigm4

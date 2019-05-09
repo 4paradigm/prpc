@@ -7,22 +7,23 @@
 #include "Master.h"
 #include "MasterClient.h"
 
-#include "pico_test_common.h"
-#include "pico_unittest_operator.h"
-#include "common/include/PicoContext.h"
-#include "common/include/initialize.h"
 
 namespace paradigm4 {
 namespace pico {
 
+DEFINE_string(endpoint, "", "");
+DEFINE_string(rootpath, "", "");
+DEFINE_uint64(recv_timeout, 0, "");
+DEFINE_uint64(disconnect_timeout, 0, "");
+const std::string RANK_KEY="asdf";
+
 class ZkMasterClientTest : public ::testing::Test {
 public:
     void SetUp() override {
-        ASSERT_TRUE(pico_context().env_config().master.type == "zk");
-        ZKMASTER zk_config = pico_context().env_config().master.zk;
-        server_list = zk_config.endpoint;
-        recv_timeout = zk_config.recv_timeout;
-        disconnect_timeout = zk_config.disconnect_timeout;
+        server_list = FLAGS_endpoint;
+        recv_timeout = FLAGS_recv_timeout;
+        disconnect_timeout = FLAGS_disconnect_timeout;
+        root_path = FLAGS_rootpath;
         sub_id = 0;
     }
 
@@ -31,8 +32,7 @@ public:
 
     std::string gen_path() {
         int n = sub_id++;
-        ZKMASTER zk_config = pico_context().env_config().master.zk;
-        return zk_config.rootpath + "/" + std::to_string(n);
+        return root_path + "/" + std::to_string(n);
     }
 
 protected:
@@ -60,26 +60,6 @@ TEST_F(ZkMasterClientTest, GenerateID) {
     EXPECT_EQ(0, id);
     id = client.generate_id("test_key2");
     EXPECT_EQ(1, id);
-
-    client.add_rpc_name_id("api1", "key1", client.generate_id("api1"));
-    client.get_rpc_name_id("api1", "key1", id);
-    EXPECT_EQ(0, id);
-    client.add_rpc_name_id("api1", "key2", client.generate_id("api1"));
-    client.get_rpc_name_id("api1", "key2", id);
-    EXPECT_EQ(1, id);
-    client.add_rpc_name_id("api2", "key1", client.generate_id("api2"));
-    client.get_rpc_name_id("api2", "key1", id);
-    EXPECT_EQ(0, id);
-    client.add_rpc_name_id("api1", "key2", 9);
-    client.get_rpc_name_id("api1", "key2", id);
-    EXPECT_EQ(1, id);
-    client.add_rpc_name_id("api2", "key1", 9);
-    client.get_rpc_name_id("api2", "key1", id);
-    EXPECT_EQ(0, id);
-    client.add_rpc_name_id("api2", "key2", client.generate_id("api2"));
-    client.get_rpc_name_id("api2", "key2", id);
-    EXPECT_EQ(1, id);
-
     client.clear_master();
     client.finalize();
 }
@@ -197,88 +177,53 @@ TEST_F(ZkMasterClientTest, RegisterNode) {
     ZkMasterClient pserver1(test_path, server_list, recv_timeout, disconnect_timeout);
     pserver1.initialize();
     CommInfo info;
-    info.role = PSERVER_ROLE_STR;
     info.global_rank = pserver1.generate_id(RANK_KEY);
-    info.local_rank = pserver1.generate_id(PSERVER_ROLE_STR);
     info.endpoint = "127.0.0.1:1";
     pserver1.register_node(info);
-    pserver1.set_node_ready(info.global_rank);
     EXPECT_EQ(0, info.global_rank);
-    EXPECT_EQ(0, info.local_rank);
 
     ZkMasterClient pserver2(test_path, server_list, recv_timeout, disconnect_timeout);
     pserver2.initialize();
     info.global_rank = pserver2.generate_id(RANK_KEY);
-    info.local_rank = pserver2.generate_id(PSERVER_ROLE_STR);
     info.endpoint = "127.0.0.1:2";
     pserver1.register_node(info);
-    pserver1.set_node_ready(info.global_rank);
     EXPECT_EQ(1, info.global_rank);
-    EXPECT_EQ(1, info.local_rank);
 
     ZkMasterClient client1(test_path, server_list, recv_timeout, disconnect_timeout);
     client1.initialize();
-    info.role = LEARNER_ROLE_STR;
     info.global_rank = client1.generate_id(RANK_KEY);
-    info.local_rank = client1.generate_id(LEARNER_ROLE_STR);
     info.endpoint = "127.0.0.1:101";
     client1.register_node(info);
-    client1.set_node_ready(info.global_rank);
     EXPECT_EQ(2, info.global_rank);
-    EXPECT_EQ(0, info.local_rank);
 
     ZkMasterClient client2(test_path, server_list, recv_timeout, disconnect_timeout);
     client2.initialize();
     info.global_rank = client2.generate_id(RANK_KEY);
-    info.local_rank = client2.generate_id(LEARNER_ROLE_STR);
     info.endpoint = "127.0.0.1:102";
     client2.register_node(info);
-    client2.set_node_ready(info.global_rank);
     EXPECT_EQ(3, info.global_rank);
-    EXPECT_EQ(1, info.local_rank);
 
     ZkMasterClient client3(test_path, server_list, recv_timeout, disconnect_timeout);
     client3.initialize();
     info.global_rank = client3.generate_id(RANK_KEY);
-    info.local_rank = client3.generate_id(LEARNER_ROLE_STR);
     info.endpoint = "127.0.0.1:103";
     client3.register_node(info);
-    client3.set_node_ready(info.global_rank);
     EXPECT_EQ(4, info.global_rank);
-    EXPECT_EQ(2, info.local_rank);
 
 
-    auto pserver_list = client1.get_nodes(PSERVER_ROLE_STR);
-    EXPECT_EQ(0, pserver_list[0]);
-    EXPECT_EQ(1, pserver_list[1]);
-    EXPECT_EQ(client1.get_comm_info(0).endpoint, "127.0.0.1:1");
-    EXPECT_EQ(client1.get_comm_info(1).endpoint, "127.0.0.1:2");
 
-    auto learner_list = client2.get_nodes(LEARNER_ROLE_STR);
-    EXPECT_EQ(2, learner_list[0]);
-    EXPECT_EQ(3, learner_list[1]);
-    EXPECT_EQ(4, learner_list[2]);
-    EXPECT_EQ(client2.get_comm_info(2).endpoint, "127.0.0.1:101");
-    EXPECT_EQ(client2.get_comm_info(3).endpoint, "127.0.0.1:102");
-    EXPECT_EQ(client2.get_comm_info(4).endpoint, "127.0.0.1:103");
+    std::vector<CommInfo> nodes;
+    ASSERT_TRUE(client3.get_comm_info(nodes));
+    EXPECT_EQ(0, nodes[0].global_rank);
+    EXPECT_EQ(1, nodes[1].global_rank);
+    EXPECT_EQ(2, nodes[2].global_rank);
+    EXPECT_EQ(3, nodes[3].global_rank);
+    EXPECT_EQ(4, nodes[4].global_rank);
 
-
-    auto node_list = client3.get_nodes();
-    EXPECT_EQ(0, node_list[0]);
-    EXPECT_EQ(1, node_list[1]);
-    EXPECT_EQ(2, node_list[2]);
-    EXPECT_EQ(3, node_list[3]);
-    EXPECT_EQ(4, node_list[4]);
-
-    pserver1.set_node_finished(0);
     pserver1.finalize();
-    pserver2.set_node_finished(1);
     pserver2.finalize();
-    client1.set_node_finished(2);
     client1.finalize();
-    client2.set_node_finished(3);
     client2.finalize();
-    client3.set_node_finished(4);
     client3.clear_master();
     client3.finalize();
 }
@@ -362,18 +307,6 @@ TEST_F(MasterTest, Model) {
 
 int main(int argc, char* argv[]) {
     testing::InitGoogleTest(&argc, argv);
-    paradigm4::pico::test::PicoUnitTestCommon::singleton().initialize(&argc, argv);
-    if (paradigm4::pico::test::PicoUnitTestOperator::singleton().is_show_operator()) {
-        // local_wrapper, repeat_num=10
-        paradigm4::pico::test::PicoUnitTestOperator::singleton().append(
-              paradigm4::pico::test::LocalWrapperOperator(10, 0, "zk"));
-        paradigm4::pico::test::PicoUnitTestOperator::singleton().show_operator();
-        paradigm4::pico::test::PicoUnitTestCommon::singleton().finalize();
-        return 0;
-    }
-    paradigm4::pico::pico_initialize(argc, argv);
     int ret = RUN_ALL_TESTS();
-    paradigm4::pico::pico_finalize();
-    paradigm4::pico::test::PicoUnitTestCommon::singleton().finalize();
     return ret;
 }

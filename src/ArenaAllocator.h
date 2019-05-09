@@ -3,8 +3,10 @@
 //
 #ifndef PICO_ArenaALLOCATOR_H
 #define PICO_ArenaALLOCATOR_H
+#include <memory>
 #include <jemalloc/jemalloc.h>
-#include "common/include/pico_memory.h"
+#include "macro.h"
+#include "pico_memory.h"
 
 namespace paradigm4 {
 namespace pico {

@@ -8,11 +8,7 @@
 #include "Master.h"
 #include "MasterClient.h"
 #include "RpcService.h"
-#include "Barrier.h"
-#include "initialize.h"
 
-#include "pico_test_common.h"
-#include "pico_unittest_operator.h"
 
 namespace paradigm4 {
 namespace pico {
@@ -27,7 +23,7 @@ TEST(RpcTest, ok) {
 
     RpcService rpc;
     RpcConfig rpc_config;
-    rpc_config.wrapper_ip = "127.0.0.1";
+    rpc_config.bind_ip = "127.0.0.1";
     rpc.initialize(&master_client, rpc_config);
 
     std::unique_ptr<RpcServer> server = rpc.create_server("asdf");
@@ -81,7 +77,7 @@ TEST(RpcTest, ok2) {
 
     RpcService rpc;
     RpcConfig rpc_config;
-    rpc_config.wrapper_ip = "127.0.0.1";
+    rpc_config.bind_ip = "127.0.0.1";
     rpc.initialize(&master_client, rpc_config);
 
     auto s1 = rpc.create_server("asdf");
@@ -157,9 +153,7 @@ TEST(RpcTest, p2p) {
     SLOG(INFO) << "Client initialized.";
 
     RpcService rpc;
-    RpcConfig rpc_config;
-    rpc_config.wrapper_ip = "127.0.0.1";
-    rpc.initialize(&master_client, rpc_config);
+    rpc.initialize(&master_client, RpcConfig());
     rpc.update_ctx();
 
     auto a = rpc.create_dealer("asdf");
@@ -207,18 +201,6 @@ TEST(RpcTest, haha) {
 
 int main(int argc, char* argv[]) {
     testing::InitGoogleTest(&argc, argv);
-    paradigm4::pico::test::PicoUnitTestCommon::singleton().initialize(&argc, argv);
-    if (paradigm4::pico::test::PicoUnitTestOperator::singleton().is_show_operator()) {
-        // no_wrapper, repeat_num=100
-        paradigm4::pico::test::PicoUnitTestOperator::singleton().append(paradigm4::pico::test::NoWrapperOperator(100));
-        paradigm4::pico::test::PicoUnitTestOperator::singleton().show_operator();
-        paradigm4::pico::test::PicoUnitTestCommon::singleton().finalize();
-        return 0;
-    }
-    paradigm4::pico::test::PicoUnitTestCommon::singleton().finalize();
-
-    paradigm4::pico::pico_initialize(argc, argv);
     int ret = RUN_ALL_TESTS();
-    paradigm4::pico::pico_finalize();
     return ret;
 }

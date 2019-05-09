@@ -6,7 +6,6 @@
 #include "common.h"
 #include "pico_lexical_cast.h"
 #include "Archive.h"
-#include "PicoException.h"
 #include "pico_log.h"
 
 #include "snappy.h"
@@ -270,7 +269,7 @@ public:
         } else if (method == "lz4") {
             _c.reset(new LZ4CompressEntity());
         } else {
-            RLOG(FATAL) << "unknown compress method";
+            SLOG(FATAL) << "unknown compress method";
         }
     }
 

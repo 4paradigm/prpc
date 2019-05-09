@@ -22,10 +22,9 @@ void RpcService::initialize(MasterClient* master_client,
     }
 
     _rpc_service_api = rpc_service_api;
-    _bind_ip = config.wrapper_ip;
+    _bind_ip = config.bind_ip;
     if (_bind_ip == "") {
-        ECHECK(fetch_ip(_master_client->endpoint(), &_bind_ip),
-              PICO_FRAMEWORK_ERRCODE(WRAPPER_FETCH_IP))
+        SCHECK(fetch_ip(_master_client->endpoint(), &_bind_ip))
               << "fetch ip failed";
     }
     _terminate_fd = eventfd(0, EFD_SEMAPHORE);
@@ -148,33 +147,15 @@ void RpcService::handle_message_event(int fd) {
 void RpcService::receiving(int tid) {
     std::vector<epoll_event> events;
     bool terminate = false;
-    std::chrono::steady_clock::time_point start
-          = std::chrono::steady_clock::now();
-
     while (!terminate) {
-        auto dur = std::chrono::steady_clock::now() - start;
-        double dur_ms = std::chrono::duration_cast<
-              std::chrono::duration<double, std::ratio<1, 1000>>>(dur)
-                              .count();
-        if (dur_ms > 10000) {
-            AggData::singleton().flush();
-            start = std::chrono::steady_clock::now();
-        }
-        {
-            timer_guard _("poll_wait");
-            _ctx.poll_wait(events, tid, -1);
-        }
-
-        {
-            timer_guard _("process msg");
-            for (auto& e : events) {
-                if (e.data.fd == _ctx._acceptor->fd()) {
-                    handle_accept_event();
-                } else if (e.data.fd == _terminate_fd) {
-                    terminate = true;
-                } else {
-                    handle_message_event(e.data.fd);
-                }
+        _ctx.poll_wait(events, tid, -1);
+        for (auto& e : events) {
+            if (e.data.fd == _ctx._acceptor->fd()) {
+                handle_accept_event();
+            } else if (e.data.fd == _terminate_fd) {
+                terminate = true;
+            } else {
+                handle_message_event(e.data.fd);
             }
         }
     }

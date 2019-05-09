@@ -1,14 +1,14 @@
 //
 // Created by sun on 2018/8/17.
 //
-#include "common/include/ArenaAllocator.h"
+#include "ArenaAllocator.h"
 #include <map>
 #include <vector>
-#include "common/include/pico_log.h"
+#include "pico_log.h"
 #define mallctl je_mallctl
 
 #ifdef USE_RDMA
-#include "common/include/RpcContext.h"
+#include "RpcContext.h"
 #endif
 
 /*

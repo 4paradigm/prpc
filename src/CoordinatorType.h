@@ -5,7 +5,7 @@
 #include <string>
 #include <cstring>
 
-#include "common/include/Archive.h"
+#include "Archive.h"
 
 namespace paradigm4 {
 namespace pico {

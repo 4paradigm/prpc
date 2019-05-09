@@ -16,7 +16,6 @@
 #include "RpcContext.h"
 #include "RpcServer.h"
 #include "RpcClient.h"
-#include "ThreadedTimer.h"
 
 namespace paradigm4 {
 namespace pico {

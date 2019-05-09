@@ -1,5 +1,5 @@
 
-#include "common/include/RpcSocket.h"
+#include "RpcSocket.h"
 
 namespace paradigm4 {
 namespace pico {

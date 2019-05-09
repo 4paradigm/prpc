@@ -3,7 +3,7 @@
 
 #include <boost/preprocessor/arithmetic/inc.hpp>
 #include <boost/preprocessor/facilities/overload.hpp>
-#include "pico_log.h"
+//#include "pico_log.h"
 
 #ifndef likely
 #define likely(x) __builtin_expect(!!(x), 1)

@@ -102,9 +102,7 @@ void Master::initialize() {
     SLOG(INFO) << "Master initializing...";
     PSCHECK(_tcp_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor())) << "fail to create tcp acceptor";
     if(_bind_ip.find(':') == std::string::npos) {
-        ECHECK(fetch_ip(_bind_ip, &_bind_ip),
-              PICO_FRAMEWORK_ERRCODE(WRAPPER_FETCH_IP))
-              << "fetch ip failed";
+        SCHECK(fetch_ip(_bind_ip, &_bind_ip)) << "fetch ip failed";
         if (_tcp_acceptor->bind_on_random_port(_bind_ip) != 0) {
             PSLOG(FATAL) << "tcp_acceptor bind failed! " << _bind_ip;
         }

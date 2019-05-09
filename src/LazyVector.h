@@ -5,7 +5,7 @@
 #ifndef PARADIGM4_PICO_COMMON_LAZYVECTOR_H
 #define PARADIGM4_PICO_COMMON_LAZYVECTOR_H
 
-#include "common/include/pico_log.h"
+#include "pico_log.h"
 
 namespace paradigm4 {
 namespace pico {

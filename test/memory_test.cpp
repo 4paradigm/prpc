@@ -8,8 +8,6 @@
 #include "ArenaAllocator.h"
 #include "pico_lexical_cast.h"
 #include "pico_memory.h"
-#include "pico_test_common.h"
-#include "pico_unittest_operator.h"
 #define VAR(v) " " << #v << "=" << (v)
 
 #define KB *1024L
@@ -104,20 +102,6 @@ int main(int argc, char* argv[]) {
     testing::InitGoogleTest(&argc, argv);
     google::AllowCommandLineReparsing();
     google::ParseCommandLineFlags(&argc, &argv, false);
-    paradigm4::pico::LogReporter::initialize();
-
-    paradigm4::pico::test::PicoUnitTestCommon::singleton().initialize(&argc, argv);
-    if (paradigm4::pico::test::PicoUnitTestOperator::singleton().is_show_operator()) {
-        // no_wrapper, repeat_num=1
-        paradigm4::pico::test::PicoUnitTestOperator::singleton().append(
-            paradigm4::pico::test::NoWrapperOperator(1));
-        paradigm4::pico::test::PicoUnitTestOperator::singleton().show_operator();
-        paradigm4::pico::test::PicoUnitTestCommon::singleton().finalize();
-        return 0;
-    }
-    paradigm4::pico::test::PicoUnitTestCommon::singleton().finalize();
     int ret = RUN_ALL_TESTS();
-
-    paradigm4::pico::LogReporter::finalize();
     return ret;
 }

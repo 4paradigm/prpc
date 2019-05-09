@@ -57,7 +57,10 @@ Dealer* FairQueue::next(int sid) {
     shared_lock_guard<RWSpinLock> _(_lk);
     SLOG(INFO) << sid;
     auto it = _sid2dealers.find(sid);
-    SCHECK(it != _sid2dealers.end()) << sid << " " << _sid2dealers.size();
+    if (it == _sid2dealers.end()) {
+        return nullptr;
+    }
+    //SCHECK(it != _sid2dealers.end()) << sid << " " << _sid2dealers.size();
     auto& d = it->second;
     SCHECK(!d.empty()) << "no dealer.";
     return d[rand() % d.size()];
@@ -378,6 +381,11 @@ void RpcContext::push_request(RpcRequest&& req) {
     }
     auto fq = it->second;
     auto dealer = fq->next(req.head().sid);
+    if (!dealer) {
+        SLOG(WARNING)
+              << "recv request, but no such server. Drop it. rpc_id is "
+              << req.head().rpc_id;
+    }
     dealer->push_request(std::move(req));
 }
 
@@ -386,14 +394,16 @@ void RpcContext::push_request(RpcRequest&& req) {
  */
 void RpcContext::push_response(RpcResponse&& resp) {
     auto it = _client_backend.find(resp.head().dest_dealer);
-    auto dealer = it->second;
-    if (dealer) {
-        dealer->push_response(std::move(resp));
-    } else {
-        SLOG(WARNING) << "recv resp, but dealer has been finalized. Drop "
-                         "it. rpc_id is "
-                      << resp.head().rpc_id;
+    if (it != _client_backend.end()) {
+        auto dealer = it->second;
+        if (dealer) {
+            dealer->push_response(std::move(resp));
+            return;
+        }
     }
+    SLOG(WARNING) << "recv resp, but dealer has been finalized. Drop "
+        "it. rpc_id is "
+        << resp.head().rpc_id;
 }
 
 void RpcContext::add_frontend_event(const std::shared_ptr<frontend_t>& f) {

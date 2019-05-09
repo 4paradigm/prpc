@@ -16,7 +16,7 @@
 #include "Archive.h"
 #include "defs.h"
 #include "common.h"
-#include "common/include/TcpSocket.h"
+#include "TcpSocket.h"
 
 namespace paradigm4 {
 namespace pico {
