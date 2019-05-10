@@ -1,5 +1,5 @@
-set(TOOL_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/tools/include)
-set(TOOL_LIB_DIR ${CMAKE_SOURCE_DIR}/tools/lib)
+set(TOOL_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third-party/include)
+set(TOOL_LIB_DIR ${CMAKE_SOURCE_DIR}/third-party/lib)
 include(CMakeParseArguments)
 
 function(find_include target)

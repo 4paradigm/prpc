@@ -3,7 +3,7 @@
 
 #include "Master.h"
 
-using namespace paradigm4::pico;
+using namespace paradigm4::pico::core;
 
 DEFINE_string(endpoint, "127.0.0.1", "ip or ip:port");
 
