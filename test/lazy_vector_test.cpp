@@ -9,6 +9,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
     TEST(LazyVector, constructor_ok) {
         LazyVector<int> lazy_vector;
@@ -367,6 +368,7 @@ namespace pico {
 
     }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

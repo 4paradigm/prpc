@@ -10,6 +10,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 
 
@@ -273,6 +274,7 @@ TEST(MasterTest, Snapshot) {
 }
 
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

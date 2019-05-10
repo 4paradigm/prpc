@@ -7,6 +7,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class Foo{};
 class FooSer{};
@@ -1133,6 +1134,7 @@ TEST(BinaryArchive, array_string) {
     }
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

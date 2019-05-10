@@ -9,6 +9,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 TEST(Base64, check_ok) {
     std::string text  = "picopicopicopicopicopicopicopicopicopicopicopicopicopicopi";
@@ -22,6 +23,7 @@ TEST(Base64, check_ok) {
     ASSERT_STREQ(text.c_str(), decoded);
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

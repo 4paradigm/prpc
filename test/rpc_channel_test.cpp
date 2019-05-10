@@ -7,6 +7,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 using namespace std;
 
@@ -37,9 +38,9 @@ TEST(RpcChannel, read_write_ok) {
     t2.join();
 }
 
-}
-}
-
+} // namespace core
+} // namespace pico
+} // namespace paradigm4
 
 int main(int argc, char* argv[]) {
     testing::InitGoogleTest(&argc, argv);

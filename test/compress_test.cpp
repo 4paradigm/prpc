@@ -9,6 +9,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 struct Foo {
     std::string data;
@@ -238,6 +239,7 @@ TEST(compress, zlib_raw_ok) {
     pico_free(c2);
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

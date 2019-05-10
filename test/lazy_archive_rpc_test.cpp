@@ -9,6 +9,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 const int kMaxRetry = 10;
 const int REPEAT = 10;
@@ -220,6 +221,7 @@ TEST(LazyArchive, rpc) {
 }
 
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

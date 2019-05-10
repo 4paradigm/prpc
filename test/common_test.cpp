@@ -10,6 +10,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 TEST(commonTest, pico_common_time_relevent_function_check) {
     std::chrono::system_clock::time_point t0;
@@ -93,8 +94,9 @@ TEST(commonTest, pico_common_format_typename_hash_check) {
     EXPECT_TRUE(hash64_1 != hash64_3);
 }
 
-}
-}
+} // namespace core
+} // namespace pico
+} // namespace paradigm4
 
 int main(int argc, char* argv[]) {
     testing::InitGoogleTest(&argc, argv);

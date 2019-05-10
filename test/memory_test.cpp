@@ -14,8 +14,8 @@
 #define MB *1024 KB
 #define GB *1024 MB
 
+using namespace paradigm4::pico::core;
 TEST(pico_memory, arena) {
-    using namespace paradigm4::pico;
     RpcArena rpcArena;
     for(int i=0;i<10;i++) {
         void * ret = rpcArena.allocate(1 MB + i * 0.1 MB);
@@ -27,12 +27,10 @@ TEST(pico_memory, arena) {
 }
 
 TEST(pico_memory, get_physical_size) {
-    using namespace paradigm4::pico;
     EXPECT_GT(pico_mem().get_total_pmem(), 0);
     LOG(INFO) << pico_mem().get_total_pmem();
 }
 TEST(pico_memory, max_memory) {
-    using namespace paradigm4::pico;
     pico_mem().set_max_managed_vmem(200 MB);
     pico_print_memstats();
 
@@ -46,7 +44,6 @@ TEST(pico_memory, max_memory) {
     EXPECT_NE(p, nullptr);
 }
 TEST(pico_memory, get_rss) {
-    using namespace paradigm4::pico;
     EXPECT_GT(pico_mem().get_used_pmem(), 0);
     EXPECT_TRUE(pico_mem().get_used_pmem() > 0 && pico_mem().get_used_pmem() < 1000 MB);
 
@@ -67,8 +64,6 @@ TEST(pico_memory, get_rss) {
 
 }
 TEST(pico_memory, limited_allocator) {
-    using paradigm4::pico::PicoLimitedAllocator;
-    using paradigm4::pico::MemPool;
     PicoLimitedAllocator<char> charAllocator;
     PicoLimitedAllocator<int> intAllocator;
     PicoLimitedAllocator<char,1,true> charAllocator1;

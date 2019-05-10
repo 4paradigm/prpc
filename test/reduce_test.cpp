@@ -12,6 +12,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 TEST(Reduce, non_in_place_ok) {
     auto run_func = []() {
@@ -40,6 +41,7 @@ TEST(Reduce, non_in_place_ok) {
     std::thread run_thread = std::thread(run_func);
     run_thread.join();
 }
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

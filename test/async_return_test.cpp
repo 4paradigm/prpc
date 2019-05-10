@@ -11,6 +11,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 TEST(AsyncReturn, execute_ok) {
     typedef std::pair<std::string, AsyncReturn> TaskPair;
@@ -111,6 +112,7 @@ TEST(AsyncReturn, template_string_execute_ok) {
     agent.join();
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

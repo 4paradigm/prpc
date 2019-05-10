@@ -8,6 +8,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 TEST(StringUtility, check_split_ok) {
     std::string text  = "0,1,2,3,4,5,6,7,8,9";
@@ -43,6 +44,7 @@ TEST(StringUtility, check_split_empty_ok) {
     EXPECT_STREQ("", token[0].first);
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

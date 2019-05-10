@@ -11,6 +11,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 TEST(HashTable, default_constructor_ok) {
     HashTable<std::string, int> ht;
@@ -238,6 +239,7 @@ TEST(HashTable, copy_swap_move_ok) {
     EXPECT_EQ(htc["e"], 50);
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

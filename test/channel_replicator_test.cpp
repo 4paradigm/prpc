@@ -10,6 +10,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 static size_t g_capacity = 30;
 static int g_count = 200;
@@ -194,6 +195,7 @@ TEST(ChannelReplicator, one_output_chan_ok) {
     EXPECT_EQ(g_cr.input_chan().size(), 0u);
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

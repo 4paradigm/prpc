@@ -9,6 +9,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 static const size_t g_capacity = 100;
 
@@ -180,7 +181,7 @@ struct Blob {
 };
 
 TEST(Channel, oom) {
-    paradigm4::pico::pico_mem().initialize();
+    paradigm4::pico::core::pico_mem().initialize();
     size_t cap = 1024 * 1024;
     const size_t chan_a_size = 1024;
     const size_t chan_b_size = 2048;
@@ -250,6 +251,7 @@ TEST(Channel, shared_open_ok) {
     EXPECT_TRUE(g_int_chan.closed());
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

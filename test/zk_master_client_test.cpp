@@ -10,6 +10,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 DEFINE_string(endpoint, "", "");
 DEFINE_string(rootpath, "", "");
@@ -302,6 +303,7 @@ TEST_F(MasterTest, Model) {
     client.finalize();
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

@@ -9,6 +9,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 TEST(PicoCast, self_type) {
     std::string sstr = "Pico is called by ourselves.";
@@ -233,6 +234,7 @@ TEST(PicoCast, pico_common_value_type_conversion_check) {
 
 
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

@@ -11,7 +11,9 @@
 #include "pico_memory.h"
 #define VAR(v) " " << #v << "=" << (v)
 
-void add_task(paradigm4::pico::Monitor& monitor, int a) {
+using namespace paradigm4::pico::core;
+
+void add_task(Monitor& monitor, int a) {
     auto id = monitor.submit(PICO_FILE_LINENUM, 0, 2000, [=] {
         LOG(INFO) << "add " << a;
         sleep(2);
@@ -20,7 +22,6 @@ void add_task(paradigm4::pico::Monitor& monitor, int a) {
 }
 
 TEST(monitor, submit) {
-    using paradigm4::pico::Monitor;
     Monitor& monitor = Monitor::singleton();
     auto id = monitor.submit(PICO_FILE_LINENUM, 0, 1000, [] {
         static int count = 0;
@@ -39,7 +40,6 @@ TEST(monitor, submit) {
 }
 
 TEST(monitor, destroy) {
-    using paradigm4::pico::Monitor;
     Monitor& monitor = Monitor::singleton();
     auto id          = monitor.submit(PICO_FILE_LINENUM, 0, 500, [] {
         static int count = 0;
@@ -59,7 +59,6 @@ TEST(monitor, destroy) {
     sleep(10);
 }
 TEST(monitor, destroy_with_additional_run) {
-    using paradigm4::pico::Monitor;
     Monitor& monitor = Monitor::singleton();
     auto id          = monitor.submit(PICO_FILE_LINENUM, 0, 500, [] {
         static int count = 0;

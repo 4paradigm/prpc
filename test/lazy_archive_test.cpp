@@ -8,6 +8,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 int REPEAT = 100;
 const int ALIGN = 32;
@@ -104,8 +105,8 @@ void mytest(bool use_apply) {
     std::vector<mystring> Z = z, Z0 = Z, Z1(REPEAT);
     if (use_apply) {
         std::shared_ptr<char> buffer;
-        pico::vector<data_block_t> data;
-        pico::vector<data_block_t> data2;
+        pico::core::vector<data_block_t> data;
+        pico::core::vector<data_block_t> data2;
         std::unique_ptr<LazyArchive> hold;
         {
             LazyArchive ar;
@@ -170,6 +171,7 @@ TEST(LazyArchive, apply) {
     mytest(true);
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

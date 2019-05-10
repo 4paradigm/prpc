@@ -14,6 +14,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 template<class T>    
 class Base : public Object {
@@ -53,6 +54,7 @@ TEST(Factory, ok) {
     EXPECT_TRUE(foo2->getName() == "Foo2");
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

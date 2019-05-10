@@ -8,6 +8,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 TEST(FormatString, no_parameter) {
     std::string str = format_string();
@@ -22,6 +23,7 @@ TEST(FormatString, test_ok) {
     EXPECT_STREQ(str.c_str(), "test");
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

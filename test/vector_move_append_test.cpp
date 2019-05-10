@@ -8,6 +8,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 TEST(VectorMoveAppend, ok) {
     std::vector<std::vector<int>> vect = {{3, 4}, {5}, {6, 7, 8}};
@@ -29,6 +30,7 @@ TEST(VectorMoveAppend, ok) {
     }
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

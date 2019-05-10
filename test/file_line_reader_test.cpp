@@ -8,6 +8,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 TEST(FileLineReader, check_ok) {
     FILE* file = std::tmpfile();
@@ -30,6 +31,7 @@ TEST(FileLineReader, check_ok) {
     EXPECT_FALSE(reader.getline(file2));
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

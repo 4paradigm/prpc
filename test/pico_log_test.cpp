@@ -11,6 +11,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 TEST(picoLog, check_ok) {
     SLOG(INFO) << "hello world\"'!@#$%^&*()_+";
@@ -31,8 +32,9 @@ TEST(picoLog, multithread_ok) {
     }
 }
 
-}
-}
+} // namespace core
+} // namespace pico
+} // namespace paradigm4
 
 int main(int argc, char* argv[]) {
     testing::InitGoogleTest(&argc, argv);

@@ -12,6 +12,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 TEST(RpcTest, ok) {
     Master master("127.0.0.1");
@@ -196,6 +197,7 @@ TEST(RpcTest, haha) {
 
 
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

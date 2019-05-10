@@ -11,6 +11,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 TEST(PicoJsonNodeTest, pico_json_node_constructor_check)
 {
@@ -420,6 +421,7 @@ TEST(PicoJsonNodeTest, pico_json_node_add_erase_modify_check)
 
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

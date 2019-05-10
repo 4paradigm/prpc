@@ -6,6 +6,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 TEST(URICode, EncodeDecode) {
     std::string s;
@@ -22,6 +23,7 @@ TEST(URICode, EncodeDecode) {
     EXPECT_EQ(s, URICode::decode(e));
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

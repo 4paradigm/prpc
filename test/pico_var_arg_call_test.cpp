@@ -9,6 +9,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class Foo {
 public:
@@ -53,6 +54,7 @@ TEST(PicoVarArgCall, test_ok) {
     }
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 
