@@ -3,6 +3,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 /*!
  * \brief defination of NoncopyableObject
  */
@@ -22,6 +23,7 @@ public:
 class VirtualObject : public NoncopyableObject {
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #endif // PARADIGM4_PICO_COMMON_VIRTUAL_OBJECT_H

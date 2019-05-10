@@ -5,6 +5,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 
 TcpMasterClient::TcpMasterClient(const std::string& master_ep)
@@ -154,5 +155,6 @@ MasterStatus TcpMasterClient::master_sub(const std::string& path, std::vector<st
 }
 
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4

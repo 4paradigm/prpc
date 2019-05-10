@@ -43,6 +43,7 @@ void pico_memstats(std::ostream& out);
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 class Memory {
 public:
     // init
@@ -214,6 +215,7 @@ public:
     }
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #include <array>
@@ -230,6 +232,7 @@ public:
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 template <typename T, typename _Alloc = PicoAllocator<T>>
 using vector = std::vector<T, _Alloc>;
 template <typename T, typename _Alloc = PicoAllocator<T>>
@@ -300,6 +303,7 @@ inline void pico_delete(_Tp* p) {
 //    allocator_helper::construct(global_pico_allocator<T>(),new_entry,std::forward<Args>(args)...);
 //    return std::unique_ptr<T>(new_entry,global_pico_deleter());
 //}
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 //#include "pico_memory.cpp"

@@ -15,6 +15,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 inline sockaddr_in parse_rpc_endpoint(const std::string& endpoint) {
     const char* ep = endpoint.c_str();
@@ -138,6 +139,7 @@ public:
 
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

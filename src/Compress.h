@@ -19,6 +19,7 @@ namespace LZ4 {
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 // NOT thread safe !!!!!!
 class CompressEntity : public VirtualObject {
@@ -337,6 +338,7 @@ inline Compress pico_compress(const std::string& method) {
     return Compress(method);
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

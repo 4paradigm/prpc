@@ -8,6 +8,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class Logger {
 public:
@@ -62,27 +63,27 @@ private:
 #define GLOG_WRAPPER_INFO LOG(INFO)
 #define GLOG_WRAPPER_WARNING LOG(WARNING)
 #define GLOG_WRAPPER_ERROR LOG(ERROR)
-#define GLOG_WRAPPER_FATAL paradigm4::pico::GLogFatalWrapper(__FILE__, __LINE__, false).stream()
+#define GLOG_WRAPPER_FATAL paradigm4::pico::core::GLogFatalWrapper(__FILE__, __LINE__, false).stream()
 
 #define PLOG_WRAPPER_INFO PLOG(INFO)
 #define PLOG_WRAPPER_WARNING PLOG(WARNING)
 #define PLOG_WRAPPER_ERROR PLOG(ERROR)
-#define PLOG_WRAPPER_FATAL paradigm4::pico::GLogFatalWrapper(__FILE__, __LINE__, true).stream()
+#define PLOG_WRAPPER_FATAL paradigm4::pico::core::GLogFatalWrapper(__FILE__, __LINE__, true).stream()
 
 #define P_LOG_1(severity) \
-    GLOG_WRAPPER_ ## severity << '[' << paradigm4::pico::Logger::singleton().get_id() << "] "
+    GLOG_WRAPPER_ ## severity << '[' << paradigm4::pico::core::Logger::singleton().get_id() << "] "
 
 #define P_CHECK_1(condition) \
     if (!(condition)) P_LOG_1(FATAL) << "Check failed: " #condition " "
 
 #define P_BLOG_1(level) \
-    VLOG(level) << '[' << paradigm4::pico::Logger::singleton().get_id() << "] "
+    VLOG(level) << '[' << paradigm4::pico::core::Logger::singleton().get_id() << "] "
 
 #define PR_CHECK_1(condition) \
     if (!(condition)) PR_LOG_1(FATAL) << "Check failed: " #condition " "
 
 #define P_PLOG_1(severity) \
-    GLOG_WRAPPER_ ## severity << '[' << paradigm4::pico::Logger::singleton().get_id() << "] "
+    GLOG_WRAPPER_ ## severity << '[' << paradigm4::pico::core::Logger::singleton().get_id() << "] "
 
 #define P_PCHECK_1(condition) \
     if (!(condition)) P_PLOG_1(FATAL) << "PCheck failed: " #condition " "
@@ -102,6 +103,7 @@ private:
 // ATTENTION, condition will only evaluated on specified rank
 #define PSCHECK(...) OVERRIDE_MACRO_2(__VA_ARGS__, P_PCHECK_2, P_PCHECK_1)(__VA_ARGS__)
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

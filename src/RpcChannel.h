@@ -13,6 +13,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class RpcChannelID {
 };
@@ -112,6 +113,7 @@ private:
     char _pad_3[64];
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

@@ -10,6 +10,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class URICode {
 public:
@@ -60,8 +61,8 @@ private:
     constexpr static const char* _hex = "0123456789ABCDEF";
 };
 
-
-}
-}
+} // namespace core
+} // namespace pico
+} // namespace paradigm4
 
 #endif //PARADIGM4_PICO_COMMON_URI_CODE_H

@@ -1,14 +1,15 @@
 #ifndef PARADIGM4_PICO_COMMON_ASYNC_RETURN_H
 #define PARADIGM4_PICO_COMMON_ASYNC_RETURN_H
 
-#include <mutex>
 #include <condition_variable>
 #include <memory>
+#include <mutex>
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
-template<class T>
+template <class T>
 class AsyncReturnObject {
 public:
     void reset() {
@@ -16,10 +17,10 @@ public:
         _ret.reset();
         _returned = false;
     }
-    
+
     std::shared_ptr<T> wait() {
         std::unique_lock<std::mutex> mlock(_mutex);
-        _cond.wait(mlock, [this]{return _returned;});
+        _cond.wait(mlock, [this] { return _returned; });
         return _ret;
     }
 
@@ -43,7 +44,7 @@ private:
  *  this class is used when a function call another function and get its
  *  return state later.
  */
-template<class T>
+template <class T>
 class AsyncReturnV {
 public:
     AsyncReturnV() {
@@ -70,7 +71,7 @@ private:
 
 typedef AsyncReturnV<void> AsyncReturn;
 
-
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #endif // PARADIGM4_PICO_COMMON_ASYNC_RETURN_H

@@ -2,6 +2,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 void RpcMessage::initialize(rpc_head_t&& head, BinaryArchive&& ar, LazyArchive&& lazy) {
     lazy.apply(_data);
@@ -44,5 +45,6 @@ RpcMessage::RpcMessage(RpcResponse&& resp) {
         initialize(std::move(resp._head), std::move(resp._ar), std::move(resp._lazy));
     }
 }
+} // namespace core
 } // namespace pico
 } // namespace paradigm4

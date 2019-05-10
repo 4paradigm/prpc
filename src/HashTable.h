@@ -22,6 +22,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 template<typename T, class = decltype(std::declval<T>() < std::declval<T>())>
 std::true_type is_less_than_comparable_test(const T&);
@@ -822,6 +823,7 @@ private:
     allocator_type _allocator;
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #endif // PARADIGM4_PICO_TABLE_HASH_TABLE_H

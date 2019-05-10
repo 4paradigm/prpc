@@ -7,6 +7,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 ZkMasterClient::ZkMasterClient(const std::string& root_path, 
       const std::string& hosts, 
@@ -325,5 +326,6 @@ void ZkMasterClient::handle_event(int type, int state, const char* path) {
     }
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4

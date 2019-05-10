@@ -19,6 +19,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 const int BNUM = 8;
 const int BSIZE = 32 * 1024;
@@ -184,6 +185,7 @@ private:
 
 
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

@@ -9,6 +9,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class SpinLock {
 public:
@@ -153,6 +154,7 @@ private:
     T* lk;
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

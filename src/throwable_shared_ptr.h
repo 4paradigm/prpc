@@ -11,6 +11,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class shared_ptr_count {
 public:
@@ -186,6 +187,7 @@ private:
     std::function<void(T*)> _deleter;
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

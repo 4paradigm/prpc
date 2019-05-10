@@ -8,6 +8,7 @@
 #include "pico_log.h"
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class StringUtility : public VirtualObject {
 public:
@@ -116,6 +117,7 @@ public:
     PICO_DEFINE_TO_STRING_NEW(long double, "%.18LF");
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #endif // PARADIGM4_PICO_COMMON_STRING_UTILITY_H

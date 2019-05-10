@@ -5,6 +5,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 void GLogFatalWrapper::fail_func_abort() {
     std::abort();
@@ -67,5 +68,6 @@ std::ostream& GLogFatalWrapper::stream() {
     }
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4

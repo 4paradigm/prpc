@@ -51,6 +51,7 @@
 */
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 /*!
 @brief unnamed namespace with internal helper functions
@@ -10880,6 +10881,7 @@ uses the standard template types.
 @since version 1.0.0
 */
 using PicoJsonNode = basic_json<>;
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

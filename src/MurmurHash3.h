@@ -13,6 +13,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 #define FORCE_INLINE inline __attribute__((always_inline))
 
@@ -453,6 +454,7 @@ FORCE_INLINE void murmur_hash3_x64_128(const void* key, const int len,
     ((uint64_t*)out)[1] = h2;
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #endif // PARADIGM4_PICO_COMMON_MURMUR_HASH3_H

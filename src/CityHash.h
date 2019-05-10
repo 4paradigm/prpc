@@ -50,6 +50,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 typedef uint8_t uint8;
 typedef uint32_t uint32;
@@ -540,6 +541,7 @@ inline uint128 CityHashCrc128(const char *s, size_t len) {
 
 #endif
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #endif // PARADIGM4_PICO_COMMON_CITY_HASH_H

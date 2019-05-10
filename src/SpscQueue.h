@@ -7,6 +7,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 template <typename T>
 class SpscQueue {
@@ -93,6 +94,7 @@ private:
     }
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

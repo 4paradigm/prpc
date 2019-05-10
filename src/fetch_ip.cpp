@@ -25,6 +25,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 bool get_local_ip_by_hostname(std::string& ip_address) {
     int hostname_buf_len = 2048;
@@ -265,5 +266,6 @@ bool fetch_ip(const std::string& user_set_ip, std::string* ip) {
     return true;
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4

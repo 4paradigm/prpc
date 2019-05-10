@@ -13,6 +13,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 TcpConfig TcpSocket::_tcp_config;
 bool TcpSocket::_use_tcp_config = false;
@@ -286,7 +287,7 @@ bool TcpSocket::send_rpc_message(RpcMessage&& msg, bool more) {
 }
 
 bool TcpSocket::recv_rpc_messages(
-      std::vector<paradigm4::pico::RpcMessage>& rmsgs) {
+      std::vector<paradigm4::pico::core::RpcMessage>& rmsgs) {
     rmsgs.clear();
     bool func_called = false;
     bool socket_alive = false;
@@ -345,6 +346,7 @@ std::unique_ptr<RpcSocket> TcpAcceptor::accept() {
     return std::make_unique<TcpSocket>(fd);
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

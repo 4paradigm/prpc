@@ -3,6 +3,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class RpcContext;
 class Dealer;
@@ -28,6 +29,7 @@ RpcServer::~RpcServer() {
     _service->remove_server(this);
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

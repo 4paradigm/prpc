@@ -18,6 +18,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class Monitor {
 public:
@@ -270,6 +271,7 @@ inline Monitor& pico_monitor() {
     return Monitor::singleton();
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #endif // PICO_MONITOR_H

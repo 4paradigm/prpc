@@ -28,6 +28,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 #ifndef PICO_GENERATE_COMPARISON_OPERATOR_CONCEPT
 #define PICO_GENERATE_COMPARISON_OPERATOR_CONCEPT(name, op) \
@@ -514,6 +515,7 @@ int gettid();
 int getpid();
 void set_thread_name(const std::string& name);
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

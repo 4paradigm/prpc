@@ -6,6 +6,7 @@
 #include "pico_memory.h"
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 template <typename T>
 class MpscQueue {
@@ -80,6 +81,7 @@ private:
     std::atomic<Node*> _head;
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

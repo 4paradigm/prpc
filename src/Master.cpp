@@ -4,6 +4,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 constexpr int DMASTER = 3;
 
@@ -433,5 +434,6 @@ const char* CONTROLLER_CLI_ROLE_STR = "CONTROLLER_CLI";
 const char* RANK_KEY = "RANKER";
 
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4

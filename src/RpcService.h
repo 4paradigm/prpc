@@ -19,6 +19,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class RpcService : public NoncopyableObject {
 public:
@@ -90,6 +91,7 @@ private:
 };
 
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

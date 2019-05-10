@@ -9,6 +9,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 
 class AsyncWatcher {
@@ -183,7 +184,8 @@ private:
     typename WatchingQueue<T>::WatchHandle _handle;
 };
 
-}
-}
+} // namespace core
+} // namespace pico
+} // namespace paradigm4
 
 #endif

@@ -7,6 +7,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 /*!
  * \brief include a ChannelEntity pointer, pack ChannelEntity function
@@ -139,6 +140,7 @@ template<>
 class Channel<void> {
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

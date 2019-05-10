@@ -11,6 +11,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 /*!
  * \brief Factory class include a string to function map
@@ -84,6 +85,7 @@ private:
     std::unordered_map<std::string, std::function<void*(ArgTypes...)>> _producers;
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #endif // PARADIGM4_PICO_COMMON_FACTORY_H

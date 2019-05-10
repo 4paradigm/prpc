@@ -6,6 +6,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 /*!
  * \brief const value
@@ -92,6 +93,7 @@ const char* const PSERVER_C2S_RPC_NAME = "pserver_c2s_rpc_api";
 const char* const PSERVER_S2S_RPC_NAME = "pserver_s2s_rpc_api";
 const char* const CONTROLLER_RPC_NAME = "controller_rpc_api";
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #endif // PARADIGM4_PICO_COMMON_DEFS_H

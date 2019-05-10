@@ -17,6 +17,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class MemoryStorage {
 protected:
@@ -183,8 +184,8 @@ private:
     tree_t _root;
 };
 
-
-}
-}
+} // namespace core
+} // namespace pico
+} // namespace paradigm4
 
 #endif //PARADIGM4_PICO_DS_COMMON_MEMORY_STORAGE_H 

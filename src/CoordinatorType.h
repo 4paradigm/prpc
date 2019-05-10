@@ -9,6 +9,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 const char* const COORDINATOR_STR_SYNC = "sync";
 const char* const COORDINATOR_STR_ASYNC = "async";
@@ -39,6 +40,7 @@ inline std::string coordinator_type_to_str(const CoordinatorType& type) {
     }
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

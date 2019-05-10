@@ -11,6 +11,7 @@
 #include "macro.h"
 namespace paradigm4 {
 namespace pico {
+namespace core {
 PICO_DEFINE_MEMBER_FUNC_CHECKER(hash);
 
 template<typename T, typename Enable=void>
@@ -84,6 +85,7 @@ public:
     }
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #endif // PARADIGM4_PICO_COMMON_PARTITIONER_H

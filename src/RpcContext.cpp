@@ -2,6 +2,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 /*
  * 暂时LB的策略是random
@@ -457,6 +458,7 @@ void RpcContext::del_event(int fd, int epfd) {
     --_n_events;
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

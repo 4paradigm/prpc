@@ -9,6 +9,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 template<typename T, typename S>
 T inner_lexical_cast(const S& s) {
@@ -354,7 +355,8 @@ inline bool pico_lexical_cast(const S& s, T& t) {
     return false;
 }
 
-}
-}
+} // namespace core
+} // namespace pico
+} // namespace paradigm4
 
 #endif // PARADIGM4_PICO_COMMON_PICO_LEXICAL_CAST_H

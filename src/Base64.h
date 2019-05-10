@@ -5,6 +5,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class Base64 {
 public:
@@ -119,6 +120,7 @@ inline void pico_base64_decode(const std::string& input, void* output, size_t& o
     Base64::singleton().base64_decode(input, output, out_len);
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #endif // PARADIGM4_PICO_COMMON_BASE64_H

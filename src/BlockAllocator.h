@@ -8,6 +8,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 template<class T, size_t* N>
 class BlockAllocator {
@@ -100,6 +101,7 @@ private:
     Block* _block_head = nullptr;
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

@@ -23,6 +23,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 struct RpcConfig {
     std::string bind_ip = "127.0.0.1";
@@ -205,6 +206,7 @@ private:
     int _io_thread_num;
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

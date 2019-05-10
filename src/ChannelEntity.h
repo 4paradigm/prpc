@@ -13,6 +13,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 /*!
  * \brief class ChannelEntity is a deque of type T.
@@ -23,7 +24,7 @@ namespace pico {
 template <class T>
 class ChannelEntity : public VirtualObject {
 public:
-    typedef pico::deque<T, PicoAllocator<T>> buffer_type;
+    typedef pico::core::deque<T, PicoAllocator<T>> buffer_type;
 
     ChannelEntity() {
         _reserved_data.reserve(RESERVED_SIZE);
@@ -303,7 +304,8 @@ public:
     std::condition_variable _full_cond;
 };
 
-} // end of namespace pico
-} // end of namespace paradigm4
+} // namespace core
+} // namespace pico
+} // namespace paradigm4
 
 #endif // PARADIGM4_PICO_COMMON_CHANNEL_ENTITY_H

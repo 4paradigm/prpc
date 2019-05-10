@@ -10,6 +10,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class RpcContext;
 class RpcService;
@@ -64,7 +65,7 @@ public:
         return (_initialized_client || _initialized_server);
     }
 
-    //void reset();
+    // void reset();
 
     void send_request_one_way(RpcRequest&& req) {
         req.head().src_dealer = -1;
@@ -134,6 +135,7 @@ private:
     bool _initialized_client = false;
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

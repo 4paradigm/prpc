@@ -10,6 +10,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 class Arena {
 public:
     // To be used as IOBuf::FreeFunction, userData should be set to
@@ -104,6 +105,7 @@ using RpcAllocator = PicoAllocator<T, NoExcept>;
 #endif
 
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #endif // PICO_ArenaALLOCATOR_H

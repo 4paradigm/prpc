@@ -9,6 +9,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class RpcContext;
 class Dealer;
@@ -33,6 +34,7 @@ private:
     std::unique_ptr<std::atomic<int>> _n_dealers;
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

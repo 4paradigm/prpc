@@ -10,6 +10,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 struct data_block_t {
     char* data;
@@ -145,7 +146,7 @@ private:
     SharedArchiveReader() {}
     SharedArchiveReader(SharedArchiveReader&&) = default;
     SharedArchiveReader& operator=(SharedArchiveReader&&) = default;
-    pico::vector<data_block_t> _data;
+    pico::core::vector<data_block_t> _data;
     size_t _pos = 0;
     friend class LazyArchive;
 };
@@ -164,8 +165,8 @@ public:
     }
 
 private:
-    pico::vector<data_block_t>& _data;
-    SharedArchiveWriter(pico::vector<data_block_t>& data): _data(data) {}
+    pico::core::vector<data_block_t>& _data;
+    SharedArchiveWriter(pico::core::vector<data_block_t>& data): _data(data) {}
     friend class LazyArchive;
 };
 
@@ -206,7 +207,7 @@ public:
         return *this;
     }
 
-    void attach(pico::vector<data_block_t>&& data) {
+    void attach(pico::core::vector<data_block_t>&& data) {
         if (!data.empty()) {
             data_block_t& ar_block = data.back();
             _ar._ar.set_read_buffer(ar_block.data, ar_block.length);
@@ -217,7 +218,7 @@ public:
         _cur = 0;
     }
 
-    void apply(pico::vector<data_block_t>& data) {
+    void apply(pico::core::vector<data_block_t>& data) {
         if (!_lazy.empty()) {
             _meta_ar.clear();
             ArchiveWriter arw(_meta_ar);
@@ -271,7 +272,7 @@ private:
     BinaryArchive _meta_ar;
     ArchiveReader _ar;
     SharedArchiveReader _shared;
-    pico::vector<LazyPtr> _lazy;
+    pico::core::vector<LazyPtr> _lazy;
     size_t _cur = 0;
 };
 
@@ -387,6 +388,7 @@ void pico_deserialize(ArchiveReader& ar, SharedArchiveReader& shared, std::pair<
     pico_deserialize(ar, shared, p.second);
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

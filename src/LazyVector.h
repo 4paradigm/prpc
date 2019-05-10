@@ -9,6 +9,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 const size_t EXTRA_SPACE_RESERVED = 64;
 
@@ -349,6 +350,7 @@ private:
 };
 
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #endif // PARADIGM4_PICO_COMMON_LAZYVECTOR_H

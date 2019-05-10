@@ -8,6 +8,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 typedef int16_t RpcErrorCodeType;
 
@@ -172,7 +173,7 @@ public:
     char* _start = nullptr;
     std::shared_ptr<char> _buffer;
 
-    pico::vector<data_block_t> _data;
+    pico::core::vector<data_block_t> _data;
     std::unique_ptr<LazyArchive> _hold;
     int _pending_block_cnt = 0;
 };
@@ -343,6 +344,7 @@ private:
     std::unique_ptr<RpcMessage> _msg = nullptr;
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

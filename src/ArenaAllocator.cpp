@@ -19,6 +19,7 @@ extern bool je_opt_retain;
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 extent_hooks_t Arena::original_hooks_;
 
 extent_alloc_t* Arena::original_alloc_ = nullptr;
@@ -138,5 +139,6 @@ RpcArena::RpcArena() {
     rdma_hook.purge_forced = NULL;
     update_hook(&rdma_hook);
 }
+} // namespace core
 } // namespace pico
 } // namespace paradigm4

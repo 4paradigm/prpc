@@ -27,6 +27,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class ArchiveBase {
 public:
@@ -1041,21 +1042,21 @@ Archive<AR>& operator>>(Archive<AR>& ar, T& x) {
  */
 #define PICO_SERIALIZATION(FIELDS...) \
     template<class AR>\
-    bool _archive_serialize_internal_(paradigm4::pico::Archive<AR>& _ar_) const { \
-        paradigm4::pico::ArchiveSerializer<AR> _serializer_(_ar_); \
+    bool _archive_serialize_internal_(paradigm4::pico::core::Archive<AR>& _ar_) const { \
+        paradigm4::pico::core::ArchiveSerializer<AR> _serializer_(_ar_); \
         return _serializer_.serizlize(FIELDS); \
     } \
     template<class AR>\
-    bool _archive_deserialize_internal_(paradigm4::pico::Archive<AR>& _ar_) { \
-        paradigm4::pico::ArchiveDeserializer<AR> _deserializer_(_ar_); \
+    bool _archive_deserialize_internal_(paradigm4::pico::core::Archive<AR>& _ar_) { \
+        paradigm4::pico::core::ArchiveDeserializer<AR> _deserializer_(_ar_); \
         return _deserializer_.deserialize(FIELDS); \
     } \
-    friend struct ::paradigm4::pico::serialize_helper;
+    friend struct ::paradigm4::pico::core::serialize_helper;
 
 #ifndef PICO_SERIALIZED_SIZE
 #define PICO_SERIALIZED_SIZE(FIELDS...) \
     size_t _serialized_size_internal_()const {\
-        paradigm4::pico::SerializedSize _serialized_size_; \
+        paradigm4::pico::core::SerializedSize _serialized_size_; \
         return _serialized_size_.serialized_size(FIELDS);\
     }
 #endif
@@ -1085,11 +1086,11 @@ struct SerializableObject;
 #ifndef PICO_PS_SERIALIZATION
 #define PICO_PS_SERIALIZATION(TYPE, FIELDS...)                                                \
     PICO_SERIALIZATION(FIELDS)                                                          \
-    virtual bool _binary_archive_serialize_internal_(paradigm4::pico::BinaryArchive& ar)      \
+    virtual bool _binary_archive_serialize_internal_(paradigm4::pico::core::BinaryArchive& ar)      \
           const override {                                                                    \
         return _archive_serialize_internal_(ar);                                              \
     }                                                                                         \
-    virtual bool _binary_archive_deserialize_internal_(paradigm4::pico::BinaryArchive& ar)    \
+    virtual bool _binary_archive_deserialize_internal_(paradigm4::pico::core::BinaryArchive& ar)    \
           override {                                                                          \
         return _archive_deserialize_internal_(ar);                                            \
     }
@@ -1935,6 +1936,7 @@ template<class T> using IsTextFileSerializable = IsSerializable<TextFileArchiveT
 template<class T> using IsTextFileDeserializable = IsDeserializable<TextFileArchiveType, T>;
 template<class T> using IsTextFileArchivable = IsArchivable<TextFileArchiveType, T>;
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

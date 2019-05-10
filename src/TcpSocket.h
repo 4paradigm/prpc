@@ -11,6 +11,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 struct TcpConfig {
     int keepalive_time;
@@ -86,7 +87,7 @@ public:
     static TcpConfig _tcp_config;
 private:
     
-    pico::deque<RpcMessage> _pending_msgs;
+    pico::core::deque<RpcMessage> _pending_msgs;
     size_t _block_id = 0, _recieved_size = 0;
 
     int _fd = -1;
@@ -129,6 +130,7 @@ private:
     std::string _ep;
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

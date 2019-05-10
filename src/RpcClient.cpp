@@ -3,6 +3,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 std::shared_ptr<Dealer> RpcClient::create_dealer() {
     auto ret = std::make_shared<Dealer>(_info.rpc_id, _service);
@@ -23,6 +24,7 @@ RpcClient::~RpcClient() {
                            << n_dealers << " dealer are not deconstructed";
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

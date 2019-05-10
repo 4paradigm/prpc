@@ -5,9 +5,11 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 bool fetch_ip(const std::string& user_set_ip, std::string* ip);
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

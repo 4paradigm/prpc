@@ -2,6 +2,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 void RpcService::initialize(MasterClient* master_client,
       const RpcConfig& config,
@@ -161,6 +162,7 @@ void RpcService::receiving(int tid) {
     }
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

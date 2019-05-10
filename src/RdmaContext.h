@@ -10,6 +10,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 struct RdmaConfig {
     std::string ib_devname;
@@ -322,9 +323,9 @@ private:
     RWSpinLock _lock;
 };
 
-
-}
-}
+} // namespace core
+} // namespace pico
+} // namespace paradigm4
 
 #endif // USE_RDMA
 #endif // PARADIGM4_PICO_COMMON_RDMA_CONTEXT_H

@@ -83,6 +83,7 @@ inline void* SYS_memalign(size_t align,size_t size) {
 #endif
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 DEFINE_uint64(pmem_monitor_interval_ms, 4000, "interval of pmem/rss monitor (ms)");
 DEFINE_uint64(max_pmem_mb, -1, "max physical memory (mb), -1 means unlimited");
@@ -350,10 +351,11 @@ void* handle_OOM(std::size_t size, bool nothrow) {
         std::__throw_bad_alloc();
     return ptr;
 }
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 
-using paradigm4::pico::pico_mem;
+using paradigm4::pico::core::pico_mem;
 void* pico_malloc(size_t size) {
     void* res = SYS_malloc(size);
     if (unlikely(res == nullptr)) {
@@ -439,19 +441,19 @@ void pico_memstats(std::ostream& out) {
 }
 #if OVERRIDE_SYSTEM_NEW
 void* operator new(std::size_t size) {
-    return paradigm4::pico::newImpl<false>(size);
+    return paradigm4::pico::core::newImpl<false>(size);
 }
 
 void* operator new[](std::size_t size) {
-    return paradigm4::pico::newImpl<false>(size);
+    return paradigm4::pico::core::newImpl<false>(size);
 }
 
 void* operator new(std::size_t size, const std::nothrow_t&) noexcept {
-    return paradigm4::pico::newImpl<true>(size);
+    return paradigm4::pico::core::newImpl<true>(size);
 }
 
 void* operator new[](std::size_t size, const std::nothrow_t&) noexcept {
-    return paradigm4::pico::newImpl<true>(size);
+    return paradigm4::pico::core::newImpl<true>(size);
 }
 
 void operator delete(void* ptr) noexcept {

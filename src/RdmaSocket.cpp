@@ -8,6 +8,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 bool RdmaSocket::accept(std::string& info) {
 
@@ -161,7 +162,7 @@ bool RdmaSocket::handle_in_event(std::function<void(RpcMessage&&)> pass) {
             }
             ctl_msg_cnt += ack_num(wc.imm_data);
             for (int j = 0; j < read_complete_num(wc.imm_data); ++j) {
-                std::unique_ptr<paradigm4::pico::RdmaSocket::msg_mr_t> t;
+                std::unique_ptr<paradigm4::pico::core::RdmaSocket::msg_mr_t> t;
                 //SLOG(INFO) << "read ok";
                 _sending_msgs.pop(t);
                 //SLOG(INFO) << "read ok";
@@ -645,6 +646,7 @@ int RdmaAcceptor::fd() {
     return _fd;
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

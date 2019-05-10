@@ -63,7 +63,7 @@
 #define PICO_TRY_CATCH(expr) \
     try { \
         expr; \
-    } catch (paradigm4::pico::PicoException& e) { \
+    } catch (paradigm4::pico::core::PicoException& e) { \
         SLOG(FATAL) << "PicoException: " << e.what(); \
     } catch (std::exception& e) { \
         SLOG(FATAL) << "std::exception: " << e.what(); \
@@ -80,10 +80,10 @@
     int main(int argc, char* argv[]) { \
         int ret = 0; \
         try { \
-            paradigm4::pico::pico_initialize(argc, argv); \
+            paradigm4::pico::core::pico_initialize(argc, argv); \
             ret = inner_main(argc, argv); \
-            paradigm4::pico::pico_finalize(); \
-        } catch (paradigm4::pico::PicoException& e) { \
+            paradigm4::pico::core::pico_finalize(); \
+        } catch (paradigm4::pico::core::PicoException& e) { \
             SLOG(FATAL) << "PicoException: " << e.what(); \
         } catch (std::exception& e) { \
             SLOG(FATAL) << "STL exception: " << e.what(); \
@@ -124,26 +124,26 @@
 #ifndef PICO_APP_CONFIG
 #define PICO_APP_CONFIG(name, type, deftval, desc, is_missing_ok) \
     static type G_ ## name = deftval; \
-    static auto s_inner_checker_G_ ## name = paradigm4::pico::DefaultChecker<type>(); \
+    static auto s_inner_checker_G_ ## name = paradigm4::pico::core::DefaultChecker<type>(); \
     static auto s_inner_checker_func_G_ ## name = s_inner_checker_G_ ## name.checker(); \
     static std::string s_inner_checker_string_G_ ## name = s_inner_checker_G_ ## name.tostring(); \
     static bool s_g_is_missing_ok_G_ ## name = is_missing_ok; \
-    static paradigm4::pico::ConfigureLoaderRegister s_g_config_loader_reg_G_ ## name ( \
+    static paradigm4::pico::core::ConfigureLoaderRegister s_g_config_loader_reg_G_ ## name ( \
             inner_app_config_helper(), {#name, \
             #type, \
             desc, \
-            paradigm4::pico::pico_lexical_cast<std::string>(G_ ## name), \
+            paradigm4::pico::core::pico_lexical_cast<std::string>(G_ ## name), \
             s_g_is_missing_ok_G_ ## name, \
             []() -> bool { \
                 if (s_g_is_missing_ok_G_ ## name) { \
-                    G_ ## name = paradigm4::pico::app_config().get<type>(#name, G_ ## name); \
+                    G_ ## name = paradigm4::pico::core::app_config().get<type>(#name, G_ ## name); \
                     return true; \
                 } else { \
-                    return paradigm4::pico::app_config()[#name].try_as(G_ ## name); \
+                    return paradigm4::pico::core::app_config()[#name].try_as(G_ ## name); \
                 } \
             }, \
             []() -> std::string { \
-                return paradigm4::pico::pico_lexical_cast<std::string>(G_ ## name); \
+                return paradigm4::pico::core::pico_lexical_cast<std::string>(G_ ## name); \
             }, \
             []() -> bool {return s_inner_checker_func_G_ ## name(G_ ## name, #name);}, \
             s_inner_checker_string_G_ ## name})
@@ -152,26 +152,26 @@
 #ifndef PICO_FRAMEWORK_CONFIG
 #define PICO_FRAMEWORK_CONFIG(name, type, deftval, desc, is_missing_ok) \
     static type P_ ## name = deftval; \
-    static auto s_inner_checker_P_ ## name = paradigm4::pico::DefaultChecker<type>(); \
+    static auto s_inner_checker_P_ ## name = paradigm4::pico::core::DefaultChecker<type>(); \
     static auto s_inner_checker_func_P_ ## name = s_inner_checker_P_ ## name.checker(); \
     static std::string s_inner_checker_string_P_ ## name = s_inner_checker_P_ ## name.tostring(); \
     static bool s_g_is_missing_ok_P_ ## name = is_missing_ok; \
-    static paradigm4::pico::ConfigureLoaderRegister s_g_config_loader_reg_P_ ## name ( \
+    static paradigm4::pico::core::ConfigureLoaderRegister s_g_config_loader_reg_P_ ## name ( \
             inner_framework_config_helper(), {#name, \
             #type, \
             desc, \
-            paradigm4::pico::pico_lexical_cast<std::string>(P_ ## name), \
+            paradigm4::pico::core::pico_lexical_cast<std::string>(P_ ## name), \
             s_g_is_missing_ok_P_ ## name, \
             []() -> bool { \
                 if (s_g_is_missing_ok_P_ ## name) { \
-                    P_ ## name = paradigm4::pico::framework_config().get<type>(#name, P_ ## name); \
+                    P_ ## name = paradigm4::pico::core::framework_config().get<type>(#name, P_ ## name); \
                     return true; \
                 } else { \
-                    return paradigm4::pico::framework_config()[#name].try_as(P_ ## name); \
+                    return paradigm4::pico::core::framework_config()[#name].try_as(P_ ## name); \
                 } \
             }, \
             []() -> std::string { \
-                return paradigm4::pico::pico_lexical_cast<std::string>(P_ ## name); \
+                return paradigm4::pico::core::pico_lexical_cast<std::string>(P_ ## name); \
             }, \
             []() -> bool {return s_inner_checker_func_P_ ## name(P_ ## name, #name);}, \
             s_inner_checker_string_P_ ## name})
@@ -184,22 +184,22 @@
     static auto s_inner_checker_func_G_ ## name = s_inner_checker_G_ ## name.checker(); \
     static std::string s_inner_checker_string_G_ ## name = s_inner_checker_G_ ## name.tostring(); \
     static bool s_g_is_missing_ok_G_ ## name = is_missing_ok; \
-    static paradigm4::pico::ConfigureLoaderRegister s_g_config_loader_reg_G_ ## name ( \
+    static paradigm4::pico::core::ConfigureLoaderRegister s_g_config_loader_reg_G_ ## name ( \
             inner_app_config_helper(), {#name, \
             #type, \
             desc, \
-            paradigm4::pico::pico_lexical_cast<std::string>(G_ ## name), \
+            paradigm4::pico::core::pico_lexical_cast<std::string>(G_ ## name), \
             s_g_is_missing_ok_G_ ## name, \
             []() -> bool { \
                 if (s_g_is_missing_ok_G_ ## name) { \
-                    G_ ## name = paradigm4::pico::app_config().get<type>(#name, G_ ## name); \
+                    G_ ## name = paradigm4::pico::core::app_config().get<type>(#name, G_ ## name); \
                     return true; \
                 } else { \
-                    return paradigm4::pico::app_config()[#name].try_as(G_ ## name); \
+                    return paradigm4::pico::core::app_config()[#name].try_as(G_ ## name); \
                 } \
             }, \
             []() -> std::string { \
-                return paradigm4::pico::pico_lexical_cast<std::string>(G_ ## name); \
+                return paradigm4::pico::core::pico_lexical_cast<std::string>(G_ ## name); \
             }, \
             []() -> bool {return s_inner_checker_func_G_ ## name(G_ ## name, #name);}, \
             s_inner_checker_string_G_ ## name})
@@ -212,22 +212,22 @@
     static auto s_inner_checker_func_P_ ## name = s_inner_checker_P_ ## name.checker(); \
     static std::string s_inner_checker_string_P_ ## name = s_inner_checker_P_ ## name.tostring(); \
     static bool s_g_is_missing_ok_P_ ## name = is_missing_ok; \
-    static paradigm4::pico::ConfigureLoaderRegister s_g_config_loader_reg_P_ ## name ( \
+    static paradigm4::pico::core::ConfigureLoaderRegister s_g_config_loader_reg_P_ ## name ( \
             inner_framework_config_helper(), {#name, \
             #type, \
             desc, \
-            paradigm4::pico::pico_lexical_cast<std::string>(P_ ## name), \
+            paradigm4::pico::core::pico_lexical_cast<std::string>(P_ ## name), \
             s_g_is_missing_ok_P_ ## name, \
             []() -> bool { \
                 if (s_g_is_missing_ok_P_ ## name) { \
-                    P_ ## name = paradigm4::pico::framework_config().get<type>(#name, P_ ## name); \
+                    P_ ## name = paradigm4::pico::core::framework_config().get<type>(#name, P_ ## name); \
                     return true; \
                 } else { \
-                    return paradigm4::pico::framework_config()[#name].try_as(P_ ## name); \
+                    return paradigm4::pico::core::framework_config()[#name].try_as(P_ ## name); \
                 } \
             }, \
             []() -> std::string { \
-                return paradigm4::pico::pico_lexical_cast<std::string>(P_ ## name); \
+                return paradigm4::pico::core::pico_lexical_cast<std::string>(P_ ## name); \
             }, \
             []() -> bool {return s_inner_checker_func_P_ ## name(P_ ## name, #name);}, \
             s_inner_checker_string_P_ ## name})
@@ -248,7 +248,7 @@
 #ifndef PICO_DEFINE_FACTORY
 #define PICO_DEFINE_FACTORY(factory_name, ArgTypes...) \
     namespace pico_factory { \
-    class pico_##factory_name##_factory: public paradigm4::pico::Factory<ArgTypes> { \
+    class pico_##factory_name##_factory: public paradigm4::pico::core::Factory<ArgTypes> { \
         public: \
             static pico_##factory_name##_factory & singleton() { \
                 static pico_##factory_name##_factory factory; \
@@ -279,7 +279,7 @@
 
 /*
  *  Strongly recommend that reflect class is
- *  subclass of paradigm4::pico::Object, to
+ *  subclass of paradigm4::pico::core::Object, to
  *  avoid memory leak
  */ 
 #ifndef PICO_FACTORY_REGISTER

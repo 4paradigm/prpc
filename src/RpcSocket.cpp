@@ -3,6 +3,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 bool RpcSocket::send_msg(RpcMessage&& msg) {
     int64_t sz = _sending_queue_size.fetch_add(1, std::memory_order_acq_rel);
@@ -128,6 +129,7 @@ int RpcAcceptor::bind_on_random_port(const std::string& bind_ip) {
         }
     }
 }
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 

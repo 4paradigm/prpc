@@ -12,6 +12,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 template<class T>
 class ChannelReplicator { // by one-slot open ring-buffer, can make another implementation later
@@ -261,6 +262,7 @@ public:
     void finalize() {}
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #endif // PARADIGM4_PICO_COMMON_CHANNEL_REPLICATOR_H

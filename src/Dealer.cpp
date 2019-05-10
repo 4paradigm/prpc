@@ -5,6 +5,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 Dealer::Dealer(int rpc_id, RpcService* service)
     : _rpc_id(rpc_id), _g_rank(service->global_rank()), _service(service),
@@ -151,5 +152,6 @@ void Dealer::send_response(RpcResponse&& resp) {
     }
 }
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4

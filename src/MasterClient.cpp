@@ -9,6 +9,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 constexpr int DCLIENT = 2;
 
@@ -544,6 +545,6 @@ const char* MasterClient::PATH_RPC = "_rpc_";
 const char* MasterClient::PATH_CONTEXT = "_context_";
 const char* MasterClient::PATH_MODEL = "_model_";
 
-
-}
-}
+} // namespace core
+} // namespace pico
+} // namespace paradigm4

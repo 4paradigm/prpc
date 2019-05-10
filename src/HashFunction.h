@@ -6,6 +6,7 @@
 
 namespace paradigm4 {
 namespace pico {
+namespace core {
 
 class HashFunction : public VirtualObject {
 public:
@@ -50,6 +51,7 @@ public:
     }
 };
 
+} // namespace core
 } // namespace pico
 } // namespace paradigm4
 #endif // PARADIGM4_PICO_COMMON_HASH_FUNCTION_H
