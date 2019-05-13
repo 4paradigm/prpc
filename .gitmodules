@@ -1,3 +1,4 @@
 [submodule "third-party"]
 	path = third-party
 	url = git@gitlab.4pd.io:ml_system/pico/third-party.git
+	update = none
