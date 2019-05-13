@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_COMPRESS_H
-#define PARADIGM4_PICO_COMMON_COMPRESS_H
+#ifndef PARADIGM4_PICO_CORE_COMPRESS_H
+#define PARADIGM4_PICO_CORE_COMPRESS_H
 
 #include <type_traits>
 
@@ -342,4 +342,4 @@ inline Compress pico_compress(const std::string& method) {
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_PICO_CAST_H
+#endif // PARADIGM4_PICO_CORE_PICO_CAST_H

@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_RDMA_CONTEXT_H
-#define PARADIGM4_PICO_COMMON_RDMA_CONTEXT_H
+#ifndef PARADIGM4_PICO_CORE_RDMA_CONTEXT_H
+#define PARADIGM4_PICO_CORE_RDMA_CONTEXT_H
 #ifdef USE_RDMA
 #include "PicoJsonNode.h"
 #include "SpinLock.h"
@@ -327,5 +327,5 @@ private:
 } // namespace paradigm4
 
 #endif // USE_RDMA
-#endif // PARADIGM4_PICO_COMMON_RDMA_CONTEXT_H
+#endif // PARADIGM4_PICO_CORE_RDMA_CONTEXT_H
 

@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_RPCCHANNEL_H
-#define PARADIGM4_PICO_COMMON_RPCCHANNEL_H
+#ifndef PARADIGM4_PICO_CORE_RPCCHANNEL_H
+#define PARADIGM4_PICO_CORE_RPCCHANNEL_H
 
 #include <poll.h>
 #include <sys/epoll.h>
@@ -117,4 +117,4 @@ private:
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_RPCCHANNEL_H
+#endif // PARADIGM4_PICO_CORE_RPCCHANNEL_H

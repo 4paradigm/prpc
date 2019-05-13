@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_PICO_LEXICAL_CAST_H
-#define PARADIGM4_PICO_COMMON_PICO_LEXICAL_CAST_H
+#ifndef PARADIGM4_PICO_CORE_PICO_LEXICAL_CAST_H
+#define PARADIGM4_PICO_CORE_PICO_LEXICAL_CAST_H
 
 
 #include <boost/lexical_cast.hpp>
@@ -359,4 +359,4 @@ inline bool pico_lexical_cast(const S& s, T& t) {
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_PICO_LEXICAL_CAST_H
+#endif // PARADIGM4_PICO_CORE_PICO_LEXICAL_CAST_H

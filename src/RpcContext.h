@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_RPCCONTEXT_H
-#define PARADIGM4_PICO_COMMON_RPCCONTEXT_H
+#ifndef PARADIGM4_PICO_CORE_RPCCONTEXT_H
+#define PARADIGM4_PICO_CORE_RPCCONTEXT_H
 
 #include <atomic>
 #include <deque>
@@ -210,4 +210,4 @@ private:
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_RPCCONTEXT_H
+#endif // PARADIGM4_PICO_CORE_RPCCONTEXT_H

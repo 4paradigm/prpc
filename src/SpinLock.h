@@ -1,11 +1,10 @@
-#ifndef PARADIGM4_PICO_COMMON_SPINLOCK_H
-#define PARADIGM4_PICO_COMMON_SPINLOCK_H
+#ifndef PARADIGM4_PICO_CORE_SPINLOCK_H
+#define PARADIGM4_PICO_CORE_SPINLOCK_H
 
 #include <algorithm>
 #include <atomic>
 #include <thread>
 
-#include "macro.h"
 
 namespace paradigm4 {
 namespace pico {
@@ -158,4 +157,4 @@ private:
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_SPINLOCK_H
+#endif // PARADIGM4_PICO_CORE_SPINLOCK_H

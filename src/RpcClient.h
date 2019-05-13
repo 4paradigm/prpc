@@ -38,4 +38,4 @@ private:
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PICO_COMMON_INCLUDE_RPCSERVICE_H_
+#endif // PICO_CORE_INCLUDE_RPCSERVICE_H_

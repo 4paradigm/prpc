@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_COMMON_H
-#define PARADIGM4_PICO_COMMON_COMMON_H
+#ifndef PARADIGM4_PICO_CORE_COMMON_H
+#define PARADIGM4_PICO_CORE_COMMON_H
 
 #include <string>
 #include <mutex>
@@ -24,11 +24,12 @@
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 #include "MurmurHash3.h"
 #pragma GCC diagnostic pop
-#include "defs.h"
 
 namespace paradigm4 {
 namespace pico {
 namespace core {
+
+typedef int16_t comm_rank_t;
 
 #ifndef PICO_GENERATE_COMPARISON_OPERATOR_CONCEPT
 #define PICO_GENERATE_COMPARISON_OPERATOR_CONCEPT(name, op) \
@@ -437,6 +438,7 @@ inline unsigned pico_process_default_concurrency() {
     return concurrency;
 }
 
+const uint32_t MURMURHASH_SEED = 142857;
 /*!
  * \brief hash string into int32
  * \param key  string to be hash
@@ -519,4 +521,4 @@ void set_thread_name(const std::string& name);
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_COMMON_H
+#endif // PARADIGM4_PICO_CORE_COMMON_H

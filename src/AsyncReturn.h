@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_ASYNC_RETURN_H
-#define PARADIGM4_PICO_COMMON_ASYNC_RETURN_H
+#ifndef PARADIGM4_PICO_CORE_ASYNC_RETURN_H
+#define PARADIGM4_PICO_CORE_ASYNC_RETURN_H
 
 #include <condition_variable>
 #include <memory>
@@ -74,4 +74,4 @@ typedef AsyncReturnV<void> AsyncReturn;
 } // namespace core
 } // namespace pico
 } // namespace paradigm4
-#endif // PARADIGM4_PICO_COMMON_ASYNC_RETURN_H
+#endif // PARADIGM4_PICO_CORE_ASYNC_RETURN_H

@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_STRING_UTILITY_H
-#define PARADIGM4_PICO_COMMON_STRING_UTILITY_H
+#ifndef PARADIGM4_PICO_CORE_STRING_UTILITY_H
+#define PARADIGM4_PICO_CORE_STRING_UTILITY_H
 
 #include <string>
 #include <cmath>
@@ -120,4 +120,4 @@ public:
 } // namespace core
 } // namespace pico
 } // namespace paradigm4
-#endif // PARADIGM4_PICO_COMMON_STRING_UTILITY_H
+#endif // PARADIGM4_PICO_CORE_STRING_UTILITY_H

@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_ARCHIVE_H
-#define PARADIGM4_PICO_COMMON_ARCHIVE_H
+#ifndef PARADIGM4_PICO_CORE_ARCHIVE_H
+#define PARADIGM4_PICO_CORE_ARCHIVE_H
 
 #include <string>
 #include <cstring>
@@ -1940,4 +1940,4 @@ template<class T> using IsTextFileArchivable = IsArchivable<TextFileArchiveType,
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_ARCHIVE_H
+#endif // PARADIGM4_PICO_CORE_ARCHIVE_H

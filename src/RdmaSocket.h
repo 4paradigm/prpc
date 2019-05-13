@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_RDMA_SOCKET_H
-#define PARADIGM4_PICO_COMMON_RDMA_SOCKET_H
+#ifndef PARADIGM4_PICO_CORE_RDMA_SOCKET_H
+#define PARADIGM4_PICO_CORE_RDMA_SOCKET_H
 #ifdef USE_RDMA
 
 #include <algorithm>
@@ -190,4 +190,4 @@ private:
 } // namespace paradigm4
 
 #endif // USE_RDMA
-#endif // PARADIGM4_PICO_COMMON_RDMA_SOCKET_H}}}
+#endif // PARADIGM4_PICO_CORE_RDMA_SOCKET_H}}}

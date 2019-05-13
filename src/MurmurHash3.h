@@ -6,8 +6,8 @@
 // algorithms are optimized for their respective platforms. You can still
 // compile and run any of them on any platform, but your performance with the
 // non-native version will be less than optimal.
-#ifndef PARADIGM4_PICO_COMMON_MURMUR_HASH3_H
-#define PARADIGM4_PICO_COMMON_MURMUR_HASH3_H
+#ifndef PARADIGM4_PICO_CORE_MURMUR_HASH3_H
+#define PARADIGM4_PICO_CORE_MURMUR_HASH3_H
 
 #include <stdint.h>
 
@@ -457,4 +457,4 @@ FORCE_INLINE void murmur_hash3_x64_128(const void* key, const int len,
 } // namespace core
 } // namespace pico
 } // namespace paradigm4
-#endif // PARADIGM4_PICO_COMMON_MURMUR_HASH3_H
+#endif // PARADIGM4_PICO_CORE_MURMUR_HASH3_H

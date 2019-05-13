@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_COORDINATOR_TYPE_H
-#define PARADIGM4_PICO_COMMON_COORDINATOR_TYPE_H
+#ifndef PARADIGM4_PICO_CORE_COORDINATOR_TYPE_H
+#define PARADIGM4_PICO_CORE_COORDINATOR_TYPE_H
 
 #include <algorithm>
 #include <string>
@@ -44,4 +44,4 @@ inline std::string coordinator_type_to_str(const CoordinatorType& type) {
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_COORDINATOR_TYPE_H
+#endif // PARADIGM4_PICO_CORE_COORDINATOR_TYPE_H

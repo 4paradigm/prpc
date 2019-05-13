@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_MASTER_H
-#define PARADIGM4_PICO_COMMON_MASTER_H
+#ifndef PARADIGM4_PICO_CORE_MASTER_H
+#define PARADIGM4_PICO_CORE_MASTER_H
 
 #include <utility>
 #include <cstddef>
@@ -15,7 +15,6 @@
 #include "Archive.h"
 #include "TcpSocket.h"
 #include "common.h"
-#include "defs.h"
 
 namespace paradigm4 {
 namespace pico {
@@ -136,4 +135,4 @@ private:
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_MASTER_H
+#endif // PARADIGM4_PICO_CORE_MASTER_H

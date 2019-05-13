@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_CHANNEL_REPLICATOR_H
-#define PARADIGM4_PICO_COMMON_CHANNEL_REPLICATOR_H
+#ifndef PARADIGM4_PICO_CORE_CHANNEL_REPLICATOR_H
+#define PARADIGM4_PICO_CORE_CHANNEL_REPLICATOR_H
 
 #include <vector>
 #include <thread>
@@ -265,4 +265,4 @@ public:
 } // namespace core
 } // namespace pico
 } // namespace paradigm4
-#endif // PARADIGM4_PICO_COMMON_CHANNEL_REPLICATOR_H
+#endif // PARADIGM4_PICO_CORE_CHANNEL_REPLICATOR_H

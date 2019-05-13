@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_CHANNEL_ENTITY_H
-#define PARADIGM4_PICO_COMMON_CHANNEL_ENTITY_H
+#ifndef PARADIGM4_PICO_CORE_CHANNEL_ENTITY_H
+#define PARADIGM4_PICO_CORE_CHANNEL_ENTITY_H
 
 #include <condition_variable>
 #include <functional>
@@ -308,4 +308,4 @@ public:
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_CHANNEL_ENTITY_H
+#endif // PARADIGM4_PICO_CORE_CHANNEL_ENTITY_H

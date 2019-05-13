@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_RPCSERVICE_H
-#define PARADIGM4_PICO_COMMON_RPCSERVICE_H
+#ifndef PARADIGM4_PICO_CORE_RPCSERVICE_H
+#define PARADIGM4_PICO_CORE_RPCSERVICE_H
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -95,4 +95,4 @@ private:
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PICO_COMMON_INCLUDE_RPCSERVICE_H_
+#endif // PICO_CORE_INCLUDE_RPCSERVICE_H_

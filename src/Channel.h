@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_CHANNEL_H
-#define PARADIGM4_PICO_COMMON_CHANNEL_H
+#ifndef PARADIGM4_PICO_CORE_CHANNEL_H
+#define PARADIGM4_PICO_CORE_CHANNEL_H
 
 #include <memory>
 
@@ -144,4 +144,4 @@ class Channel<void> {
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_CHANNEL_H
+#endif // PARADIGM4_PICO_CORE_CHANNEL_H

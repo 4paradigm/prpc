@@ -7,11 +7,11 @@ echo ${PROJECT_ROOT}
 #PREFIX=?
 #USE_RDMA=?
 #J=?
-#PATH
-#LD_LIBRARY_PATH
+#PATH=? 
 
 function setup() {
     if [ 0"${THIRD_PARTY_SRC}" == "0" ]; then
+        git submodule update
         THIRD_PARTY_SRC=${PROJECT_ROOT}/third-party
     fi
     if [ 0"${THIRD_PARTY_PREFIX}" == "0" ]; then
@@ -36,7 +36,7 @@ function build() {
     if [ 0"${J}" == "0" ];then
         J=`nproc | awk '{print int(($0 + 1)/ 2)}'` # make cocurrent thread number
     fi
-    make -j${J}
+    make -j${J} $*
     popd
 }
 
@@ -52,6 +52,6 @@ function publish() {
 }
 
 setup
-build
+build $*
 publish
 

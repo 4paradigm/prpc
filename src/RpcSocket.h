@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_RPC_SOCKET_H
-#define PARADIGM4_PICO_COMMON_RPC_SOCKET_H
+#ifndef PARADIGM4_PICO_CORE_RPC_SOCKET_H
+#define PARADIGM4_PICO_CORE_RPC_SOCKET_H
 
 #include <algorithm>
 #include <atomic>
@@ -143,4 +143,4 @@ public:
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_RPC_SOCKET_H
+#endif // PARADIGM4_PICO_CORE_RPC_SOCKET_H

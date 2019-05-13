@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_SPSCQUEUE_H
-#define PARADIGM4_PICO_COMMON_SPSCQUEUE_H
+#ifndef PARADIGM4_PICO_CORE_SPSCQUEUE_H
+#define PARADIGM4_PICO_CORE_SPSCQUEUE_H
 
 #include <atomic>
 #include <iostream>
@@ -98,4 +98,4 @@ private:
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_SPSCQUEUE_H
+#endif // PARADIGM4_PICO_CORE_SPSCQUEUE_H

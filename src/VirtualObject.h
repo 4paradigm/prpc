@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_VIRTUAL_OBJECT_H
-#define PARADIGM4_PICO_COMMON_VIRTUAL_OBJECT_H
+#ifndef PARADIGM4_PICO_CORE_VIRTUAL_OBJECT_H
+#define PARADIGM4_PICO_CORE_VIRTUAL_OBJECT_H
 
 namespace paradigm4 {
 namespace pico {
@@ -26,4 +26,4 @@ class VirtualObject : public NoncopyableObject {
 } // namespace core
 } // namespace pico
 } // namespace paradigm4
-#endif // PARADIGM4_PICO_COMMON_VIRTUAL_OBJECT_H
+#endif // PARADIGM4_PICO_CORE_VIRTUAL_OBJECT_H

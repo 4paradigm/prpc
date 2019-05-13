@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_DEALER_H
-#define PARADIGM4_PICO_COMMON_DEALER_H
+#ifndef PARADIGM4_PICO_CORE_DEALER_H
+#define PARADIGM4_PICO_CORE_DEALER_H
 
 #include <memory>
 
@@ -139,4 +139,4 @@ private:
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_DEALER_H
+#endif // PARADIGM4_PICO_CORE_DEALER_H

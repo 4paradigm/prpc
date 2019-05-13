@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_HASH_FUNCTION_H
-#define PARADIGM4_PICO_COMMON_HASH_FUNCTION_H
+#ifndef PARADIGM4_PICO_CORE_HASH_FUNCTION_H
+#define PARADIGM4_PICO_CORE_HASH_FUNCTION_H
 
 #include <cstdint>
 #include "VirtualObject.h"
@@ -54,4 +54,4 @@ public:
 } // namespace core
 } // namespace pico
 } // namespace paradigm4
-#endif // PARADIGM4_PICO_COMMON_HASH_FUNCTION_H
+#endif // PARADIGM4_PICO_CORE_HASH_FUNCTION_H

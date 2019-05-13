@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_URI_CODE_H
-#define PARADIGM4_PICO_COMMON_URI_CODE_H
+#ifndef PARADIGM4_PICO_CORE_URI_CODE_H
+#define PARADIGM4_PICO_CORE_URI_CODE_H
 
 #include <iostream>
 #include <string>
@@ -65,4 +65,4 @@ private:
 } // namespace pico
 } // namespace paradigm4
 
-#endif //PARADIGM4_PICO_COMMON_URI_CODE_H
+#endif //PARADIGM4_PICO_CORE_URI_CODE_H

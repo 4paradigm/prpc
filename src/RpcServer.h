@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_PRPC_SERVER_H
-#define PARADIGM4_PICO_PRPC_SERVER_H
+#ifndef PARADIGM4_PICO_CORE_PRPC_SERVER_H
+#define PARADIGM4_PICO_CORE_PRPC_SERVER_H
 
 #include <gflags/gflags.h>
 
@@ -57,4 +57,4 @@ private:
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PICO_COMMON_INCLUDE_RPCSERVICE_H_
+#endif // PICO_CORE_INCLUDE_RPCSERVICE_H_

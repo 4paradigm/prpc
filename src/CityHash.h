@@ -39,8 +39,8 @@
 // By the way, for some hash functions, given strings a and b, the hash
 // of a+b is easily derived from the hashes of a and b.  This property
 // doesn't hold for any hash functions in this file.
-#ifndef PARADIGM4_PICO_COMMON_CITY_HASH_H
-#define PARADIGM4_PICO_COMMON_CITY_HASH_H
+#ifndef PARADIGM4_PICO_CORE_CITY_HASH_H
+#define PARADIGM4_PICO_CORE_CITY_HASH_H
 
 #include <stdlib.h>  // for size_t.
 #include <utility>
@@ -544,4 +544,4 @@ inline uint128 CityHashCrc128(const char *s, size_t len) {
 } // namespace core
 } // namespace pico
 } // namespace paradigm4
-#endif // PARADIGM4_PICO_COMMON_CITY_HASH_H
+#endif // PARADIGM4_PICO_CORE_CITY_HASH_H

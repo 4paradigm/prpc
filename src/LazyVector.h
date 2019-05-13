@@ -2,8 +2,8 @@
 // Created by Huang Geyang on 2018/8/16.
 //
 
-#ifndef PARADIGM4_PICO_COMMON_LAZYVECTOR_H
-#define PARADIGM4_PICO_COMMON_LAZYVECTOR_H
+#ifndef PARADIGM4_PICO_CORE_LAZYVECTOR_H
+#define PARADIGM4_PICO_CORE_LAZYVECTOR_H
 
 #include "pico_log.h"
 
@@ -353,4 +353,4 @@ private:
 } // namespace core
 } // namespace pico
 } // namespace paradigm4
-#endif // PARADIGM4_PICO_COMMON_LAZYVECTOR_H
+#endif // PARADIGM4_PICO_CORE_LAZYVECTOR_H

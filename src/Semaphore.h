@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_SEMAPHORE_H
-#define PARADIGM4_PICO_COMMON_SEMAPHORE_H
+#ifndef PARADIGM4_PICO_CORE_SEMAPHORE_H
+#define PARADIGM4_PICO_CORE_SEMAPHORE_H
 
 #include <mutex>
 #include <condition_variable>
@@ -89,4 +89,4 @@ private:
 } // namespace core
 } // namespace pico
 } // namespace paradigm4
-#endif // PARADIGM4_PICO_COMMON_SEMAPHORE_H
+#endif // PARADIGM4_PICO_CORE_SEMAPHORE_H

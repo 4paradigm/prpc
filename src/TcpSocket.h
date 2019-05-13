@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_TCP_H
-#define PARADIGM4_PICO_COMMON_TCP_H
+#ifndef PARADIGM4_PICO_CORE_TCP_H
+#define PARADIGM4_PICO_CORE_TCP_H
 
 #include <algorithm>
 #include <atomic>
@@ -134,4 +134,4 @@ private:
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_TCP_H
+#endif // PARADIGM4_PICO_CORE_TCP_H

@@ -5,7 +5,7 @@
 #define PICO_ArenaALLOCATOR_H
 #include <memory>
 #include <jemalloc/jemalloc.h>
-#include "macro.h"
+//#include "macro.h"
 #include "pico_memory.h"
 
 namespace paradigm4 {

@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_BASE64_H
-#define PARADIGM4_PICO_COMMON_BASE64_H
+#ifndef PARADIGM4_PICO_CORE_BASE64_H
+#define PARADIGM4_PICO_CORE_BASE64_H
 
 #include "pico_log.h"
 
@@ -123,4 +123,4 @@ inline void pico_base64_decode(const std::string& input, void* output, size_t& o
 } // namespace core
 } // namespace pico
 } // namespace paradigm4
-#endif // PARADIGM4_PICO_COMMON_BASE64_H
+#endif // PARADIGM4_PICO_CORE_BASE64_H

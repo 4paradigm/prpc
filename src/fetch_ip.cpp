@@ -19,13 +19,14 @@
 #include <boost/format.hpp>
 
 #include "common.h"
-#include "defs.h"
-#include "macro.h"
 #include "pico_log.h"
 
 namespace paradigm4 {
 namespace pico {
 namespace core {
+
+const char* const REGEX_IPV4
+      = R"(^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$)";
 
 bool get_local_ip_by_hostname(std::string& ip_address) {
     int hostname_buf_len = 2048;

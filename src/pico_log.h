@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_PICO_LOG_H
-#define PARADIGM4_PICO_COMMON_PICO_LOG_H
+#ifndef PARADIGM4_PICO_CORE_PICO_LOG_H
+#define PARADIGM4_PICO_CORE_PICO_LOG_H
 
 #include <iostream>
 #include <functional>
@@ -107,5 +107,5 @@ private:
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_PICO_LOG_H
+#endif // PARADIGM4_PICO_CORE_PICO_LOG_H
 

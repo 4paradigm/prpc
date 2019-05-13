@@ -1,5 +1,5 @@
-#ifndef PARADIGM4_PICO_COMMON_MASTER_CLIENT_H
-#define PARADIGM4_PICO_COMMON_MASTER_CLIENT_H
+#ifndef PARADIGM4_PICO_CORE_MASTER_CLIENT_H
+#define PARADIGM4_PICO_CORE_MASTER_CLIENT_H
 
 #include <list>
 #include <string>
@@ -319,4 +319,4 @@ private:
 } // namespace pico
 } // namespace paradigm4
 
-#endif // PARADIGM4_PICO_COMMON_MASTER_CLIENT_H
+#endif // PARADIGM4_PICO_CORE_MASTER_CLIENT_H
