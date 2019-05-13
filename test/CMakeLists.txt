@@ -1,4 +1,4 @@
-link_libraries(pico_common_static gtest gtest_main)
+link_libraries(pico_core_static gtest gtest_main)
 add_executable(channel_test channel_test.cpp)
 add_executable(archive_test archive_test.cpp)
 add_executable(rpc_service_test rpc_service_test.cpp)

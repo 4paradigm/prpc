@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set -e
 PROJECT_ROOT=`pwd`
 echo ${PROJECT_ROOT}
 #THIRD_PARTY_PREFIX=?
@@ -9,10 +9,6 @@ echo ${PROJECT_ROOT}
 #J=?
 #PATH
 #LD_LIBRARY_PATH
-
-function usage() {
-    echo "haha"
-}
 
 function setup() {
     if [ 0"${THIRD_PARTY_SRC}" == "0" ]; then
@@ -36,12 +32,26 @@ function build() {
     fi
     mkdir -p ${PROJECT_ROOT}/build
     pushd ${PROJECT_ROOT}/build
-    cmake -DCMAKE_MODULE_PATH=${PROJECT_ROOT}/cmake ${EXTRA_DEFINE} ..
+    ${THIRD_PARTY_PREFIX}/bin/cmake -DCMAKE_MODULE_PATH=${PROJECT_ROOT}/cmake ${EXTRA_DEFINE} ..
+    if [ 0"${J}" == "0" ];then
+        J=`nproc | awk '{print int(($0 + 1)/ 2)}'` # make cocurrent thread number
+    fi
     make -j${J}
     popd
 }
 
+function publish() {
+    if [ 0"${prefix}" == "0" ]; then
+        return 0
+    fi
+    mkdir -p ${prefix}/include/pico-core
+    mkdir -p ${prefix}/lib
+    cp ${PROJECT_ROOT}/src/*.h ${prefix}/include/pico-core
+    cp ${PROJECT_ROOT}/build/libpico_core.so ${prefix}/lib
+    cp ${PROJECT_ROOT}/build/libpico_core_static.a ${prefix}/lib
+}
+
 setup
 build
-
+publish
 
