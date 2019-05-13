@@ -3,7 +3,6 @@
 #ifdef USE_RDMA
 #include "PicoJsonNode.h"
 #include "SpinLock.h"
-#include "flags.h"
 #include <map>
 #include <rdma/rdma_cma.h>
 #include <rdma/rdma_verbs.h>

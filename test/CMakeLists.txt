@@ -1,4 +1,4 @@
-link_libraries(pico_common gtest gtest_main)
+link_libraries(pico_common_static gtest gtest_main)
 add_executable(channel_test channel_test.cpp)
 add_executable(archive_test archive_test.cpp)
 add_executable(rpc_service_test rpc_service_test.cpp)
@@ -26,7 +26,4 @@ add_executable(rpc_channel_test rpc_channel_test.cpp)
 add_executable(lazy_vector_test lazy_vector_test.cpp)
 add_executable(lazy_archive_test lazy_archive_test.cpp)
 add_executable(lazy_archive_rpc_test lazy_archive_rpc_test.cpp)
-
-
-
 add_executable(rpc_test rpc_test.cpp)
