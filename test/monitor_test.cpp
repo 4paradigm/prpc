@@ -12,7 +12,7 @@
 #define VAR(v) " " << #v << "=" << (v)
 
 using namespace paradigm4::pico::core;
-
+const std::string PICO_FILE_LINENUM = "asdf";
 void add_task(Monitor& monitor, int a) {
     auto id = monitor.submit(PICO_FILE_LINENUM, 0, 2000, [=] {
         LOG(INFO) << "add " << a;
