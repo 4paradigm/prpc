@@ -2,8 +2,8 @@
 set -e
 PROJECT_ROOT=`pwd`
 echo ${PROJECT_ROOT}
-#THIRD_PARTY_PREFIX=?
-#THIRD_PARTY_SRC=?
+#THIRD_PARTY_PREFIX=
+#THIRD_PARTY_SRC=
 #PREFIX=?
 #USE_RDMA=?
 #J=?
@@ -11,14 +11,14 @@ echo ${PROJECT_ROOT}
 
 function setup() {
     if [ 0"${THIRD_PARTY_SRC}" == "0" ]; then
-        git submodule update
+        git submodule update --init --recursive --checkout
         THIRD_PARTY_SRC=${PROJECT_ROOT}/third-party
     fi
     if [ 0"${THIRD_PARTY_PREFIX}" == "0" ]; then
         THIRD_PARTY_PREFIX=${PROJECT_ROOT}/third-party
     fi
     # install tools
-    prefix=${THIRD_PARTY_PREFIX} ${THIRD_PARTY_SRC}/prepare.sh build cmake glog gflags yaml boost zookeeper zlib snappy lz4  jemalloc sparsehash googletest
+    prefix=${THIRD_PARTY_PREFIX} ${THIRD_PARTY_SRC}/prepare.sh build cmake glog gflags yaml boost zookeeper zlib snappy lz4 jemalloc sparsehash googletest
     if [ "${WITH_RDMA}" == "1" ];then
         prefix=${THIRD_PARTY_PREFIX} ${THIRD_PARTY_SRC}/prepare.sh build rdma-core
     fi
@@ -32,7 +32,7 @@ function build() {
     fi
     mkdir -p ${PROJECT_ROOT}/build
     pushd ${PROJECT_ROOT}/build
-    ${THIRD_PARTY_PREFIX}/bin/cmake -DCMAKE_MODULE_PATH=${PROJECT_ROOT}/cmake ${EXTRA_DEFINE} ..
+    ${THIRD_PARTY_PREFIX}/bin/cmake -DCMAKE_MODULE_PATH=${PROJECT_ROOT}/cmake -DTHIRD_PARTY=${THIRD_PARTY_PREFIX} ${EXTRA_DEFINE} ..
     if [ 0"${J}" == "0" ];then
         J=`nproc | awk '{print int(($0 + 1)/ 2)}'` # make cocurrent thread number
     fi

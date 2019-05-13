@@ -1,4 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
+
+if(NOT THIRD_PARTY)
+    set(THIRD_PARTY "third-party")
+endif()
+message(STATUS "third party: ${THIRD_PARTY}")
+
 file(GLOB SRC src/*.cpp)
 find_package(Jemalloc REQUIRED)
 find_package(GLOG REQUIRED)
@@ -26,8 +32,8 @@ endif()
 set(CMAKE_SHARED_LINKER_FLAGS "-pthread -Wl,--whole-archive -lrt -Wl,--no-whole-archive")
 set(CMAKE_EXE_LINKER_FLAGS "-pthread -Wl,--whole-archive -lrt -Wl,--no-whole-archive")
 
-include_directories(SYSTEM src third-party/include)
-link_directories(third-party/lib third-party/lib64)
+include_directories(SYSTEM src ${THIRD_PARTY}/include)
+link_directories(${THIRD_PARTY}/lib ${THIRD_PARTY}/lib64)
 set(CORE_LIB ${PicoCoreDep_LIBRARIES} )
 
 set(MALLOC_DEFINITIONS -DUSE_JEMALLOC -DOVERRIDE_SYSTEM_MALLOC=0 -DOVERRIDE_SYSTEM_NEW=0)
