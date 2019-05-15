@@ -30,8 +30,6 @@ public:
 
     std::shared_ptr<Dealer> create_dealer();
 
-    void release_dealer(Dealer*);
-
     RpcServer(int rpc_id,
           int server_id,
           const std::string& rpc_name,
@@ -44,6 +42,10 @@ public:
     }
 
     ~RpcServer();
+
+private:
+    friend Dealer;
+    void release_dealer(Dealer*);
 
 private:
     int _id;

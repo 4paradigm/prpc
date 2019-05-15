@@ -18,7 +18,6 @@ class RpcClient {
 public:
 
     std::shared_ptr<Dealer> create_dealer();
-    void release_dealer(Dealer*);
 
     RpcClient(const RpcServiceInfo& info, RpcService* service)
         : _n_dealers(std::make_unique<std::atomic<int>>(0)) {
@@ -27,6 +26,10 @@ public:
     }
 
     ~RpcClient();
+
+private:
+    friend Dealer;
+    void release_dealer(Dealer*);
 
 private:
     RpcServiceInfo _info;
