@@ -368,7 +368,8 @@ bool MasterClient::get_rpc_service_info(const std::string& rpc_service_api,
         if (!tree_node_get(path + '/' + sid, g_rank)) {
             continue;
         }
-        out.servers.push_back({std::stoi(sid), std::stoi(g_rank)});
+        out.servers.push_back(
+              {std::stoi(sid), static_cast<comm_rank_t>(std::stoi(g_rank))});
     }
     return true;
 }

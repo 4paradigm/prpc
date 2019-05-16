@@ -4,7 +4,7 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include "common.h"
+#include "FileLineReader.h"
 
 namespace paradigm4 {
 namespace pico {

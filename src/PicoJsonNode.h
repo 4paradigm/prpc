@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "pico_log.h"
+#include "FileLineReader.h"
 
 // disable float-equal warnings on GCC/clang
 #if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
