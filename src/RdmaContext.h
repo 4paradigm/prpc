@@ -12,6 +12,22 @@ namespace pico {
 namespace core {
 
 struct RdmaConfig {
+    RdmaConfig() = default;
+
+    template<typename T>
+    RdmaConfig(const T& o) {
+        ib_devname = o.ib_devname;
+        gid_index = o.gid_index;
+        ib_port = o.ib_port;
+        traffic_class = o.traffic_class;
+        sl = o.sl;
+        mtu = o.mtu;
+        pkey_index = o.pkey_index;
+        min_rnr_timer = o.min_rnr_timer;
+        retry_cnt = o.retry_cnt;
+        timeout = o.timeout;
+    }
+
     std::string ib_devname;
     int gid_index;
     int ib_port;

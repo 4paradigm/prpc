@@ -26,6 +26,19 @@ namespace pico {
 namespace core {
 
 struct RpcConfig {
+    RpcConfig() = default;
+
+    template <typename T>
+    RpcConfig(const T& o) {
+        bind_ip = o.bind_ip;
+        io_thread_num = o.io_thread_num;
+        protocol = o.protocol;
+#ifdef USE_RDMA
+        rdma = o.rdma;
+#endif
+        tcp = o.tcp;
+    }
+
     std::string bind_ip = "127.0.0.1";
     size_t io_thread_num = 1;
     std::string protocol = "tcp";

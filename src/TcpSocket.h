@@ -14,6 +14,16 @@ namespace pico {
 namespace core {
 
 struct TcpConfig {
+    TcpConfig() = default;
+
+    template<typename T>
+    TcpConfig(const T& o) {
+        keepalive_time = o.keepalive_time;
+        keepalive_intvl = o.keepalive_intvl;
+        keepalive_probes = o.keepalive_probes;
+        connect_timeout = o.connect_timeout;
+    }
+
     int keepalive_time;
     int keepalive_intvl;
     int keepalive_probes;
