@@ -66,6 +66,10 @@ public:
         return 0;
     }
 
+    std::string get_bind_ip() {
+        return _bind_ip;
+    }
+
 private:
 
     void handle_accept_event();
