@@ -33,6 +33,17 @@ private:
     std::string _id;
 };
 
+class GLogFatalException : public std::exception {
+public:
+    GLogFatalException(const std::string& msg) : _msg(msg) {}
+
+    const char* what() const noexcept {
+        return _msg.c_str();
+    }
+private:
+    std::string _msg;
+};
+
 class GLogFatalWrapper {
 public:
     explicit GLogFatalWrapper(const char* file_name, int line_number, bool pcheck);
@@ -41,20 +52,21 @@ public:
 
     std::ostream& stream();
 
-    static void set_fail_func(std::function<void()> func);
+    static void set_fail_func(std::function<void(const std::string&)> func);
 
-    static void fail_func_abort();
+    static void fail_func_abort(const std::string& msg);
 
-    static void fail_func_throw();
+    static void fail_func_throw(const std::string& msg);
 
 private: 
-    static std::function<void()> _fail_func;
+    static std::function<void(const std::string&)> _fail_func;
     static bool _func_set;
 
 private:
     bool _pcheck = false;
     google::LogMessage* _glog_message;
     google::ErrnoLogMessage* _plog_message; // Workaround: ~ErrnoLogMessage is not virtual
+    std::ostringstream _stream;
 };
 
 // auxilaries macro, DO NOT USE
