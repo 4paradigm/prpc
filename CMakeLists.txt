@@ -6,6 +6,7 @@ endif()
 message(STATUS "third party: ${THIRD_PARTY}")
 
 file(GLOB SRC src/*.cpp)
+file(GLOB HRDS src/*.h)
 find_package(Jemalloc REQUIRED)
 find_package(GLOG REQUIRED)
 find_package(GFLAGS REQUIRED)
@@ -56,3 +57,14 @@ add_executable(masterd src/masterd.cc)
 target_link_libraries(masterd pico_core_static)
 
 add_subdirectory(test)
+
+
+
+INSTALL(TARGETS masterd pico_core_static pico_core
+       RUNTIME DESTINATION bin
+       LIBRARY DESTINATION lib
+       ARCHIVE DESTINATION lib
+)
+
+INSTALL(DIRECTORY src/ DESTINATION include/pico-core
+        FILES_MATCHING PATTERN "*.h")
