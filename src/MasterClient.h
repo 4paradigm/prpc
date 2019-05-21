@@ -106,8 +106,8 @@ public:
 
     void wait_task_ready();
     WatcherHandle watch_task(std::function<void(const std::string&)>);
-    // WatcherHandle watch_node(comm_rank_t g_rank, std::function<void()>);
-    // WatcherHandle watch_nodes(AsyncWatcher&);
+    WatcherHandle watch_node(comm_rank_t g_rank, std::function<void()>);
+    WatcherHandle watch_nodes(AsyncWatcher&);
 
     void alloc_role_rank(const std::string& role,
           size_t role_num,

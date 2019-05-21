@@ -2,6 +2,7 @@
 #define PARADIGM4_PICO_CORE_PRPC_SERVER_H
 
 #include <gflags/gflags.h>
+#include <unordered_set>
 
 #include "Dealer.h"
 #include "MasterClient.h"
@@ -30,11 +31,12 @@ public:
 
     std::shared_ptr<Dealer> create_dealer();
 
+    void terminate();
+
     RpcServer(int rpc_id,
           int server_id,
           const std::string& rpc_name,
-          RpcService* service)
-        : _n_dealers(std::make_unique<std::atomic<int>>(0)) {
+          RpcService* service) {
         _rpc_id = rpc_id;
         _id = server_id;
         _rpc_name = rpc_name;
@@ -52,7 +54,8 @@ private:
     int _rpc_id;
     std::string _rpc_name;
     RpcService* _service;
-    std::unique_ptr<std::atomic<int>> _n_dealers;
+    SpinLock _lk;
+    std::unordered_set<Dealer*> _dealers;
 };
 
 } // namespace core

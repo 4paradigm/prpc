@@ -382,6 +382,7 @@ void RpcContext::push_request(RpcRequest&& req) {
     }
     auto fq = it->second;
     auto dealer = fq->next(req.head().sid);
+    // XXX 有server，没有dealer，这个行为可以是cache住request
     if (!dealer) {
         SLOG(WARNING)
               << "recv request, but no such server. Drop it. rpc_id is "

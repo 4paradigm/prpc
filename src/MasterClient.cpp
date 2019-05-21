@@ -170,22 +170,15 @@ WatcherHandle MasterClient::watch_task(std::function<void(const std::string&)> c
     return h;
 }
 
-/*
 WatcherHandle MasterClient::watch_node(comm_rank_t rank, std::function<void()> cb) {
     SCHECK(cb);
     std::string path = _root_path + PATH_NODE + "/" + std::to_string(rank);
-    return tree_watch(path, [this, path, cb]() {
-        std::string leave;
-        SCHECK(tree_node_get(path, leave));
-        if (leave == "dead") {
-            cb();
-        }
-    });
+    return tree_watch(path, cb);
 }
 
 WatcherHandle MasterClient::watch_nodes(AsyncWatcher& watcher) {
     return tree_watch(_root_path + PATH_NODE, [&watcher]() { watcher.notify(); });
-}*/
+}
 
 void MasterClient::alloc_role_rank(const std::string& role,
       size_t role_num,
