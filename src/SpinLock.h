@@ -5,6 +5,7 @@
 #include <atomic>
 #include <thread>
 
+#include <boost/fiber/detail/cpu_relax.hpp>
 
 namespace paradigm4 {
 namespace pico {
