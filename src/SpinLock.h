@@ -42,7 +42,7 @@ public:
  */
 class RWSpinLock {
     enum : int32_t { READER = 2, WRITER = 1 };
-
+    static constexpr int MAX_TESTS = 1000;  
 public:
     constexpr RWSpinLock() : _(0) {}
 
@@ -50,9 +50,26 @@ public:
     RWSpinLock& operator=(RWSpinLock const&) = delete;
 
     void lock() {
-        for (uint32_t count = 0; unlikely(!try_lock()); ++count) {
-            if (count > 1000) {
-                std::this_thread::yield();
+        int collisions = 0;
+        for (;;) {
+            for (int tests = 0; _.load(std::memory_order_relaxed) != 0; ++tests) {
+                if (MAX_TESTS > tests) {
+                    cpu_relax();
+                } else {
+                    static constexpr std::chrono::microseconds us0{0};
+                    std::this_thread::sleep_for(us0);
+                }
+            }
+            if (!try_lock()) {
+                static thread_local std::minstd_rand generator;
+                static std::uniform_int_distribution<uint64_t> distribution{0, 1ull << collisions};
+                const std::size_t z = distribution(generator);
+                ++collisions;
+                for (std::size_t i = 0; i < z; ++i) {
+                    cpu_relax();
+                }
+            } else {
+                break;
             }
         }
     }
@@ -70,11 +87,16 @@ public:
     //增加一个reader，然后等Writer退出
     void lock_shared() {
         int32_t value = _.fetch_add(READER, std::memory_order_acquire);
-        for (uint32_t count = 0; unlikely(value & WRITER); ++count) {
-            value = _.load(std::memory_order_acquire);
-            if (count > 1000) {
-                std::this_thread::yield();
+        if (unlikely(value & WRITER)) {
+            for (int tests = 0; _.load(std::memory_order_relaxed) & WRITER; ++tests) {
+                if (MAX_TESTS > tests) {
+                    cpu_relax();
+                } else {
+                    static constexpr std::chrono::microseconds us0{0};
+                    std::this_thread::sleep_for(us0);
+                }
             }
+            _.load(std::memory_order_acquire);
         }
     }
 
@@ -121,6 +143,7 @@ public:
 
 private:
     std::atomic<int32_t> _;
+    char _pad[60] = {0};
 };
 
 template <class T>

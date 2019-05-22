@@ -54,6 +54,12 @@ public:
         }
     }
 
+    bool test_empty() {
+        Node* t = _tail.load(std::memory_order_relaxed);
+        Node* next = t->next.load(std::memory_order_relaxed);
+        return next == nullptr;
+    }
+    
 private:
     struct alignas(8) Node {
         Node(T&& v) : v(std::move(v)), next(nullptr) {}
