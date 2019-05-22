@@ -293,15 +293,11 @@ std::vector<int32_t> MasterClient::get_storage_list() {
 }
 
 bool MasterClient::add_model(const std::string& name, const std::string& model) {
-    bool ret = tree_node_add(_root_path + PATH_MODEL + '/' + name, model);
-    tree_node_get(_root_path + PATH_MODEL + '/' + name); //active watcher
-    return ret;
+    return tree_node_add(_root_path + PATH_MODEL + '/' + name, model);
 }
 
 bool MasterClient::set_model(const std::string& name, const std::string& model) {
-    bool ret = tree_node_set(_root_path + PATH_MODEL + '/' + name, model);
-    tree_node_get(_root_path + PATH_MODEL + '/' + name); //active watcher
-    return ret;
+    return tree_node_set(_root_path + PATH_MODEL + '/' + name, model);
 }
 
 bool MasterClient::get_model(const std::string& name, std::string& model) {
@@ -309,9 +305,7 @@ bool MasterClient::get_model(const std::string& name, std::string& model) {
 }
 
 bool MasterClient::del_model(const std::string& name) {
-    bool ret = tree_node_del(_root_path + PATH_MODEL + '/' + name);
-    tree_node_get(_root_path + PATH_MODEL + '/' + name); //active watcher
-    return ret;
+    return tree_node_del(_root_path + PATH_MODEL + '/' + name);
 }
 
 std::vector<std::string> MasterClient::get_model_names() {
@@ -527,7 +521,16 @@ bool MasterClient::tree_node_sub(const std::string& path, std::vector<std::strin
 }
 WatcherHandle MasterClient::tree_watch(const std::string& path, std::function<void()> cb) {
     SCHECK(master_check_valid_path(path)) << path;
-    return _table.insert(path, cb);
+    auto ret = _table.insert(path, cb);
+
+    // 对于zkmaster只会在tree_node_get和tree_node_sub的同时注册一次性的监听。
+    // 如果cb中有tree_node_get tree_node_sub，则当对应的内容发生变化时仍会调用cb，否则有可能不会再调用cb。
+    // 理论上如果不调用get|sub，就说明client不需要相应的内容，那么即使发生了变化，也没有必要再通知client。
+    // 所以如果某个程序依赖于永久监听，那么这个程序应该是不严谨的，很可能存在一些隐蔽的问题。
+    std::vector<std::string> children;
+    tree_node_get(path);
+    tree_node_sub(path, children);
+    return ret;
 }
 
 const char* MasterClient::PATH_NODE = "_node_";
