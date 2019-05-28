@@ -1079,9 +1079,14 @@ Archive<AR>& operator>>(Archive<AR>& ar, T& x) {
     }
 #endif
 
-namespace ps {
-struct SerializableObject;
-} // namespace ps
+struct SerializableObject : public Object {
+    virtual bool _binary_archive_serialize_internal_(BinaryArchive&) const {
+        return true;
+    }
+    virtual bool _binary_archive_deserialize_internal_(BinaryArchive&) {
+        return true;
+    }
+};
 
 #ifndef PICO_PS_SERIALIZATION
 #define PICO_PS_SERIALIZATION(TYPE, FIELDS...)                                                \

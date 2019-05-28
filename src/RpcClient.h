@@ -25,6 +25,8 @@ public:
         _service = service;
     }
 
+    bool get_rpc_service_info(RpcServiceInfo& out);
+
     ~RpcClient();
 
 private:

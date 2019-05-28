@@ -117,6 +117,35 @@ bool MasterClient::get_task_failed(std::string& message) {
     return tree_node_get(_root_path + PATH_TASK_STATE + "/fail", message);
 }
 
+bool MasterClient::add_task_node(comm_rank_t g_rank, const std::string& role) {
+    tree_node_add(_root_path + PATH_TASK_STATE + "/node");
+    return tree_node_add(_root_path + PATH_TASK_STATE + "/node/" + std::to_string(g_rank), role);
+}
+
+bool MasterClient::del_task_node(comm_rank_t g_rank) {
+    return tree_node_del(_root_path + PATH_TASK_STATE + "/node/" + std::to_string(g_rank));
+}
+
+bool MasterClient::get_task_node(const std::string& role, std::vector<comm_rank_t>& g_rank) {
+    std::vector<std::string> ranks;
+    if (!tree_node_sub(_root_path + PATH_TASK_STATE + "/node", ranks)) {
+        return false;
+    }
+    g_rank.clear();
+    g_rank.reserve(ranks.size());
+    for (const auto& rank : ranks) {
+        std::string rank_role;
+        if (role == "") {
+            g_rank.push_back(std::stoi(rank));
+        } else if (tree_node_get(_root_path + PATH_TASK_STATE + "/node/" + rank, rank_role)) {
+            if (rank_role == role || role == "") {
+                g_rank.push_back(std::stoi(rank));
+            }
+        }
+    }
+    return true;
+}
+
 void MasterClient::register_node(const CommInfo& info) {
     std::string rank = std::to_string(info.global_rank);
     SCHECK(tree_node_add(_root_path + PATH_NODE + "/" + rank, info.to_json_str(), true));
@@ -126,22 +155,21 @@ void MasterClient::register_node(const CommInfo& info) {
 bool MasterClient::get_comm_info(comm_rank_t g_rank, CommInfo& info) {
     std::string rank = std::to_string(g_rank);
     std::string str;
-    SCHECK(tree_node_get(_root_path + PATH_NODE +  "/" + rank, str));
+    bool ret = tree_node_get(_root_path + PATH_NODE +  "/" + rank, str);
     info.from_json_str(str);
-    return true;
+    return ret;
 }
 
 bool MasterClient::get_comm_info(std::vector<CommInfo>& info) {
     info.clear();
     std::vector<std::string> ranks;
-    SCHECK(tree_node_sub(_root_path + PATH_NODE, ranks));
+    tree_node_sub(_root_path + PATH_NODE, ranks);
     info.reserve(ranks.size());
     for (const auto& rank : ranks) {
         CommInfo tmp;
-        if (!get_comm_info(std::stoi(rank), tmp)) {
-            return false;
+        if (get_comm_info(std::stoi(rank), tmp)) {
+            info.push_back(tmp);
         }
-        info.push_back(tmp);
     }
     return true;
 }
@@ -154,7 +182,7 @@ void MasterClient::wait_task_ready() {
     cancle_watch(h);
 }
 
-WatcherHandle MasterClient::watch_task(std::function<void(const std::string&)> cb) {
+WatcherHandle MasterClient::watch_task_fail(std::function<void(const std::string&)> cb) {
     SCHECK(cb);
     std::string path = _root_path + PATH_TASK_STATE + "/fail";
     WatcherHandle h = tree_watch(path, [this, path, cb](){
@@ -170,14 +198,8 @@ WatcherHandle MasterClient::watch_task(std::function<void(const std::string&)> c
     return h;
 }
 
-WatcherHandle MasterClient::watch_node(comm_rank_t rank, std::function<void()> cb) {
-    SCHECK(cb);
-    std::string path = _root_path + PATH_NODE + "/" + std::to_string(rank);
-    return tree_watch(path, cb);
-}
-
-WatcherHandle MasterClient::watch_nodes(AsyncWatcher& watcher) {
-    return tree_watch(_root_path + PATH_NODE, [&watcher]() { watcher.notify(); });
+WatcherHandle MasterClient::watch_task_node(AsyncWatcher& watcher) {
+    return tree_watch(_root_path + PATH_TASK_STATE + "/node", [&watcher]() { watcher.notify(); });
 }
 
 void MasterClient::alloc_role_rank(const std::string& role,

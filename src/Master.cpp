@@ -139,7 +139,7 @@ void Master::exit() {
 
 void Master::serving() {
     bool exit = false;
-    while (!exit) {
+    while (true) {
         for (int fd: poll()) {
             if (fd == _tcp_acceptor->fd()) {
                 // Accept
@@ -173,6 +173,13 @@ void Master::serving() {
                     _watchers.erase(it->second.get());
                     _fd_socket_map.erase(it);
                 }
+            }
+        }
+        if (exit) {
+            if (_fd_socket_map.empty()) {
+                break;
+            } else {
+                SLOG(WARNING) << "received exit request but need wait all client exit.";
             }
         }
     }
@@ -425,12 +432,6 @@ void Master::master_sub(RpcRequest& req, RpcResponse& resp) {
     resp << MasterStatus::OK << children;
 }
 
-const char* PSERVER_ROLE_STR = "PSERVER";
-const char* PSERVER_CLI_ROLE_STR = "PSERVER_CLI";
-const char* LEARNER_ROLE_STR = "LEARNER";
-const char* PREDICTOR_ROLE_STR = "PREDICTOR";
-const char* CONTROLLER_ROLE_STR = "CONTROLLER";
-const char* CONTROLLER_CLI_ROLE_STR = "CONTROLLER_CLI";
 const char* RANK_KEY = "RANKER";
 
 

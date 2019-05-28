@@ -18,6 +18,11 @@ void RpcClient::release_dealer(Dealer* d) {
     _n_dealers->fetch_add(-1, std::memory_order_release);
 }
 
+bool RpcClient::get_rpc_service_info(RpcServiceInfo& out)  {
+    return _service->ctx()->get_rpc_service_info(_info.rpc_service_name, out);
+}
+
+
 RpcClient::~RpcClient() {
     int n_dealers = _n_dealers->load(std::memory_order_acquire);
     SCHECK(n_dealers == 0) << "RpcClient " << _info << " deconstructed, but "

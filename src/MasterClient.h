@@ -65,6 +65,9 @@ public:
     bool get_task_ready();
     bool set_task_failed(const std::string& message);
     bool get_task_failed(std::string& message);
+    bool add_task_node(comm_rank_t g_rank, const std::string& role);
+    bool del_task_node(comm_rank_t g_rank);
+    bool get_task_node(const std::string& role, std::vector<comm_rank_t>&);
 
     void register_node(const CommInfo& info);
     bool get_comm_info(std::vector<CommInfo>&);
@@ -105,9 +108,8 @@ public:
     void reset_generate_id(const std::string& key);
 
     void wait_task_ready();
-    WatcherHandle watch_task(std::function<void(const std::string&)>);
-    WatcherHandle watch_node(comm_rank_t g_rank, std::function<void()>);
-    WatcherHandle watch_nodes(AsyncWatcher&);
+    WatcherHandle watch_task_fail(std::function<void(const std::string&)>);
+    WatcherHandle watch_task_node(AsyncWatcher&);
 
     void alloc_role_rank(const std::string& role,
           size_t role_num,
@@ -130,8 +132,6 @@ public:
     bool del_model(const std::string& name);
     std::vector<std::string> get_model_names();
     WatcherHandle watch_model(const std::string& name, std::function<void()>);
-
-    bool get_snapshot(PicoJsonNode& json);
 
     void cancle_watch(WatcherHandle);
 
