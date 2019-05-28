@@ -115,7 +115,7 @@ public:
         return _server_req_ch->recv(req, timeout, 64);
     }
 
-    int id() {
+    int32_t id() {
         return _id;
     }
 
@@ -126,7 +126,7 @@ private:
     RpcContext* _ctx;
     RpcServer* _rpc_server = nullptr;
     RpcClient* _rpc_client = nullptr;
-    int64_t _id;
+    int32_t _id;
 
     std::shared_ptr<req_ch_t> _server_req_ch;
     std::shared_ptr<resp_ch_t> _client_resp_ch;

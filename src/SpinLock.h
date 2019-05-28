@@ -6,6 +6,7 @@
 #include <thread>
 
 #include <boost/fiber/detail/cpu_relax.hpp>
+#include "macro.h"
 
 namespace paradigm4 {
 namespace pico {
