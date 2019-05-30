@@ -94,6 +94,10 @@ std::shared_ptr<Dealer> RpcService::create_dealer(const std::string& rpc_name) {
     return ret;
 }
 
+std::shared_ptr<Dealer> RpcService::create_dealer() {
+    return std::make_shared<Dealer>(-1, this);
+}
+
 void RpcService::remove_server(RpcServer* server) {
     /*
      * XXX 从master上删除这个server

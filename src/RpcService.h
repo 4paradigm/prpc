@@ -52,6 +52,8 @@ public:
 
     std::shared_ptr<Dealer> create_dealer(const std::string& rpc_name);
 
+    std::shared_ptr<Dealer> create_dealer();
+
     void remove_dealer(Dealer*);
 
     void remove_server(RpcServer* server);

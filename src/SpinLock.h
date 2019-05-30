@@ -5,7 +5,6 @@
 #include <atomic>
 #include <thread>
 #include <random>
-#include "macro.h"
 
 #include <boost/fiber/detail/cpu_relax.hpp>
 #include "macro.h"

@@ -59,6 +59,8 @@ public:
 
     void terminate();
 
+    bool is_terminated();
+
     void finalize();
 
     bool initialized() {
@@ -137,6 +139,7 @@ private:
 
     bool _initialized_server = false;
     bool _initialized_client = false;
+    bool _terminated = false;
 };
 
 } // namespace core

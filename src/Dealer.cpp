@@ -56,6 +56,11 @@ void Dealer::terminate() {
     if (_client_resp_ch) {
         _client_resp_ch->terminate();
     }
+    _terminated = true;
+}
+
+bool Dealer::is_terminated() {
+    return _terminated;
 }
 
 void Dealer::finalize() {
