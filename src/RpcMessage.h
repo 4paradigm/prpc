@@ -280,6 +280,7 @@ public:
     RpcResponse(const RpcRequest& req) {
         _head.dest_rank = req.head().src_rank;
         _head.dest_dealer = req.head().src_dealer;
+        _head.src_rank = req.head().dest_rank;
         _head.rpc_id = req.head().rpc_id;
         _ar.resize(sizeof(_head));
         _ar.set_cursor(_ar.end());
