@@ -9,14 +9,30 @@ namespace core {
 
 Dealer::Dealer(int rpc_id, RpcService* service)
     : _rpc_id(rpc_id), _g_rank(service->global_rank()), _service(service),
-      _ctx(_service->ctx()), _id(AtomicID<Dealer, int64_t>::gen()) {}
+      _ctx(_service->ctx()), _id(gen_id()) {}
 
 Dealer::Dealer(const std::string& rpc_name, RpcService* service) {
     _rpc_id = service->register_rpc_service(rpc_name);
     _g_rank = service->global_rank();
     _service = service;
     _ctx = service->ctx();
-    _id = AtomicID<Dealer, int64_t>::gen();
+    _id = gen_id();
+}
+
+int Dealer::gen_id() {
+    static SpinLock _lk;
+    static std::unordered_set<int> _used;
+    static uint32_t next = 0;
+    int ret = -1;
+    lock_guard<SpinLock> _(_lk);
+    for (;;) {
+        ret = next++ & std::numeric_limits<int>::max();
+        if (_used.count(ret) == 0) {
+            _used.insert(ret);
+            break;
+        }
+    }
+    return ret;
 }
 
 void Dealer::initialize_as_server(RpcServer* server) {
@@ -83,17 +99,21 @@ void Dealer::_send_request(RpcRequest&& req) {
     comm_rank_t dest_g_rank = 0;
     std::shared_ptr<frontend_t> f = nullptr;
     // 寻找可用的服务
+    auto err = SUCC;
     if (req.head().sid != -1) {
         f = _ctx->get_client_frontend_by_sid(_rpc_id, req.head().sid);
+        errno = ENOSUCHSERVER;
     } else if (req.head().dest_rank != -1) {
         f = _ctx->get_client_frontend_by_rank(req.head().dest_rank);
+        errno = ENOSUCHRANK;
     } else {
         f = _ctx->get_client_frontend_by_rpc_id(_rpc_id, req.head().sid);
+        errno = ENOSUCHSERVICE;
     }
     if (!f) {
         SLOG(WARNING) << "no such service. " << req.head();
         RpcResponse resp;
-        resp.set_error_code(123);
+        resp.set_error_code(err);
         _client_resp_ch->send(std::move(resp));
         return;
     }
@@ -101,7 +121,6 @@ void Dealer::_send_request(RpcRequest&& req) {
     req.head().dest_rank = dest_g_rank;
     req.head().rpc_id = _rpc_id;
     if (f->info.global_rank == _g_rank) {
-    SLOG(INFO) << req.head();
         _ctx->_spin_lock.lock_shared();
         _ctx->push_request(std::move(req));
         _ctx->_spin_lock.unlock_shared();
@@ -109,7 +128,7 @@ void Dealer::_send_request(RpcRequest&& req) {
         // XXX 没有建立连接，自动连，最好启动另一个线程做这件事儿
         if (!f->socket && !_ctx->connect(f)) {
             RpcResponse resp;
-            // XXX resp.set_error_code(ENOSERVICE);
+            resp.set_error_code(ECONNECTION);
             _client_resp_ch->send(std::move(resp));
             return;
         }

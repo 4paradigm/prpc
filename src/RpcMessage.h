@@ -10,7 +10,21 @@ namespace paradigm4 {
 namespace pico {
 namespace core {
 
-typedef int16_t RpcErrorCodeType;
+//typedef int16_t RpcErrorCodeType;
+
+enum RpcErrorCodeType:int16_t {
+    SUCC,
+    ENOSUCHSERVER = 101,
+    ENOSUCHRANK,
+    ENOSUCHSERVICE,
+    ELOGICERROR,
+    EILLEGALMSG,
+    ETIMEOUT,
+    ENOTFOUND,
+    ECONNECTION
+};
+
+
 
 /*!
  * \brief rpc message info head,
@@ -26,8 +40,7 @@ struct rpc_head_t {
     int32_t sid = -1;
     uint32_t extra_block_count = 0;
     uint32_t extra_block_length = 0;
-    RpcErrorCodeType err_no = 0;
-    int32_t error_code = 0;
+    RpcErrorCodeType error_code = SUCC;
 
     size_t msg_size() {
         return sizeof(rpc_head_t) + extra_block_length + body_size;

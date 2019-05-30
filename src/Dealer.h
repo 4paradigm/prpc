@@ -120,13 +120,17 @@ public:
     }
 
 private:
+
+    static int gen_id();
+
+
     int _rpc_id;
     comm_rank_t _g_rank;
     RpcService* _service;
     RpcContext* _ctx;
     RpcServer* _rpc_server = nullptr;
     RpcClient* _rpc_client = nullptr;
-    int64_t _id;
+    int _id;
 
     std::shared_ptr<req_ch_t> _server_req_ch;
     std::shared_ptr<resp_ch_t> _client_resp_ch;
