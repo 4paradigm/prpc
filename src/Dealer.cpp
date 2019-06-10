@@ -131,7 +131,8 @@ void Dealer::_send_request(RpcRequest&& req) {
         _ctx->_spin_lock.unlock_shared();
     } else {
         // XXX 没有建立连接，自动连，最好启动另一个线程做这件事儿
-        if (!f->socket && !_ctx->connect(f)) {
+        int state = f->state.load(std::memory_order_acquire);
+        if (state == FRONTEND_DISCONNECT && !_ctx->connect(f)) { 
             RpcResponse resp;
             resp.set_error_code(ECONNECTION);
             _client_resp_ch->send(std::move(resp));

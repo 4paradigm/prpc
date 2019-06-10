@@ -8,6 +8,27 @@ namespace core {
  * 暂时LB的策略是random
  * 一个好一点做法是Dealer来要请求
  */
+
+void FairQueue::add_server(int sid) {
+    lock_guard<RWSpinLock> _(_lk);
+    std::vector<RpcRequest> vec;
+    SCHECK(_sid2cache.emplace(sid, std::move(vec)).second);
+}
+
+void FairQueue::remove_server(int sid) {
+    lock_guard<RWSpinLock> _(_lk);
+    auto cit = _sid2cache.find(sid);
+    SCHECK(cit != _sid2cache.end());
+    if (!cit->second.empty()) {
+        auto& req = cit->second.front();
+        SLOG(WARNING)
+            << "remove server. Drop cached requests. "
+            << " rpc_id is " << req.head().rpc_id
+            << " sid is " << req.head().sid;
+    }
+    _sid2cache.erase(cit);
+}
+
 void FairQueue::add_server_dealer(int sid,
       Dealer* dealer) {
     lock_guard<RWSpinLock> _(_lk);
@@ -17,6 +38,13 @@ void FairQueue::add_server_dealer(int sid,
         _sid2dealers.insert({sid, {dealer}});
     } else {
         it->second.push_back(dealer);
+    }
+    auto cit = _sid2cache.find(sid);
+    if (cit != _sid2cache.end()) {
+        for (RpcRequest& req: cit->second) {
+            dealer->push_request(std::move(req));
+        }
+        cit->second.clear();
     }
 }
 
@@ -39,7 +67,7 @@ void FairQueue::remove_server_dealer(int sid,
 
 bool FairQueue::empty() {
     shared_lock_guard<RWSpinLock> _(_lk);
-    return _sid2dealers.empty();
+    return _sid2dealers.empty() && _sid2cache.empty();
 }
 
 Dealer* FairQueue::next() {
@@ -56,7 +84,6 @@ Dealer* FairQueue::next() {
 
 Dealer* FairQueue::next(int sid) {
     shared_lock_guard<RWSpinLock> _(_lk);
-    SLOG(INFO) << sid;
     auto it = _sid2dealers.find(sid);
     if (it == _sid2dealers.end()) {
         return nullptr;
@@ -65,6 +92,22 @@ Dealer* FairQueue::next(int sid) {
     auto& d = it->second;
     SCHECK(!d.empty()) << "no dealer.";
     return d[rand() % d.size()];
+}
+
+bool FairQueue::push_request(int sid, RpcRequest&& req) {
+    lock_guard<RWSpinLock> _(_lk);
+    auto it = _sid2dealers.find(sid);
+    if (it != _sid2dealers.end()) {
+        SCHECK(!it->second.empty()) << "no dealer.";
+        it->second.back()->push_request(std::move(req));
+        return true;
+    }
+    auto cit = _sid2cache.find(sid);
+    if (cit != _sid2cache.end()) {
+        cit->second.push_back(std::move(req));
+        return true;
+    }
+    return false;
 }
 
 void RpcContext::initialize(bool is_use_rdma,
@@ -96,6 +139,35 @@ void RpcContext::bind(const std::string& ip, int backlog) {
     SLOG(INFO) << "bind success. endpoint is " << _acceptor->endpoint();
 }
 
+void RpcContext::begin_add_server() {
+    _spin_lock.lock();
+    SLOG(INFO) << "begin add server ";
+}
+
+void RpcContext::end_add_server(int rpc_id, int sid) {
+    auto it = _server_backend.find(rpc_id);
+    if (it == _server_backend.end()) {
+        std::tie(it, std::ignore)
+              = _server_backend.emplace(rpc_id, std::make_shared<FairQueue>());
+    }
+    it->second->add_server(sid);
+    SLOG(INFO) << "add server : " << rpc_id << " " << sid;
+    _spin_lock.unlock();
+}
+
+void RpcContext::remove_server(int rpc_id, int sid) {
+    lock_guard<RWSpinLock> l(_spin_lock);
+    SLOG(INFO) << "remove server : " << rpc_id << " " << sid;
+    auto it = _server_backend.find(rpc_id);
+    SCHECK(it != _server_backend.end()) << _server_backend.size();
+    // XXX 想一想死锁问题，fq里也有个锁
+    auto fq = it->second;
+    fq->remove_server(sid);
+    if (fq->empty()) {
+        _server_backend.erase(it);
+    }
+}
+
 void RpcContext::add_server_dealer(int rpc_id,
       int sid,
       Dealer* dealer) {
@@ -106,7 +178,6 @@ void RpcContext::add_server_dealer(int rpc_id,
         std::tie(it, std::ignore)
               = _server_backend.emplace(rpc_id, std::make_shared<FairQueue>());
     }
-    SLOG(INFO) << rpc_id << " " << _server_backend.size();
     it->second->add_server_dealer(sid, dealer);
 }
 
@@ -114,6 +185,7 @@ void RpcContext::remove_server_dealer(int rpc_id,
       int sid,
       Dealer* dealer) {
     lock_guard<RWSpinLock> l(_spin_lock);
+    SLOG(INFO) << "remove server dealer : " << rpc_id << " " << sid;
     auto it = _server_backend.find(rpc_id);
     SCHECK(it != _server_backend.end()) << _server_backend.size();
     // XXX 想一想死锁问题，fq里也有个锁
@@ -197,9 +269,6 @@ std::shared_ptr<frontend_t> RpcContext::get_client_frontend_by_sid(int rpc_id,
 std::shared_ptr<frontend_t> RpcContext::get_server_frontend_by_rank(
       comm_rank_t rank) {
     shared_lock_guard<RWSpinLock> l(_spin_lock);
-    for (const auto& t : _server_sockets) {
-        SLOG(INFO) << t.first;
-    }
     auto it = _server_sockets.find(rank);
     if (it == _server_sockets.end()) {
         return nullptr;
@@ -262,6 +331,7 @@ bool RpcContext::connect(std::shared_ptr<frontend_t> f) {
         return false;
     }
     add_frontend_event(f);
+    f->state.store(FRONTEND_CONNECT, std::memory_order_release);
     return true;
 }
 
@@ -307,11 +377,21 @@ void RpcContext::update_comm_info(const std::vector<CommInfo>& list) {
  */
 void RpcContext::update_service_info(const std::vector<RpcServiceInfo>& list) {
     {
-        lock_guard<RWSpinLock> l(_spin_lock);
         lock_guard<std::mutex> lk(_rpc_mu);
+        lock_guard<RWSpinLock> l(_spin_lock);
         _rpc_info.clear();
         _rpc_server_info.clear();
-        for (const auto& info : list) {
+        auto service_list = list;
+        for (auto& service_info: service_list) {
+            int num = 0;
+            for (auto& server_info: service_info.servers) {
+                if (_client_sockets.count(server_info.global_rank)) {
+                    service_info.servers[num++] = server_info;
+                }
+            }
+            service_info.servers.resize(num);
+        }
+        for (const auto& info : service_list) {
             _rpc_info.emplace(info.rpc_service_name, info);
         }
         for (const auto& pr : _rpc_info) {
@@ -375,20 +455,24 @@ void RpcContext::push_request(RpcRequest&& req) {
     // XXX 如果没有找到server，那么先扔掉，后面想办法回复一个默认的resp
     if (it == _server_backend.end()) {
         SLOG(WARNING)
-              << "recv request, but no such service. Drop it. rpc_id is "
-              << req.head().rpc_id;
-
+              << "recv request, but no such service. Drop it. "
+              << " rpc_id is " << req.head().rpc_id
+              << " sid is " << req.head().sid;
         return;
     }
     auto fq = it->second;
     auto dealer = fq->next(req.head().sid);
-    // XXX 有server，没有dealer，这个行为可以是cache住request
     if (!dealer) {
-        SLOG(WARNING)
-              << "recv request, but no such server. Drop it. rpc_id is "
-              << req.head().rpc_id;
+        if (!fq->push_request(req.head().sid, std::move(req))) {
+            SLOG(WARNING)
+                << "recv request, but no such server. Drop it. "
+                << " rpc_id is " << req.head().rpc_id
+                << " sid is " << req.head().sid;
+        }
+    } else {
+        dealer->push_request(std::move(req));
     }
-    dealer->push_request(std::move(req));
+    
 }
 
 /*

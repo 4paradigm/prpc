@@ -40,9 +40,10 @@ void RpcService::initialize(MasterClient* master_client,
     _master_client->register_node(_self);
     _watch_master_hdl
           = _master_client->watch_rpc_service_info(_rpc_service_api, [this]() {
-                update_ctx();
+                _watcher.notify();
             });
-    update_ctx();
+    _terminate.store(false);
+    _watch_thread = std::thread(&RpcService::watching, this);
 }
 
 void RpcService::finalize() {
@@ -53,16 +54,23 @@ void RpcService::finalize() {
     }
     ::close(_terminate_fd);
     _master_client->cancle_watch(_watch_master_hdl);
+    _terminate.store(true);
+    _watcher.notify();
+    _watch_thread.join();
+    SLOG(INFO) << "rpc service finalize";
 }
 
 // MT Safe
-std::unique_ptr<RpcServer> RpcService::create_server(const std::string& rpc_name,
+std::unique_ptr<RpcServer> RpcService::create_server(
+      const std::string& rpc_name,
       int server_id) {
     int rpc_id;
+    _ctx.begin_add_server();
     SCHECK(_master_client->register_server(
           _rpc_service_api, rpc_name, _self.global_rank, rpc_id, server_id));
     BLOG(1) << "Registered rpc serivce: " << rpc_name
             << " with rpc id: " << rpc_id << ", server id: " << server_id;
+    _ctx.end_add_server(rpc_id, server_id);
     return std::make_unique<RpcServer>(rpc_id, server_id, rpc_name, this);
 }
 
@@ -72,14 +80,10 @@ std::unique_ptr<RpcClient> RpcService::create_client(
     _ctx.wait([rpc_name, expected_server_num](RpcContext* ctx) {
         RpcServiceInfo info;
         bool ret = ctx->get_rpc_service_info(rpc_name, info);
-        if (!ret || (ret && (int)info.servers.size() < expected_server_num)) {
-            return false;
-        }
-        return true;
+        return ret && (int)info.servers.size() >= expected_server_num;
     });
     RpcServiceInfo info;
-    bool ret;
-    ret = _ctx.get_rpc_service_info(rpc_name, info);
+    SCHECK(_ctx.get_rpc_service_info(rpc_name, info));
     //SCHECK(ret && info.servers.size() >= expected_server_num);
     return std::make_unique<RpcClient>(info, this);
 }
@@ -89,6 +93,7 @@ std::shared_ptr<Dealer> RpcService::create_dealer(const std::string& rpc_name) {
     auto ret = std::make_shared<Dealer>(rpc_id, this);
     ret->initialize_as_client();
     ret->initialize_as_server();
+    SLOG(INFO) << rpc_name << " " << rpc_id;
     _ctx.add_server_dealer(rpc_id, -1, ret.get());
     _ctx.add_client_dealer(ret.get());
     return ret;
@@ -99,13 +104,9 @@ std::shared_ptr<Dealer> RpcService::create_dealer() {
 }
 
 void RpcService::remove_server(RpcServer* server) {
-    /*
-     * XXX 从master上删除这个server
-     * 如果删除了最后一个server，那么
-     * 所有service的信息也会删除
-     */
     bool ret = _master_client->deregister_server(
           _rpc_service_api, server->rpc_name(), server->id());
+    _ctx.remove_server(server->rpc_id(), server->id());
     SCHECK(ret) << ret;
 }
 
@@ -164,6 +165,16 @@ void RpcService::receiving(int tid) {
             }
         }
     }
+}
+
+void RpcService::watching() {
+    _watcher.wait([this](){
+        if (_terminate.load()) {
+            return true;
+        }
+        update_ctx();
+        return false;
+    });
 }
 
 } // namespace core

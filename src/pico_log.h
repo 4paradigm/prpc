@@ -12,7 +12,7 @@ namespace core {
 
 class Logger {
 public:
-    static Logger singleton() {
+    static Logger& singleton() {
         static Logger logger;
         return logger;
     }

@@ -25,23 +25,28 @@ namespace core {
 
 class WatcherTable {
 public:
+    struct Watcher {
+        std::mutex mutex;
+        std::function<void()> callback;
+    };
+
     class WatcherHandle {
         friend WatcherTable;
 
     private:
         WatcherTable* _table = nullptr;
         std::string _key = "";
-        std::list<std::function<void()>>::iterator _cb;
+        std::list<std::shared_ptr<Watcher>>::iterator _watcher;
     };
 
     ~WatcherTable();
     void invoke(const std::string& key);
-    WatcherHandle insert(const std::string& key, std::function<void()> cb);
-    void erase(WatcherHandle h);
+    WatcherHandle insert(const std::string& key, std::function<void()> callback);
+    void erase(WatcherHandle handle);
 
 private:
     std::mutex _mu;
-    std::unordered_map<std::string, std::list<std::function<void()>>> _cbs;
+    std::unordered_map<std::string, std::list<std::shared_ptr<Watcher>>> _mp;
 };
 
 typedef WatcherTable::WatcherHandle WatcherHandle;
@@ -113,6 +118,7 @@ public:
 
     void alloc_role_rank(const std::string& role,
           size_t role_num,
+          comm_rank_t g_rank,
           comm_rank_t& r_rank,
           std::vector<comm_rank_t>& all);
 

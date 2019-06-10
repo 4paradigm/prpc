@@ -49,7 +49,10 @@ struct rpc_head_t {
     friend std::ostream& operator<< (std::ostream& stream, const rpc_head_t& head) {
         stream << "rpc_head[src(rank:dealer):(" << head.src_rank << ":" << head.src_dealer
                << "), dest(rank:dealer):(" << head.dest_rank << ":" << head.dest_dealer
-               << "), rpc_id:" << head.rpc_id
+               << "), rpc_id:" << head.rpc_id 
+               << ", sid:" << head.sid
+               << ", extra_block(count:length):(" << head.extra_block_count 
+               << ":" << head.extra_block_length << ")"
                << ", size:" << head.body_size << "]";
         return stream;
     }

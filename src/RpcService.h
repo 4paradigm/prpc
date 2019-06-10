@@ -48,7 +48,7 @@ public:
           int server_id = -1);
 
     std::unique_ptr<RpcClient> create_client(const std::string& rpc_name,
-          int expected_server_num = 0);
+          int expected_server_num = 1);
 
     std::shared_ptr<Dealer> create_dealer(const std::string& rpc_name);
 
@@ -80,6 +80,8 @@ private:
 
     void receiving(int tid);
 
+    void watching();
+
     std::vector<std::thread> _proxy_threads;
     int _terminate_fd;
 
@@ -94,6 +96,9 @@ private:
      */
     MasterClient* _master_client;
     WatcherHandle _watch_master_hdl;
+    AsyncWatcher _watcher;
+    std::thread _watch_thread;
+    std::atomic<bool> _terminate = {false};
 };
 
 

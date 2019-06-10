@@ -209,7 +209,7 @@ bool TcpSocket::accept(std::string& info) {
     int64_t len = meta[1];
 
     if (magic != 0) {
-        SLOG(WARNING) << "magic not correct. " << magic;
+        SLOG(WARNING) << "magic not correct. magic:" << magic << " len:" << len;
         return false;
     }
 

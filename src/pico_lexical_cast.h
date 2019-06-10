@@ -355,6 +355,15 @@ inline bool pico_lexical_cast(const S& s, T& t) {
     return false;
 }
 
+inline int check_stoi(const std::string& str) {
+    try {
+        return std::stoi(str);
+    } catch (std::exception& e) {
+        SLOG(FATAL) << "error stoi: " << str;
+        return 0;
+    }
+}
+
 } // namespace core
 } // namespace pico
 } // namespace paradigm4

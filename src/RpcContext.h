@@ -58,12 +58,15 @@ class RpcServer;
 class FairQueue : public NoncopyableObject {
 public:
     FairQueue() {}
+    void add_server(int sid);
+    void remove_server(int sid);
     void add_server_dealer(int sid, Dealer* dealer);
     void remove_server_dealer(int sid, Dealer* dealer);
     bool empty();
     Dealer* next();
     Dealer* next(int sid);
 
+    bool push_request(int sid, RpcRequest&& req);
 private:
 
     RWSpinLock _lk;
@@ -71,14 +74,19 @@ private:
     std::unordered_map<int, std::vector<Dealer*>> _sid2dealers;
     std::vector<int> _sids;
     std::atomic<int> _sids_rr_index;
+
+    std::unordered_map<int, std::vector<RpcRequest>> _sid2cache;
 };
 
+constexpr int FRONTEND_DISCONNECT = 0;
+constexpr int FRONTEND_CONNECT = 1;
 struct frontend_t {
     std::mutex connect_mu;
     std::unique_ptr<RpcSocket> socket;
     CommInfo info;
     bool is_client_socket;
     int epfd = -1;
+    std::atomic<int> state = {FRONTEND_DISCONNECT};
 };
 
 class RpcContext {
@@ -104,6 +112,12 @@ public:
         shared_lock_guard<RWSpinLock> l(_spin_lock);
         return _acceptor->endpoint();
     }
+
+    void begin_add_server();
+
+    void end_add_server(int rpc_id, int sid);
+
+    void remove_server(int rpc_id, int sid);
 
     void add_server_dealer(int rpc_id, int sid, Dealer* dealer);
 

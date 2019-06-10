@@ -5,6 +5,7 @@
 
 #include "AsyncWatcher.h"
 #include "MasterClient.h"
+#include "pico_lexical_cast.h"
 #include "pico_log.h"
 
 namespace paradigm4 {
@@ -15,41 +16,51 @@ constexpr int DCLIENT = 2;
 
 WatcherTable::~WatcherTable() {
     std::lock_guard<std::mutex> lk(_mu);
-    SCHECK(_cbs.empty());
+    SCHECK(_mp.empty());
 }
 
-WatcherHandle WatcherTable::insert(const std::string& key, std::function<void()> cb) {
+WatcherHandle WatcherTable::insert(const std::string& key, std::function<void()> callback) {
     std::lock_guard<std::mutex> lk(_mu);
-    auto& list = _cbs[key];
-    WatcherHandle h;
-    h._table = this;
-    h._key = key;
-    h._cb = list.insert(list.end(), cb);
+    auto watcher = std::make_shared<Watcher>();
+    watcher->callback = callback;
+    auto& list = _mp[key];
+    WatcherHandle handle;
+    handle._table = this;
+    handle._key = key;
+    handle._watcher = list.emplace(list.end(), watcher);
     BLOG(DCLIENT) << "insert one callback of " << key;
-    return h;
+    return handle;
 }
 
-void WatcherTable::erase(WatcherHandle h) {
+void WatcherTable::erase(WatcherHandle handle) {
     std::lock_guard<std::mutex> lk(_mu);
-    SCHECK(h._table == this);
-    auto it = _cbs.find(h._key);
-    SCHECK(it != _cbs.end());
-    it->second.erase(h._cb);
-    BLOG(DCLIENT) << "erase one callback of " << h._key;
+    SCHECK(handle._table == this);
+    auto it = _mp.find(handle._key);
+    SCHECK(it != _mp.end());
+    auto watcher = (*handle._watcher);
+    {
+        std::lock_guard<std::mutex> lkcb(watcher->mutex);
+        it->second.erase(handle._watcher);
+    }
+    BLOG(DCLIENT) << "erase one callback of " << handle._key;
     if (it->second.empty()) {
-        _cbs.erase(it);
-        BLOG(DCLIENT) << "all callback of " << h._key << " erased";
+        _mp.erase(it);
+        BLOG(DCLIENT) << "all callback of " << handle._key << " erased";
     }
 }
 
 void WatcherTable::invoke(const std::string& key) {
-    std::lock_guard<std::mutex> lk(_mu);
-    auto it = _cbs.find(key);
-    if (it != _cbs.end()) {
-        BLOG(DCLIENT) << "invoke callback " << key << " num " << it->second.size();
-        for (auto& cb: it->second) {
-            cb();
+    std::list<std::shared_ptr<Watcher>> watchers;
+    {
+        std::lock_guard<std::mutex> lk(_mu);
+        auto it = _mp.find(key);
+        if (it != _mp.end()) {
+            watchers = it->second;
         }
+    }
+    for (auto watcher: watchers) {
+        std::lock_guard<std::mutex> lkcb(watcher->mutex);
+        watcher->callback();
     }
 }
 
@@ -136,10 +147,10 @@ bool MasterClient::get_task_node(const std::string& role, std::vector<comm_rank_
     for (const auto& rank : ranks) {
         std::string rank_role;
         if (role == "") {
-            g_rank.push_back(std::stoi(rank));
+            g_rank.push_back(check_stoi(rank));
         } else if (tree_node_get(_root_path + PATH_TASK_STATE + "/node/" + rank, rank_role)) {
             if (rank_role == role || role == "") {
-                g_rank.push_back(std::stoi(rank));
+                g_rank.push_back(check_stoi(rank));
             }
         }
     }
@@ -167,7 +178,7 @@ bool MasterClient::get_comm_info(std::vector<CommInfo>& info) {
     info.reserve(ranks.size());
     for (const auto& rank : ranks) {
         CommInfo tmp;
-        if (get_comm_info(std::stoi(rank), tmp)) {
+        if (get_comm_info(check_stoi(rank), tmp)) {
             info.push_back(tmp);
         }
     }
@@ -176,16 +187,16 @@ bool MasterClient::get_comm_info(std::vector<CommInfo>& info) {
 
 void MasterClient::wait_task_ready() {
     AsyncWatcher watcher;
-    WatcherHandle h = tree_watch(
+    WatcherHandle handle = tree_watch(
           _root_path + PATH_TASK_STATE, [&watcher]() { watcher.notify(); });
     watcher.wait([this](){ return tree_node_get(_root_path + PATH_TASK_STATE + "/ready"); });
-    cancle_watch(h);
+    cancle_watch(handle);
 }
 
 WatcherHandle MasterClient::watch_task_fail(std::function<void(const std::string&)> cb) {
     SCHECK(cb);
     std::string path = _root_path + PATH_TASK_STATE + "/fail";
-    WatcherHandle h = tree_watch(path, [this, path, cb](){
+    WatcherHandle handle = tree_watch(path, [this, path, cb](){
         std::string message;
         if (tree_node_get(path, message)) {
             cb(message);
@@ -195,7 +206,7 @@ WatcherHandle MasterClient::watch_task_fail(std::function<void(const std::string
     if (tree_node_get(path, message)) {
         cb(message);
     }
-    return h;
+    return handle;
 }
 
 WatcherHandle MasterClient::watch_task_node(AsyncWatcher& watcher) {
@@ -204,27 +215,29 @@ WatcherHandle MasterClient::watch_task_node(AsyncWatcher& watcher) {
 
 void MasterClient::alloc_role_rank(const std::string& role,
       size_t role_num,
+      comm_rank_t global_rank,
       comm_rank_t& role_rank,
       std::vector<comm_rank_t>& all) {
     std::string key = "alloc_role_rank_" + role;
     std::string path = _root_path + key;
-    reset_generate_id(key);
+    tree_clear_path(path);
     barrier(key, role_num);
-    role_rank = generate_id(key);
-    SLOG(INFO) << "get role rank : " << role_rank;
     tree_node_add(path);
+    SCHECK(tree_node_add(path + '/' + std::to_string(global_rank)));
     barrier(key, role_num);
-    SCHECK(tree_node_add(path + '/' + std::to_string(role_rank)));
-    barrier(key, role_num);
+    all.resize(role_num);
     std::vector<std::string> children;
     tree_node_sub(path, children);
     SCHECK(children.size() == role_num);
-    all.resize(role_num);
     for (size_t i = 0; i < role_num; ++i) {
-        all[i] = std::stoi(children[i]);
+        comm_rank_t rank = static_cast<comm_rank_t>(check_stoi(children[i]));
+        if (rank == global_rank) {
+            role_rank = i;
+        }
+        all[i] = rank;
     }
     barrier(key, role_num);
-    tree_clear_path(path);
+    SLOG(INFO) << "get role rank : " << role_rank;
 }
 
 void MasterClient::barrier(const std::string& barrier_name, size_t number) {
@@ -233,7 +246,7 @@ void MasterClient::barrier(const std::string& barrier_name, size_t number) {
     std::string ready_path = base_path + "/ready";
     
     AsyncWatcher watcher;
-    WatcherHandle h = tree_watch(ready_path, [&watcher](){ watcher.notify(); });
+    WatcherHandle handle = tree_watch(ready_path, [&watcher](){ watcher.notify(); });
     watcher.wait([this, &ready_path](){ return !tree_node_get(ready_path); });
 
     tree_node_add(base_path);
@@ -257,7 +270,7 @@ void MasterClient::barrier(const std::string& barrier_name, size_t number) {
         watcher.wait([this, &ready_path](){ return tree_node_get(ready_path); });
         SCHECK(tree_node_del(node_path + '/' + gen));
     }
-    cancle_watch(h);
+    cancle_watch(handle);
 }
 
 void MasterClient::acquire_lock(const std::string& lock_name) {
@@ -268,13 +281,13 @@ void MasterClient::acquire_lock(const std::string& lock_name) {
     SCHECK(!gen.empty());
     
     AsyncWatcher watcher;
-    WatcherHandle h = tree_watch(lock_path, [&watcher](){ watcher.notify(); });
+    WatcherHandle handle = tree_watch(lock_path, [&watcher](){ watcher.notify(); });
     watcher.wait([this, &gen, &lock_path](){
         std::vector<std::string> children;
         SCHECK(tree_node_sub(lock_path, children));
         return gen == children[0];
     });
-    cancle_watch(h);
+    cancle_watch(handle);
 
     std::unique_lock<std::mutex> lck(_client_mtx);
     SCHECK(_acquired_lock.emplace(lock_name, lock_path + '/' + gen).second);
@@ -309,7 +322,7 @@ std::vector<int32_t> MasterClient::get_storage_list() {
     std::vector<std::string> storage_ids;
     SCHECK(tree_node_sub(_root_path + PATH_CONTEXT, storage_ids));
     for (auto& storage_id: storage_ids) {
-        storage_list.push_back(std::stoi(storage_id));
+        storage_list.push_back(check_stoi(storage_id));
     }
     return storage_list;
 }
@@ -365,7 +378,7 @@ bool MasterClient::get_rpc_service_info(const std::string& rpc_service_api,
     if (!tree_node_get(path, rpc_id)) {
         return false;
     }
-    out.rpc_id = std::stoi(rpc_id);
+    out.rpc_id = check_stoi(rpc_id);
     std::vector<std::string> sids;
     if (!tree_node_sub(path, sids)) {
         return false;
@@ -378,7 +391,7 @@ bool MasterClient::get_rpc_service_info(const std::string& rpc_service_api,
             continue;
         }
         out.servers.push_back(
-              {std::stoi(sid), static_cast<comm_rank_t>(std::stoi(g_rank))});
+              {check_stoi(sid), static_cast<comm_rank_t>(check_stoi(g_rank))});
     }
     return true;
 }
@@ -400,8 +413,8 @@ WatcherHandle MasterClient::watch_rpc_service_info(
     SCHECK(cb);
     std::string path = _root_path + PATH_RPC + '/' + rpc_service_api;
     tree_node_add(path);
-    WatcherHandle h = tree_watch(path, cb);
-    return h;
+    WatcherHandle handle = tree_watch(path, cb);
+    return handle;
 }
 
 void MasterClient::register_rpc_service(const std::string& rpc_service_api,
@@ -415,11 +428,12 @@ void MasterClient::register_rpc_service(const std::string& rpc_service_api,
     path += '/' + rpc_name;
     if (!tree_node_get(path, info_str)) {
         rpc_id = generate_id(rpc_service_api);
-        tree_node_add(path);
-        SCHECK(tree_node_set(path, std::to_string(rpc_id)));
+        tree_node_add(path, std::to_string(rpc_id));
     } else {
-        rpc_id = std::stoi(info_str);
+        rpc_id = check_stoi(info_str);
     }
+    SLOG(INFO) << "register service :  " << rpc_service_api << " " 
+              << rpc_name << " " << rpc_id;
     release_lock(rpc_key);
 }
 
@@ -438,8 +452,9 @@ bool MasterClient::register_server(const std::string& rpc_service_api,
       int global_rank,
       int& rpc_id,
       int& server_id) {
-    SLOG(INFO) << "register server :  " << rpc_service_api << " " << rpc_name << global_rank;
     register_rpc_service(rpc_service_api, rpc_name, rpc_id);
+    SLOG(INFO) << "register server :  " << rpc_service_api << " " 
+              << rpc_name << " " << rpc_id << " " << global_rank;
     std::string rpc_key = rpc_service_api + "$" + rpc_name;
     if (server_id == -1) {
         server_id = generate_id(rpc_key);
@@ -474,8 +489,8 @@ void MasterClient::reset_generate_id(const std::string& key) {
     tree_clear_path(path);
 }
 
-void MasterClient::cancle_watch(WatcherHandle cb) {
-    _table.erase(cb);
+void MasterClient::cancle_watch(WatcherHandle handle) {
+    _table.erase(handle);
 }
 
 void MasterClient::notify_watchers(const std::string& path) {

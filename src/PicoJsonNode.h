@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "pico_log.h"
+#include "pico_lexical_cast.h"
 #include "FileLineReader.h"
 
 // disable float-equal warnings on GCC/clang
@@ -9789,7 +9790,7 @@ basic_json_parser_63:
                     case value_t::array:
                     {
                         // create an entry in the array
-                        result = &result->operator[](static_cast<size_type>(std::stoi(reference_token)));
+                        result = &result->operator[](static_cast<size_type>(check_stoi(reference_token)));
                         break;
                     }
 
@@ -9852,7 +9853,7 @@ basic_json_parser_63:
                         else
                         {
                             // convert array index to number; unchecked access
-                            ptr = &ptr->operator[](static_cast<size_type>(std::stoi(reference_token)));
+                            ptr = &ptr->operator[](static_cast<size_type>(check_stoi(reference_token)));
                         }
                         break;
                     }
@@ -9897,7 +9898,7 @@ basic_json_parser_63:
                         }
 
                         // note: at performs range check
-                        ptr = &ptr->inner_at(static_cast<size_type>(std::stoi(reference_token)));
+                        ptr = &ptr->inner_at(static_cast<size_type>(check_stoi(reference_token)));
                         break;
                     }
 
@@ -9949,7 +9950,7 @@ basic_json_parser_63:
                         }
 
                         // use unchecked array access
-                        ptr = &ptr->operator[](static_cast<size_type>(std::stoi(reference_token)));
+                        ptr = &ptr->operator[](static_cast<size_type>(check_stoi(reference_token)));
                         break;
                     }
 
@@ -9993,7 +9994,7 @@ basic_json_parser_63:
                         }
 
                         // note: at performs range check
-                        ptr = &ptr->inner_at(static_cast<size_type>(std::stoi(reference_token)));
+                        ptr = &ptr->inner_at(static_cast<size_type>(check_stoi(reference_token)));
                         break;
                     }
 
@@ -10519,7 +10520,7 @@ basic_json_parser_63:
                         }
                         else
                         {
-                            const auto idx = std::stoi(last_path);
+                            const auto idx = check_stoi(last_path);
                             if (static_cast<size_type>(idx) > parent.size())
                             {
                                 // avoid undefined behavior
@@ -10567,7 +10568,7 @@ basic_json_parser_63:
             else if (parent.is_array())
             {
                 // note erase performs range check
-                parent.erase(static_cast<size_type>(std::stoi(last_path)));
+                parent.erase(static_cast<size_type>(check_stoi(last_path)));
             }
         };
 

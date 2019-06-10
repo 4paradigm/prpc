@@ -45,7 +45,8 @@ public:
  */
 class RWSpinLock {
     enum : int32_t { READER = 2, WRITER = 1 };
-    static constexpr int MAX_TESTS = 1000;  
+    static constexpr int MAX_TESTS = 1 << 10;
+    static constexpr int MAX_COLLISION = 20;
 public:
     constexpr RWSpinLock() : _(0) {}
 
@@ -55,8 +56,8 @@ public:
     void lock() {
         int collisions = 0;
         for (;;) {
-            for (int tests = 0; _.load(std::memory_order_relaxed) != 0; ++tests) {
-                if (MAX_TESTS > tests) {
+            for (int tests = 0; _.load(std::memory_order_acquire) != 0; ++tests) {
+                if (tests < MAX_TESTS) {
                     cpu_relax();
                 } else {
                     static constexpr std::chrono::microseconds us0{0};
@@ -64,11 +65,11 @@ public:
                 }
             }
             if (!try_lock()) {
+                collisions = std::min(MAX_COLLISION, collisions + 1);
                 static thread_local std::minstd_rand generator;
-                static std::uniform_int_distribution<uint64_t> distribution{0, 1ull << collisions};
-                const std::size_t z = distribution(generator);
-                ++collisions;
-                for (std::size_t i = 0; i < z; ++i) {
+                static std::uniform_int_distribution<int> distribution{0, 1 << collisions};
+                int z = distribution(generator);
+                for (int i = 0; i < z; ++i) {
                     cpu_relax();
                 }
             } else {
@@ -91,15 +92,14 @@ public:
     void lock_shared() {
         int32_t value = _.fetch_add(READER, std::memory_order_acquire);
         if (unlikely(value & WRITER)) {
-            for (int tests = 0; _.load(std::memory_order_relaxed) & WRITER; ++tests) {
-                if (MAX_TESTS > tests) {
+            for (int tests = 0; _.load(std::memory_order_acquire) & WRITER; ++tests) {
+                if (tests < MAX_TESTS) {
                     cpu_relax();
                 } else {
                     static constexpr std::chrono::microseconds us0{0};
                     std::this_thread::sleep_for(us0);
                 }
             }
-            _.load(std::memory_order_acquire);
         }
     }
 
