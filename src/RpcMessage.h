@@ -90,7 +90,8 @@ public:
         for (size_t i = 0; i < head()->extra_block_count; ++i) {
             auto len = cur_lazy_meta[i].length;
             if (len < MIN_ZERO_COPY_SIZE) {
-                _data.emplace_back(cur, len);
+                _data.emplace_back(len);
+	  	        std::memcpy(_data.back().data, cur, len);
                 cur += len;
             } else {
                 ++_pending_block_cnt;
