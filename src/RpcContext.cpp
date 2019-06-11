@@ -228,6 +228,7 @@ std::shared_ptr<frontend_t> RpcContext::get_client_frontend_by_rank(
     shared_lock_guard<RWSpinLock> l(_spin_lock);
     auto it = _client_sockets.find(rank);
     if (it == _client_sockets.end()) {
+        SLOG(WARNING) << "no client frontend of rank " << rank;
         return nullptr;
     } else {
         return it->second;
@@ -242,11 +243,13 @@ std::shared_ptr<frontend_t> RpcContext::get_client_frontend_by_rpc_id(
     shared_lock_guard<RWSpinLock> l(_spin_lock);
     auto it1 = _rpc_server_info.find(rpc_id);
     if (it1 == _rpc_server_info.end()) {
+        SLOG(WARNING) << "no rpc service " << rpc_id;
         return nullptr;
     }
     auto it2 = it1->second.begin();
     sid = it2->second->server_id;
     if (it2 == it1->second.end()) {
+        SLOG(WARNING) << "no rpc server of rpc service " << rpc_id;
         return nullptr;
     }
     return get_client_frontend_by_rank(it2->second->global_rank);
@@ -257,10 +260,12 @@ std::shared_ptr<frontend_t> RpcContext::get_client_frontend_by_sid(int rpc_id,
     shared_lock_guard<RWSpinLock> l(_spin_lock);
     auto it1 = _rpc_server_info.find(rpc_id);
     if (it1 == _rpc_server_info.end()) {
+        SLOG(WARNING) << "no rpc service " << rpc_id;
         return nullptr;
     }
     auto it2 = it1->second.find(server_id);
     if (it2 == it1->second.end()) {
+        SLOG(WARNING) << "no rpc service server " << rpc_id << " " << server_id;
         return nullptr;
     }
     return get_client_frontend_by_rank(it2->second->global_rank);

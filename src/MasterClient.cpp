@@ -213,6 +213,10 @@ WatcherHandle MasterClient::watch_task_node(AsyncWatcher& watcher) {
     return tree_watch(_root_path + PATH_TASK_STATE + "/node", [&watcher]() { watcher.notify(); });
 }
 
+WatcherHandle MasterClient::watch_comm_node(AsyncWatcher& watcher) {
+    return tree_watch(_root_path + PATH_NODE, [&watcher]() { watcher.notify(); });
+}
+
 void MasterClient::alloc_role_rank(const std::string& role,
       size_t role_num,
       comm_rank_t global_rank,

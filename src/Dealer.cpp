@@ -115,6 +115,9 @@ void Dealer::_send_request(RpcRequest&& req) {
         f = _ctx->get_client_frontend_by_rpc_id(_rpc_id, req.head().sid);
         errno = ENOSUCHSERVICE;
     }
+    req.head().src_rank = _g_rank;
+    req.head().dest_rank = dest_g_rank;
+    req.head().rpc_id = _rpc_id;
     if (!f) {
         SLOG(WARNING) << "no such service. " << req.head();
         RpcResponse resp;
@@ -122,9 +125,6 @@ void Dealer::_send_request(RpcRequest&& req) {
         _client_resp_ch->send(std::move(resp));
         return;
     }
-    req.head().src_rank = _g_rank;
-    req.head().dest_rank = dest_g_rank;
-    req.head().rpc_id = _rpc_id;
     if (f->info.global_rank == _g_rank) {
         _ctx->_spin_lock.lock_shared();
         _ctx->push_request(std::move(req));

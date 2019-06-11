@@ -6,7 +6,7 @@ namespace paradigm4 {
 namespace pico {
 namespace core {
 
-constexpr int DMASTER = 3;
+constexpr int DMASTER = 2;
 
 void CommInfo::to_json_node(PicoJsonNode& node)const {
     node.add("global_rank", global_rank);

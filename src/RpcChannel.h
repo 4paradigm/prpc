@@ -56,21 +56,18 @@ public:
 
     bool recv(T& item, int timeout, int spin_count = 128) {
         int64_t _ = 0;
-        if (_q.pop(item)) {
-            if (_size.fetch_add(-1, std::memory_order_relaxed) == 0) {
-                PSCHECK(::read(_fd, &_, sizeof(int64_t)) == sizeof(int64_t));
-            }
-            return true;
-        }
         for (int i = 0; i < spin_count; ++i) {
-            if (_q.test_empty()) {
-                cpu_relax();
-            } else if (_q.pop(item)) {
+            if (_q.pop(item)) {
                 if (_size.fetch_add(-1, std::memory_order_relaxed) == 0) {
                     PSCHECK(::read(_fd, &_, sizeof(int64_t)) == sizeof(int64_t));
                 }
                 return true;
+            } else {
+                cpu_relax();
             }
+        }
+        if (timeout == 0) {
+            return false;
         }
         auto sz = _size.fetch_add(-1, std::memory_order_release);
         SCHECK(sz >= 0);

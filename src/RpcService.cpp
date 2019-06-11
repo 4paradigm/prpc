@@ -81,7 +81,7 @@ std::unique_ptr<RpcClient> RpcService::create_client(
         RpcServiceInfo info;
         bool ret = ctx->get_rpc_service_info(rpc_name, info);
         return ret && (int)info.servers.size() >= expected_server_num;
-    });
+    }); 
     RpcServiceInfo info;
     SCHECK(_ctx.get_rpc_service_info(rpc_name, info));
     //SCHECK(ret && info.servers.size() >= expected_server_num);
