@@ -12,6 +12,9 @@ find_package(GLOG REQUIRED)
 find_package(GFLAGS REQUIRED)
 find_package(PicoCoreDep REQUIRED)
 
+set(CMAKE_CXX_COMPILER $ENV{CXX})
+set(CMAKE_C_COMPILER $ENV{CC})
+
 add_definitions(--std=c++14 -Wall -Wextra -Wno-deprecated-declarations -frecord-gcc-switches -fPIC)
 
 option(USE_RDMA "whether build with rdma support" OFF)
