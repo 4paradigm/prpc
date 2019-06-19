@@ -8,6 +8,7 @@
 #include "fetch_ip.h"
 #include "RpcSocket.h"
 #include "RpcMessage.h"
+#include "SpscQueue.h"
 
 namespace paradigm4 {
 namespace pico {
@@ -90,13 +91,18 @@ public:
         }
     }
 
-    virtual bool send_rpc_message(RpcMessage&& msg, bool more) override;
+    virtual bool send_msg(RpcMessage& msg,
+          bool nonblock,
+          bool more,
+          RpcMessage::byte_cursor& it1,
+          RpcMessage::byte_cursor& it2) override;
 
-    bool recv_rpc_messages(std::vector<RpcMessage> &rmsgs);
+    bool recv_rpc_messages(std::vector<RpcMessage>& rmsgs);
 
     static TcpConfig _tcp_config;
 private:
-    
+
+    // for recv   
     pico::core::deque<RpcMessage> _pending_msgs;
     size_t _block_id = 0, _recieved_size = 0;
 

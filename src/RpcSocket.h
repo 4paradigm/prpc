@@ -38,7 +38,7 @@ inline sockaddr_in parse_rpc_endpoint(const std::string& endpoint) {
 
 
 /*
- * ip:port
+ * endpoint  is ip:port
  * 172.27.0.0.1:12345
  */
 class RpcSocket {
@@ -83,7 +83,18 @@ public:
         return false;
     }
 
-    virtual bool send_rpc_message(RpcMessage&& msg, bool more = false) = 0;
+    bool send_rpc_message(RpcMessage&& msg, bool more = false) {
+        auto it1 = msg.cursor();
+        auto it2 = msg.zero_copy_cursor();
+        return send_msg(msg, false, more, it1, it2);
+    }
+
+    virtual bool send_msg(RpcMessage& msg,
+          bool nonblock,
+          bool more,
+          RpcMessage::byte_cursor& it1,
+          RpcMessage::byte_cursor& it2)
+          = 0;
 
 protected:
 

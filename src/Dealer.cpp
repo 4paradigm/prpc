@@ -101,49 +101,10 @@ void Dealer::reset() {
 // retry现在是摆设
 void Dealer::_send_request(RpcRequest&& req) {
     SCHECK(_initialized_client);
-    comm_rank_t dest_g_rank = 0;
-    std::shared_ptr<frontend_t> f = nullptr;
-    // 寻找可用的服务
-    auto err = SUCC;
-    if (req.head().sid != -1) {
-        f = _ctx->get_client_frontend_by_sid(_rpc_id, req.head().sid);
-        errno = ENOSUCHSERVER;
-    } else if (req.head().dest_rank != -1) {
-        f = _ctx->get_client_frontend_by_rank(req.head().dest_rank);
-        errno = ENOSUCHRANK;
-    } else {
-        f = _ctx->get_client_frontend_by_rpc_id(_rpc_id, req.head().sid);
-        errno = ENOSUCHSERVICE;
-    }
     req.head().src_rank = _g_rank;
-    req.head().dest_rank = dest_g_rank;
     req.head().rpc_id = _rpc_id;
-    if (!f) {
-        SLOG(WARNING) << "no such service. " << req.head();
-        RpcResponse resp;
-        resp.set_error_code(err);
-        _client_resp_ch->send(std::move(resp));
-        return;
-    }
-    if (f->info.global_rank == _g_rank) {
-        _ctx->_spin_lock.lock_shared();
-        _ctx->push_request(std::move(req));
-        _ctx->_spin_lock.unlock_shared();
-    } else {
-        // XXX 没有建立连接，自动连，最好启动另一个线程做这件事儿
-        int state = f->state.load(std::memory_order_acquire);
-        if (state == FRONTEND_DISCONNECT && !_ctx->connect(f)) { 
-            RpcResponse resp;
-            resp.set_error_code(ECONNECTION);
-            _client_resp_ch->send(std::move(resp));
-            return;
-        }
-        if (!f->socket->send(std::move(req))) {
-            SLOG(WARNING) << "sending request to " << dest_g_rank
-                          << " failed. ";
-            _ctx->epipe(f);
-        }
-    }
+    RpcMessage msg = std::move(req);
+    _ctx->send_request(std::move(msg), true);
 }
 
 /*
@@ -162,16 +123,7 @@ void Dealer::send_response(RpcResponse&& resp) {
         _ctx->push_response(std::move(resp));
         _ctx->_spin_lock.unlock_shared();
     } else {
-        auto f = _ctx->get_server_frontend_by_rank(resp.head().dest_rank);
-        if (!f) {
-            SLOG(WARNING) << "send response to a dead node, drop it";
-            return;
-        }
-        if (!f->socket->send(std::move(resp))) {
-            SLOG(WARNING) << "sending response to " << dest_g_rank
-                          << " failed. ";
-            _ctx->epipe(f);
-        }
+        _ctx->send_response(std::move(resp), true);
     }
 }
 

@@ -14,6 +14,7 @@
 #include "SpinLock.h"
 #include "TcpSocket.h"
 #include "common.h"
+#include "FrontEnd.h"
 #ifdef USE_RDMA
 #include "RdmaSocket.h"
 #endif
@@ -78,17 +79,6 @@ private:
     std::unordered_map<int, std::vector<RpcRequest>> _sid2cache;
 };
 
-constexpr int FRONTEND_DISCONNECT = 0;
-constexpr int FRONTEND_CONNECT = 1;
-struct frontend_t {
-    std::mutex connect_mu;
-    std::unique_ptr<RpcSocket> socket;
-    CommInfo info;
-    bool is_client_socket;
-    int epfd = -1;
-    std::atomic<int> state = {FRONTEND_DISCONNECT};
-};
-
 class RpcContext {
 public:
     friend class Dealer;
@@ -135,19 +125,19 @@ public:
 
     void poll_wait(std::vector<epoll_event>& events, int tid, int timeout);
 
-    std::shared_ptr<frontend_t> get_client_frontend_by_rank(comm_rank_t rank);
+    std::shared_ptr<FrontEnd> get_client_frontend_by_rank(comm_rank_t rank);
     /*
      * 瞎写的，每次返回第一个，LB需要好好写
      */
-    std::shared_ptr<frontend_t> get_client_frontend_by_rpc_id(int rpc_id, int& server_id);
+    std::shared_ptr<FrontEnd> get_client_frontend_by_rpc_id(int rpc_id);
 
-    std::shared_ptr<frontend_t> get_client_frontend_by_sid(int rpc_id, int server_id);
+    std::shared_ptr<FrontEnd> get_client_frontend_by_sid(int rpc_id, int server_id);
 
-    std::shared_ptr<frontend_t> get_server_frontend_by_rank(comm_rank_t rank);
+    std::shared_ptr<FrontEnd> get_server_frontend_by_rank(comm_rank_t rank);
 
     void handle_message_event(int fd);
 
-    bool connect(std::shared_ptr<frontend_t> f); 
+    bool connect(std::shared_ptr<FrontEnd> f); 
 
     std::vector<CommInfo> get_comm_info();
     
@@ -159,18 +149,32 @@ public:
 
     void accept();
 
-    void epipe(const std::shared_ptr<frontend_t>& f) {
+    void epipe(const std::shared_ptr<FrontEnd>& f) {
         lock_guard<RWSpinLock> l(_spin_lock);
+        // TODO 不要删除，变成disconnect
         remove_frontend(f);
     }
 
-    const CommInfo& self() {
+    shared_lock_guard<RWSpinLock> shared_lock() {
+        return shared_lock_guard<RWSpinLock>(_spin_lock);
+    }
+
+    lock_guard<RWSpinLock> lock() {
+        return lock_guard<RWSpinLock>(_spin_lock);
+    }
+
+    CommInfo self() {
         return _self;
     }
 
     bool get_rpc_service_info(const std::string rpc_name, RpcServiceInfo& out);
 
-private:
+    //void send_request(RpcRequest&& req, std::shared_ptr<LB> lb, bool nonblcok);
+    //void send_response(RpcResponse&& req);
+    void send_request(RpcMessage&& req, bool nonblcok);
+
+    void send_response(RpcMessage&& resp, bool nonblock);
+
     /*
      * only for proxy
      * 假设外部已经抢到读锁
@@ -182,10 +186,10 @@ private:
       */
     void push_response(RpcResponse&& resp);
        
-    void add_frontend(const std::shared_ptr<frontend_t>& f);
-    void add_frontend_event(const std::shared_ptr<frontend_t>& f);
+private:
+    void add_frontend_event(const std::shared_ptr<FrontEnd>& f);
        
-    void remove_frontend(const std::shared_ptr<frontend_t>& f);
+    void remove_frontend(const std::shared_ptr<FrontEnd>& f);
        
     void add_event(int fd, int epfd, bool edge_trigger);
        
@@ -209,9 +213,9 @@ private:
     /*
      * frontend相关
      */
-    std::unordered_map<comm_rank_t, std::shared_ptr<frontend_t>> _client_sockets; // rank->socket
-    std::unordered_map<comm_rank_t, std::shared_ptr<frontend_t>> _server_sockets; // rank->socket
-    std::unordered_map<int, std::shared_ptr<frontend_t>> _fd_map;
+    std::unordered_map<comm_rank_t, std::shared_ptr<FrontEnd>> _client_sockets; // rank->socket
+    std::unordered_map<comm_rank_t, std::shared_ptr<FrontEnd>> _server_sockets; // rank->socket
+    std::unordered_map<int, std::shared_ptr<FrontEnd>> _fd_map;
     std::unique_ptr<RpcAcceptor> _acceptor;
 
     /*
@@ -220,6 +224,8 @@ private:
      */
     std::unordered_map<std::string, RpcServiceInfo> _rpc_info;
     std::unordered_map<int, std::unordered_map<int, ServerInfo*>> _rpc_server_info;
+    std::unordered_map<int, std::vector<std::shared_ptr<FrontEnd>>>
+          _rpc_server_frontend;
     /*
      * 用于等待rpc info满足要求的
      */

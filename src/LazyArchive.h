@@ -219,6 +219,7 @@ public:
     }
 
     void apply(pico::core::vector<data_block_t>& data) {
+        data = std::move(_shared._data);
         if (!_lazy.empty()) {
             _meta_ar.clear();
             ArchiveWriter arw(_meta_ar);
@@ -274,6 +275,8 @@ private:
     SharedArchiveReader _shared;
     pico::core::vector<LazyPtr> _lazy;
     size_t _cur = 0;
+public: 
+    std::unique_ptr<LazyArchive> _hold;
 };
 
 template<class T>

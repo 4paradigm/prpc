@@ -24,8 +24,6 @@ enum RpcErrorCodeType:int16_t {
     ECONNECTION
 };
 
-
-
 /*!
  * \brief rpc message info head,
  * must be trival type
@@ -63,12 +61,11 @@ class RpcResponse;
 
 //static const size_t MAX_BLOCK_ALIGN = 64;
 // 小于8k的消息依然copy，否则zero copy
-static const size_t MIN_ZERO_COPY_SIZE = 8 * 1024;
+static const size_t MIN_ZERO_COPY_SIZE = 4 * 1024;
 
 class RpcMessage {
 public:
     RpcMessage() = default;
-
 
     RpcMessage(RpcMessage&& o) {
         *this = std::move(o);
@@ -124,57 +121,65 @@ public:
                + head()->extra_block_count * sizeof(data_block_t);
     }
 
-    /*
-     * 必须先调完send，再调zero copy，
-     * 否则会导致zero copy的block到了，msg没到
-     * 对端无法接收
-     */
-    template <class F, class F2>
-    bool send(bool more, F send, F2 send_zero_copy) {
-        size_t n = _data.size();
-        if (!send(_start,
-                  sizeof(rpc_head_t) + head()->body_size,
-                  !_data.empty() || more)) {
-            return false;
-        }
-        if (!_data.empty()) {
-            static thread_local std::vector<std::pair<char*, size_t>> tmp1, tmp2;
-            tmp1.clear();
-            tmp2.clear();
+    struct byte_cursor {
+        byte_cursor() = default;
 
+        byte_cursor(RpcMessage* msg, bool zero_copy) {
+            if (!zero_copy) {
+                _cur.emplace_back(
+                      msg->_start, sizeof(rpc_head_t) + msg->head()->body_size);
+            }
+            size_t n = msg->_data.size();
             for (size_t i = 0; i < n; ++i) {
-                if (_data[i].length < MIN_ZERO_COPY_SIZE) {
-                    if (_data[i].length) {
-                        tmp1.emplace_back(_data[i].data, _data[i].length);
-                    }
+                if (zero_copy) {
+                    _cur.emplace_back(msg->_data[i].data, msg->_data[i].length);
                 } else {
-                    tmp2.emplace_back(_data[i].data, _data[i].length);
-                }
-            }
-            char* ptr = reinterpret_cast<char*>(_data.data());
-            if (!send(ptr,
-                      _data.size() * sizeof(_data[0]),
-                      !tmp1.empty() || more)) {
-                return false;
-            }
-
-            for (size_t i = 0; i < tmp1.size(); ++i) {
-                if (!send(tmp1[i].first,
-                      tmp1[i].second,
-                      (i + 1 < tmp1.size()) || more)) {
-                    return false;
-                }
-            }
-
-            for (size_t i = 0; i < tmp2.size(); ++i) {
-                if (!send_zero_copy(tmp2[i].first,
-                      tmp2[i].second,
-                      (i + 1 < tmp2.size()) || more)) {
-                    return false;
+                    if (msg->_data[i].length < MIN_ZERO_COPY_SIZE) {
+                        if (msg->_data[i].length) {
+                            _cur.emplace_back(
+                                  msg->_data[i].data, msg->_data[i].length);
+                        }
+                    }
                 }
             }
         }
-        return true;
+
+        void reset() {
+            _cur.clear();
+        }
+
+        bool has_next() {
+            return !_cur.empty();
+        }
+
+        size_t size() {
+            return _cur.size();
+        }
+
+        std::pair<char*, size_t> head() {
+            auto ret = _cur.front();
+            return ret;
+        }
+
+        void advance(size_t nbytes) {
+            SCHECK(_cur.front().second >= nbytes);
+            _cur.front().second -= nbytes;
+            if (_cur.front().second == 0) {
+                _cur.pop_front();
+            } else {
+                _cur.front().first += nbytes;
+            }
+        }
+
+        std::deque<std::pair<char*, size_t>> _cur;
+    };
+
+    byte_cursor zero_copy_cursor() {
+        return byte_cursor(this, true);
+    }
+
+    byte_cursor cursor() {
+        return byte_cursor(this, false);
     }
 
     friend std::ostream& operator<< (std::ostream& stream, const RpcMessage& msg) {
@@ -182,17 +187,25 @@ public:
         return stream;
     }
 
+    void send_failure() {
+        _send_failure_func();
+    }
+
     friend RpcRequest;
     friend RpcResponse;
+    friend class TcpSocket;
+    friend class RdmaSocket;
+
     void initialize(rpc_head_t&& head, BinaryArchive&& ar, LazyArchive&& lazy);
     void finalize(rpc_head_t& head, BinaryArchive& ar, LazyArchive& lazy);
 
     char* _start = nullptr;
     std::shared_ptr<char> _buffer;
-
     pico::core::vector<data_block_t> _data;
-    std::unique_ptr<LazyArchive> _hold;
     int _pending_block_cnt = 0;
+
+    std::function<void()> _send_failure_func = [](){};
+    std::unique_ptr<LazyArchive> _hold;
 };
 
 class RpcRequest {
@@ -235,6 +248,14 @@ public:
         return *this;
     }
 
+    void set_send_failure_func(std::function<void(int)> func) {
+        _send_failure_func = func;
+    }
+
+    void send_failure(int error_code) {
+        _send_failure_func(error_code);
+    }
+
     ~RpcRequest() {
         if (_msg) {
             _ar.release();
@@ -274,21 +295,25 @@ private:
     BinaryArchive _ar;
     LazyArchive _lazy;
     std::unique_ptr<RpcMessage> _msg = nullptr;
+    std::function<void(int)> _send_failure_func = [](int){};
 };
 
 class RpcResponse {
 public:
     friend RpcMessage;
     RpcResponse() = default;
-
-    RpcResponse(const RpcRequest& req) {
-        _head.dest_rank = req.head().src_rank;
-        _head.dest_dealer = req.head().src_dealer;
-        _head.src_rank = req.head().dest_rank;
-        _head.rpc_id = req.head().rpc_id;
+   
+    RpcResponse(const rpc_head_t& req_head) {
+        const auto& hd = req_head;
+        _head.dest_rank = hd.src_rank;
+        _head.dest_dealer = hd.src_dealer;
+        _head.src_rank = hd.dest_rank;
+        _head.rpc_id = hd.rpc_id;
         _ar.resize(sizeof(_head));
         _ar.set_cursor(_ar.end());
     }
+
+    RpcResponse(const RpcRequest& req) : RpcResponse(req.head()) {}
 
     RpcResponse(const RpcResponse&) = delete;
 

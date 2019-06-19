@@ -256,38 +256,80 @@ ssize_t TcpSocket::recv_nonblock(char* ptr, size_t size) {
           ::recv, _fd, ptr, size, MSG_NOSIGNAL | MSG_DONTWAIT);
 }
 
-inline bool _send_raw(int _fd, char* ptr, size_t size, bool more) {
+inline int64_t _send_raw(int fd, char* ptr, size_t size, bool nonblock, bool more) {
     int flag = MSG_NOSIGNAL;
     if (more) {
         flag |= MSG_MORE;
     }
-    size_t sent = 0;
-    for (sent = 0; sent < size;) {
+    if (nonblock) {
+        flag |= MSG_DONTWAIT;
+    }
+    int64_t sent = 0;
+    for (sent = 0; sent < (int64_t)size;) {
         ssize_t nbytes = retry_eintr_call(
-              ::send, _fd, ptr + sent, size - sent, flag | MSG_NOSIGNAL);
+              ::send, fd, ptr + sent, size - sent, flag | MSG_NOSIGNAL);
         if (nbytes > 0) {
             sent += nbytes;
         } else {
-            PSLOG(WARNING) << "fd " << _fd << " send error";
-            return false;
+            return sent;
+        }
+    }
+    return sent;
+}
+
+/*
+ * 根据cursor尽可能发送
+ */
+inline bool _send(int fd, RpcMessage::byte_cursor& cur, int flag) {
+    errno = 0;
+    while (cur.has_next()) {
+        char* ptr;
+        size_t size;
+        std::tie(ptr, size) = cur.head();
+        size_t sent = 0;
+        for (sent = 0; sent < size;) {
+            ssize_t nbytes = retry_eintr_call(::send,
+                  fd,
+                  ptr + sent,
+                  size - sent,
+                  flag | MSG_NOSIGNAL);
+            if (nbytes != -1) {
+                sent += nbytes;
+                cur.advance(nbytes);
+            } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                PSLOG(INFO) << "may be block.";
+                return true;
+            } else {
+                PSLOG(WARNING) << "tcp send error";
+                return false;
+            }
         }
     }
     return true;
 }
 
-bool TcpSocket::send_rpc_message(RpcMessage&& msg, bool more) {
-    msg.send(more,
-          [this](char* ptr, size_t size, bool more) {
-              return _send_raw(_fd, ptr, size, more);
-          },
-          [this](char* ptr, size_t size, bool more) {
-              return _send_raw(_fd2, ptr, size, more);
-          });
+bool TcpSocket::send_msg(RpcMessage&,
+      bool nonblock,
+      bool more,
+      RpcMessage::byte_cursor& it1,
+      RpcMessage::byte_cursor& it2) {
+    int flag = 0;
+    if (nonblock) {
+        flag |= MSG_DONTWAIT;
+    }
+    if (more) {
+        flag |= MSG_MORE;
+    }
+    if (!_send(_fd, it1, flag)) {
+        return false;
+    }
+    if (!_send(_fd2, it2, flag)) {
+        return false;
+    }
     return true;
 }
 
-bool TcpSocket::recv_rpc_messages(
-      std::vector<paradigm4::pico::core::RpcMessage>& rmsgs) {
+bool TcpSocket::recv_rpc_messages(std::vector<RpcMessage>& rmsgs) {
     rmsgs.clear();
     bool func_called = false;
     bool socket_alive = false;

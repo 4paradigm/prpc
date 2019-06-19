@@ -22,13 +22,13 @@ void RpcMessage::initialize(rpc_head_t&& head, BinaryArchive&& ar, LazyArchive&&
 }
 
 void RpcMessage::finalize(rpc_head_t& head, BinaryArchive& ar, LazyArchive& lazy) {
-    SCHECK(_hold == nullptr); 
+    //SCHECK(_hold == nullptr);
+    lazy._hold = std::move(_hold);
     head = *this->head();
     ar.set_read_buffer(_start, head.body_size + sizeof(rpc_head_t));
     ar.advance_cursor(sizeof(head));
     lazy.attach(std::move(_data));
 }
-
 
 RpcMessage::RpcMessage(RpcRequest&& req) {
     if (req._msg) {
