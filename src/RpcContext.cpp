@@ -334,10 +334,12 @@ bool RpcContext::connect(std::shared_ptr<frontend_t> f) {
         // service
         remove_frontend(f);
         return false;
+    } else {
+        lock_guard<RWSpinLock> l(_spin_lock);
+        add_frontend_event(f);
+        f->state.store(FRONTEND_CONNECT, std::memory_order_release);
+        return true;        
     }
-    add_frontend_event(f);
-    f->state.store(FRONTEND_CONNECT, std::memory_order_release);
-    return true;
 }
 
 std::vector<CommInfo> RpcContext::get_comm_info() {

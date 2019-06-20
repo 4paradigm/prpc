@@ -14,6 +14,9 @@ std::shared_ptr<Dealer> RpcServer::create_dealer() {
     _service->ctx()->add_server_dealer(_rpc_id, _id, ret.get());
     lock_guard<SpinLock> _(_lk);
     _dealers.insert(ret.get());
+    if (_terminate) {
+        ret->terminate();
+    }
     return ret;
 }
 
@@ -25,6 +28,7 @@ void RpcServer::release_dealer(Dealer* d) {
 
 void RpcServer::terminate() {
     lock_guard<SpinLock> _(_lk);
+    _terminate = true;
     for (Dealer* d : _dealers) {
         d->terminate();
     }
