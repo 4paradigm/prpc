@@ -45,8 +45,8 @@ public:
  */
 class RWSpinLock {
     enum : int32_t { READER = 2, WRITER = 1 };
-    static constexpr int MAX_TESTS = 1 << 10;
-    static constexpr int MAX_COLLISION = 20;
+    static const int MAX_TESTS;
+    static const int MAX_COLLISION;
 public:
     constexpr RWSpinLock() : _(0) {}
 
