@@ -152,6 +152,97 @@ TEST(RpcService, RegisterService) {
 
 }
 
+TEST(RpcService, BigMessage) {
+    auto server_run = [](RpcService* rpc) {
+        auto server = rpc->create_server("asdf");
+        auto dealer = server->create_dealer();
+        std::string check_str;
+        check_str.resize(1024 * 1024 * 5);
+        for (int i = 0; i < kMaxRetry; ++i) {
+            RpcRequest request;
+            if (dealer->recv_request(request)) {
+                std::string msg_str;
+                request >> msg_str;
+                EXPECT_STREQ(msg_str.c_str(), check_str.c_str());
+                RpcResponse response(request);
+                response << check_str;
+                dealer->send_response(std::move(response));
+            }
+        }
+    };
+
+    auto client_run = [](RpcService* rpc) {
+        std::string check_str;
+        check_str.resize(1024 * 1024 * 5);
+        for (int i = 0; i < kMaxRetry; ++i) {
+            RpcRequest request;
+            request << check_str;
+
+            auto client = rpc->create_client("asdf", 1);
+            auto dealer = client->create_dealer();
+            dealer->send_request(std::move(request));
+
+            RpcResponse response;
+            EXPECT_TRUE(dealer->recv_response(response));
+            std::string rep_str;
+            response >> rep_str;
+            EXPECT_STREQ(rep_str.c_str(), check_str.c_str());
+        }
+    };
+    FakeRpc rpc;
+    auto server_thread = std::thread(server_run, rpc.rpc1());
+    auto client_thread = std::thread(client_run, rpc.rpc2());
+    client_thread.join();
+    server_thread.join();
+}
+
+TEST(RpcService, RandMessage) {
+    auto server_run = [](RpcService* rpc) {
+        auto server = rpc->create_server("asdf");
+        auto dealer = server->create_dealer();
+        for (int i = 0; i < kMaxRetry; ++i) {
+            RpcRequest request;
+            if (dealer->recv_request(request)) {
+                std::string msg_str;
+                request >> msg_str;
+                RpcResponse response(request);
+                response << msg_str;
+                dealer->send_response(std::move(response));
+            }
+        }
+    };
+
+    auto client_run = [](RpcService* rpc) {
+        std::string check_str;
+        for (int i = 0; i < kMaxRetry; ++i) {
+            size_t sz = rand() * rand();
+            sz %= 1024 * 1024 * 5;
+            SLOG(INFO) << "send size : " << sz;
+            check_str.resize(sz);
+            RpcRequest request;
+            request << check_str;
+
+            auto client = rpc->create_client("asdf", 1);
+            auto dealer = client->create_dealer();
+            dealer->send_request(std::move(request));
+
+            RpcResponse response;
+            EXPECT_TRUE(dealer->recv_response(response));
+            std::string rep_str;
+            response >> rep_str;
+            EXPECT_STREQ(rep_str.c_str(), check_str.c_str());
+        }
+    };
+    FakeRpc rpc;
+    auto server_thread = std::thread(server_run, rpc.rpc1());
+    auto client_thread = std::thread(client_run, rpc.rpc2());
+    client_thread.join();
+    server_thread.join();
+}
+
+
+
+
 } // namespace core
 } // namespace pico
 } // namespace paradigm4

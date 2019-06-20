@@ -35,7 +35,6 @@ bool FrontEnd::connect() {
 }
 
 bool FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
-    SLOG(INFO) << "send_msg_nonblock : " << *msg.head();
     _sending_queue.push(std::move(msg));
     int sz = _sending_queue_size.fetch_add(1, std::memory_order_release);
     if (sz == 0) {
@@ -43,7 +42,6 @@ bool FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
         for (;;) {
             // 只有一个线程能到这里
             while (_sending_queue.pop(_sending_msg)) {
-                SLOG(INFO) << "send  " << (*_sending_msg.head());
                 _it1 = _sending_msg.cursor();
                 _it2 = _sending_msg.zero_copy_cursor();
                 if (!_socket->send_msg(_sending_msg, true, false, _it1, _it2)) {
@@ -51,9 +49,10 @@ bool FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
                     return false;
                 }
                 if (_it1.has_next() || _it2.has_next()) {
+                    _sending_queue_size.fetch_add(
+                          -cnt - 1, std::memory_order_release);
                     return false;
                 }
-                SLOG(INFO) << "send ok";
                 ++cnt;
             }
             sz = _sending_queue_size.fetch_add(-cnt, std::memory_order_acq_rel);
@@ -62,14 +61,11 @@ bool FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
             }
         }
     } else {
-        SLOG(INFO) << "push to pending";
-
     }
     return true;
 }
 
 bool FrontEnd::send_msg(RpcMessage&& msg) {
-    SLOG(INFO) << "send_msg : " << *msg.head();
     _sending_queue.push(std::move(msg));
     int sz = _sending_queue_size.fetch_add(1, std::memory_order_release);
     if (sz == 0) {
@@ -77,7 +73,6 @@ bool FrontEnd::send_msg(RpcMessage&& msg) {
         for (;;) {
             // 只有一个线程能到这里
             while (_sending_queue.pop(_sending_msg)) {
-                SLOG(INFO) << "send  " << (*_sending_msg.head());
                 _it1 = _sending_msg.cursor();
                 _it2 = _sending_msg.zero_copy_cursor();
                 if (!_socket->send_msg(_sending_msg, false, false, _it1, _it2)) {
@@ -95,7 +90,6 @@ bool FrontEnd::send_msg(RpcMessage&& msg) {
             }
         }
     } else {
-        SLOG(INFO) << "push to pending.";
     }
     return true;
 }
@@ -118,11 +112,11 @@ void FrontEnd::epipe(bool nonblock) {
 }
 
 void FrontEnd::keep_writing() {
-    if (state() & FRONTEND_KEEP_WRITING) {
+    if ((state() & FRONTEND_KEEP_WRITING) == FRONTEND_KEEP_WRITING) {
         return;
     }
     lock_guard<std::mutex> _(_mu);
-    if (state() & FRONTEND_KEEP_WRITING) {
+    if ((state() & FRONTEND_KEEP_WRITING) == FRONTEND_KEEP_WRITING) {
         return;
     }
     set_state(FRONTEND_KEEP_WRITING);
@@ -132,8 +126,8 @@ void FrontEnd::keep_writing() {
             return;
         }
     }
-    int cnt = 0;
     for (;;) {
+        int cnt = 0;
         while (_sending_queue.pop(_sending_msg)) {
             if (!_socket->send_msg(_sending_msg, true, false, _it1, _it2)) {
                 epipe(false);
@@ -146,6 +140,7 @@ void FrontEnd::keep_writing() {
             break;
         }
     }
+    set_state(FRONTEND_CONNECT);
 }
 
 

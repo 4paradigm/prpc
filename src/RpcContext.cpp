@@ -103,7 +103,6 @@ Dealer* FairQueue::next(int sid) {
     if (it == _sid2dealers.end()) {
         return nullptr;
     }
-    //SCHECK(it != _sid2dealers.end()) << sid << " " << _sid2dealers.size();
     auto& d = it->second;
     SCHECK(!d.empty()) << "no dealer.";
     return d[rand() % d.size()];
@@ -573,6 +572,7 @@ void RpcContext::push_request(RpcRequest&& req) {
  * 假设外部已经抢到读锁
  */
 void RpcContext::push_response(RpcResponse&& resp) {
+    SLOG(INFO) << "push_response  " << resp.head();
     auto it = _client_backend.find(resp.head().dest_dealer);
     if (it != _client_backend.end()) {
         auto dealer = it->second;

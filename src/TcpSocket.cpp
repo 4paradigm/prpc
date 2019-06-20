@@ -252,8 +252,10 @@ bool TcpSocket::accept(std::string& info) {
 }
 
 ssize_t TcpSocket::recv_nonblock(char* ptr, size_t size) {
-    return retry_eintr_call(
+    ssize_t ret = retry_eintr_call(
           ::recv, _fd, ptr, size, MSG_NOSIGNAL | MSG_DONTWAIT);
+    SLOG(INFO) << "recv size : " << ret;
+    return ret;
 }
 
 inline int64_t _send_raw(int fd, char* ptr, size_t size, bool nonblock, bool more) {
@@ -297,13 +299,14 @@ inline bool _send(int fd, RpcMessage::byte_cursor& cur, int flag) {
                 sent += nbytes;
                 cur.advance(nbytes);
             } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                PSLOG(INFO) << "may be block.";
+                PSLOG(INFO) << "may be block. " << sent;
                 return true;
             } else {
                 PSLOG(WARNING) << "tcp send error";
                 return false;
             }
         }
+        SLOG(INFO) << "sent : " << sent;
     }
     return true;
 }
