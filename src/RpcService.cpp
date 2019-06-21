@@ -77,6 +77,10 @@ std::unique_ptr<RpcServer> RpcService::create_server(
 std::unique_ptr<RpcClient> RpcService::create_client(
       const std::string& rpc_name,
       int expected_server_num) {
+    if (expected_server_num == 0) {
+        register_rpc_service(rpc_name);
+        SLOG(WARNING) << "expected server num 0, client register rpc service";
+    }
     _ctx.wait([rpc_name, expected_server_num](RpcContext* ctx) {
         RpcServiceInfo info;
         bool ret = ctx->get_rpc_service_info(rpc_name, info);

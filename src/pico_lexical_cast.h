@@ -16,6 +16,11 @@ T inner_lexical_cast(const S& s) {
     return boost::lexical_cast<T>(s);
 }
 
+template<typename T, typename S>
+T inner_lexical_cast(const S& s, size_t count) {
+    return boost::lexical_cast<T>(s, count);
+}
+
 /*!
  * \brief convert bool value to string
  * \return "true" or "false"

@@ -56,6 +56,7 @@ private:
     RpcService* _service;
     SpinLock _lk;
     std::unordered_set<Dealer*> _dealers;
+    bool _terminate = false;
 };
 
 } // namespace core
