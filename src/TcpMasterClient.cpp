@@ -72,13 +72,16 @@ bool TcpMasterClient::reconnect() {
 void TcpMasterClient::listening() {
     pollfd fds[2] = {
         {_tcp_socket->in_fd(), POLLIN | POLLPRI | POLLERR | POLLHUP | POLLRDHUP, 0},
-        {_exit_fd, POLLIN | POLLPRI, 0},    
+        {_exit_fd, POLLIN | POLLPRI, 0}, 
     };
     while (true) {
+        SLOG(INFO) << "herererererer";
         PSCHECK(retry_eintr_call(::poll, fds, (nfds_t)2, -1) != -1);
         if (fds[0].revents != 0) {
+            SLOG(INFO) << "master client event fd : " << fds[0].fd;
             bool socket_alive = _tcp_socket->handle_event(fds[0].fd, [this](RpcMessage&& msg) {
                 auto resp = std::make_shared<RpcResponse>(std::move(msg));
+                SLOG(INFO) << "master client resp rpc id : " << resp->head();
                 if (resp->head().rpc_id == WATCHER_NOTIFY_RPC_ID) {
                     std::string path;
                     *resp >> path;
@@ -88,6 +91,7 @@ void TcpMasterClient::listening() {
                     _cb_ch.send(std::move(func));
                 } else {
                     std::lock_guard<std::mutex> _(_lk);
+                    SLOG(INFO) << "master client get resp : " << resp->head().rpc_id;
                     _as_ret[resp->head().rpc_id].notify(resp);
                     _as_ret.erase(resp->head().rpc_id);
                 }    
@@ -130,6 +134,7 @@ MasterStatus TcpMasterClient::master_gen(const std::string& path, const std::str
 }
 
 MasterStatus TcpMasterClient::master_add(const std::string& path, const std::string& value, bool ephemeral) {
+    SLOG(INFO) << "client master add : " << path << " " << value << ephemeral;
     RPC_METHOD(MASTER_ADD, << path << value << ephemeral, RPC_VOID)
 }
 

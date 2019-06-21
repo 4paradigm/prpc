@@ -268,8 +268,10 @@ void RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
     } else {
         f = get_client_frontend_by_rpc_id(rpc_id);
     }
+    SLOG(INFO) << "send request : " << *msg.head();
     if (!f) {
         RpcResponse resp(*msg.head());
+        resp.set_error_code(RpcErrorCodeType::ENOSUCHSERVER);
         shared_lock();
         push_response(std::move(resp));
         return;
@@ -282,12 +284,15 @@ void RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
         return;
     }
     if (nonblock) {
-        if (f->state() & FRONTEND_DISCONNECT) {
+        if ((f->state() & FRONTEND_DISCONNECT) == FRONTEND_DISCONNECT) {
             std::thread background = std::thread(
                   [this, f](RpcMessage&& msg) {
                       if (f->connect()) {
-                        add_frontend_event(f);
-                        f->send_msg(std::move(msg));
+                          {
+                              lock_guard<RWSpinLock> l(_spin_lock);
+                              add_frontend_event(f.get());
+                          }
+                          f->send_msg(std::move(msg));
                       } else {
                           send_request(std::move(msg), false);
                       }
@@ -302,9 +307,12 @@ void RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
             }
         }
     } else {
-        if (f->state() & FRONTEND_DISCONNECT) {
+        if ((f->state() & FRONTEND_DISCONNECT) == FRONTEND_DISCONNECT) {
             if (f->connect()) {
-                add_frontend_event(f);
+                {
+                    lock_guard<RWSpinLock> l(_spin_lock);
+                    add_frontend_event(f.get());
+                }
                 f->send_msg(std::move(msg));
             } else {
                 send_request(std::move(msg), false);
@@ -318,10 +326,15 @@ void RpcContext::send_response(RpcMessage&& resp, bool nonblcok) {
     std::shared_ptr<FrontEnd> f = nullptr;
     auto dest_rank = resp.head()->dest_rank;
     f = get_server_frontend_by_rank(dest_rank);
-    if (!f || (f->state() & FRONTEND_DISCONNECT)) {
+    if (!f) {
         SLOG(WARNING) << "no server frontend";
         return;
     }
+    if (f->state() & FRONTEND_DISCONNECT) {
+        SLOG(WARNING) << "no server frontend";
+        return;
+    }
+
     if (nonblcok) {
         if (!f->send_msg_nonblock(std::move(resp))) {
             std::thread keep_writing
@@ -329,9 +342,7 @@ void RpcContext::send_response(RpcMessage&& resp, bool nonblcok) {
             keep_writing.detach();
         }
     } else {
-        if (!f->send_msg(std::move(resp))) {
-            PSLOG(WARNING) << "resp droped by epipe.";
-        }
+        f->send_msg(std::move(resp));
     }
 }
 
@@ -397,7 +408,6 @@ void RpcContext::handle_message_event(int fd) {
         }
     };
     shared_lock_guard<RWSpinLock> l(_spin_lock);
-    SLOG(INFO) << "get event : " << fd;
     auto it = _fd_map.find(fd);
     if (it == _fd_map.end()) {
         SLOG(WARNING) << "fuck!!!!";
@@ -409,8 +419,9 @@ void RpcContext::handle_message_event(int fd) {
         if (!ret) {
             _spin_lock.unlock_shared();
             _spin_lock.lock();
-            // TODO 如果是server frontend，那么应该释放资源，
-            // 现在先泄漏着
+            // TODO 仔细想想要不要只删除server end
+            // client端的epipe只删除事件
+            remove_frontend(f);
             _spin_lock.downgrade();
         }
     }
@@ -438,7 +449,7 @@ void RpcContext::update_comm_info(const std::vector<CommInfo>& list) {
         }
     }
     for (auto ptr : to_del) {
-        remove_frontend(ptr);
+        remove_frontend(ptr.get());
     }
     for (const auto& comm_info : list) {
         if (_server_sockets.count(comm_info.global_rank) == 0) {
@@ -504,7 +515,6 @@ void RpcContext::wait(const std::function<bool(RpcContext*)>& func) {
 }
 
 void RpcContext::accept() {
-    rpc_head_t head;
     BinaryArchive ar;
     std::string info;
     auto f = std::make_shared<FrontEnd>();
@@ -524,7 +534,7 @@ void RpcContext::accept() {
     lock_guard<RWSpinLock> l(_spin_lock);
     f->_is_client_socket = false;
     _server_sockets.emplace(f->info().global_rank, f);
-    add_frontend_event(f);
+    add_frontend_event(f.get());
 }
 
 bool RpcContext::get_rpc_service_info(const std::string rpc_name,
@@ -586,7 +596,8 @@ void RpcContext::push_response(RpcResponse&& resp) {
         << resp.head().rpc_id;
 }
 
-void RpcContext::add_frontend_event(const std::shared_ptr<FrontEnd>& f) {
+void RpcContext::add_frontend_event(FrontEnd* f) {
+    SCHECK(f->state() == FRONTEND_CONNECT) << f->state();
     if (!f->_socket->fds().empty()) {
         static int idx = 0;
         f->_epfd = _epfds[idx % _io_thread_num];
@@ -599,9 +610,15 @@ void RpcContext::add_frontend_event(const std::shared_ptr<FrontEnd>& f) {
     }
 }
 
-void RpcContext::remove_frontend(const std::shared_ptr<FrontEnd>& f) {
+void RpcContext::remove_frontend_event(FrontEnd* f) {
     for (auto& fd : f->_socket->fds()) {
         del_event(fd, f->_epfd);
+    }
+}
+
+void RpcContext::remove_frontend(FrontEnd* f) {
+    remove_frontend_event(f);
+    for (auto& fd : f->_socket->fds()) {
         _fd_map.erase(fd);
     }
     SLOG(INFO) << "remove frontend " << f->_info;
@@ -620,7 +637,11 @@ void RpcContext::add_event(int fd, int epfd, bool edge_trigger) {
     if (edge_trigger) {
         // event.events |= EPOLLET;
     }
-    PSCHECK(epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event) == 0);
+    //PSCHECK(epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event) == 0) << fd << " " << errno;
+    int ret = epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event);
+    if (ret != 0) {
+        PSLOG(WARNING) << "epoll ctl error";
+    }
     ++_n_events;
 }
 
@@ -630,7 +651,7 @@ void RpcContext::del_event(int fd, int epfd) {
     } else if (errno == ENOENT) {
         PSLOG(WARNING) << "no such event";
     } else {
-        PSLOG(FATAL);
+        PSLOG(FATAL) << errno;
     }
 }
 

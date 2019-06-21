@@ -25,11 +25,11 @@ bool FrontEnd::connect() {
         info.resize(ar.readable_length());
         memcpy(&info[0], ar.buffer(), info.size());
         if (!_socket->connect(_info.endpoint, info, 0)) {
+            set_state(FRONTEND_EPIPE);
+            epipe(false);
             return false;
         }
         set_state(FRONTEND_CONNECT);
-    } else {
-        epipe(false);
     }
     return true;
 }
@@ -46,7 +46,7 @@ bool FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
                 _it2 = _sending_msg.zero_copy_cursor();
                 if (!_socket->send_msg(_sending_msg, true, false, _it1, _it2)) {
                     epipe(true);
-                    return false;
+                    return true;
                 }
                 if (_it1.has_next() || _it2.has_next()) {
                     _sending_queue_size.fetch_add(
@@ -60,12 +60,10 @@ bool FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
                 break;
             }
         }
-    } else {
     }
-    return true;
 }
 
-bool FrontEnd::send_msg(RpcMessage&& msg) {
+void FrontEnd::send_msg(RpcMessage&& msg) {
     _sending_queue.push(std::move(msg));
     int sz = _sending_queue_size.fetch_add(1, std::memory_order_release);
     if (sz == 0) {
@@ -77,10 +75,10 @@ bool FrontEnd::send_msg(RpcMessage&& msg) {
                 _it2 = _sending_msg.zero_copy_cursor();
                 if (!_socket->send_msg(_sending_msg, false, false, _it1, _it2)) {
                     epipe(true);
-                    return false;
+                    return;
                 }
                 if (_it1.has_next() || _it2.has_next()) {
-                    return false;
+                    return;
                 }
                 ++cnt;
             }
@@ -91,13 +89,16 @@ bool FrontEnd::send_msg(RpcMessage&& msg) {
         }
     } else {
     }
-    return true;
 }
 
 /*
  * 内部函数，外部保证只有一个线程调用
  */
 void FrontEnd::epipe(bool nonblock) {
+    {
+        _ctx->lock();
+        _ctx->remove_frontend_event(this);
+    }
     set_state(FRONTEND_EPIPE);
     if (!_is_client_socket) {
         return;

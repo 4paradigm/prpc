@@ -73,7 +73,7 @@ public:
         if (fd == _fd2) {
             return try_recv_pending(func);
         } else {
-            SCHECK(fd == _fd);
+            SCHECK(fd == _fd) << fd << " " << _fd << " " << _fd2;
             auto tcp_func = [this, func](RpcMessage&& msg) {
                 if (msg.head()->extra_block_count == 0) {
                     func(std::move(msg));

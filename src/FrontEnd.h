@@ -45,12 +45,12 @@ public:
     void keep_writing();
 
     // thread safe, may call ctx->send_msg when flush pending
-    bool send_msg(RpcMessage&& msg);
+    void send_msg(RpcMessage&& msg);
 
     void epipe(bool nonblock);
 
     bool available() const {
-        if (state() & FRONTEND_EPIPE) {
+        if ((state() & FRONTEND_EPIPE) == FRONTEND_EPIPE) {
             std::chrono::duration<double> diff
                   = std::chrono::system_clock::now() - _epipe_time;
             return diff.count() > 10;

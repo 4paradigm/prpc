@@ -240,6 +240,57 @@ TEST(RpcService, RandMessage) {
     server_thread.join();
 }
 
+TEST(RpcService, LazyArchive) {
+    auto server_run = [](RpcService* rpc) {
+        auto server = rpc->create_server("asdf");
+        auto dealer = server->create_dealer();
+        for (int i = 0; i < kMaxRetry; ++i) {
+            RpcRequest request;
+            if (dealer->recv_request(request)) {
+                std::string msg1, msg2;
+                request.lazy() >> msg1;
+                request >> msg2;
+                EXPECT_EQ(msg1, msg2);
+                RpcResponse response(request);
+                response << msg1;
+                response.lazy() << std::move(msg2);
+                dealer->send_response(std::move(response));
+            }
+        }
+    };
+
+    auto client_run = [](RpcService* rpc) {
+        std::string check_str;
+        for (int i = 0; i < kMaxRetry; ++i) {
+            size_t sz = rand() * rand();
+            sz %= 1024 * 1024 * 5;
+            check_str.resize(sz);
+            RpcRequest request;
+            request << check_str;
+            request.lazy() << std::move(check_str);
+
+            auto client = rpc->create_client("asdf", 1);
+            auto dealer = client->create_dealer();
+            dealer->send_request(std::move(request));
+
+            RpcResponse response;
+            EXPECT_TRUE(dealer->recv_response(response));
+            std::string aa, bb;
+            response >> aa;
+            response.lazy() >> bb;
+            EXPECT_EQ(aa.size(), sz);
+            EXPECT_EQ(bb.size(), sz);
+            EXPECT_EQ(bb, aa);
+        }
+    };
+    FakeRpc rpc;
+    auto server_thread = std::thread(server_run, rpc.rpc1());
+    auto client_thread = std::thread(client_run, rpc.rpc2());
+    client_thread.join();
+    server_thread.join();
+}
+
+
 
 
 

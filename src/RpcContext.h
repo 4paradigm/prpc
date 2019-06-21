@@ -149,12 +149,6 @@ public:
 
     void accept();
 
-    void epipe(const std::shared_ptr<FrontEnd>& f) {
-        lock_guard<RWSpinLock> l(_spin_lock);
-        // TODO 不要删除，变成disconnect
-        remove_frontend(f);
-    }
-
     shared_lock_guard<RWSpinLock> shared_lock() {
         return shared_lock_guard<RWSpinLock>(_spin_lock);
     }
@@ -186,10 +180,12 @@ public:
       */
     void push_response(RpcResponse&& resp);
        
-private:
-    void add_frontend_event(const std::shared_ptr<FrontEnd>& f);
+    void add_frontend_event(FrontEnd* f);
        
-    void remove_frontend(const std::shared_ptr<FrontEnd>& f);
+    void remove_frontend_event(FrontEnd* f);
+
+private:
+    void remove_frontend(FrontEnd* f);
        
     void add_event(int fd, int epfd, bool edge_trigger);
        
@@ -215,7 +211,7 @@ private:
      */
     std::unordered_map<comm_rank_t, std::shared_ptr<FrontEnd>> _client_sockets; // rank->socket
     std::unordered_map<comm_rank_t, std::shared_ptr<FrontEnd>> _server_sockets; // rank->socket
-    std::unordered_map<int, std::shared_ptr<FrontEnd>> _fd_map;
+    std::unordered_map<int, FrontEnd*> _fd_map;
     std::unique_ptr<RpcAcceptor> _acceptor;
 
     /*

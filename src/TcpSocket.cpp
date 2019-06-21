@@ -91,6 +91,7 @@ bool TcpSocket::try_recv_pending(std::function<void(RpcMessage&&)> func) {
 bool TcpSocket::connect(const std::string& endpoint,
       const std::string& info,
       int64_t magic) {
+    SLOG(INFO) << "connect fd : " << _fd;
     sockaddr_in addr = parse_rpc_endpoint(endpoint);
     int ret = 0;
     auto starttm = std::chrono::steady_clock::now();
@@ -162,7 +163,7 @@ bool TcpSocket::connect(const std::string& endpoint,
     while (true) {
         auto dur = std::chrono::steady_clock::now() - starttm;
         int ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-        ms = 600000 - ms;
+        ms =  60000 - ms;
         if (ms <= 0) {
             SLOG(WARNING) << "temporal socket accept timeout";
             return false;
@@ -183,6 +184,7 @@ bool TcpSocket::connect(const std::string& endpoint,
 
     sockaddr_in remote_addr;
     _fd2 = ::accept4(accept_fd, (sockaddr*)&remote_addr, &len, SOCK_CLOEXEC);
+    SLOG(INFO) << "connect fd2 : " << _fd2;
     if (_fd2 == -1) {
         PSLOG(WARNING) << "temporal socket accept failed";
         return false;
@@ -203,6 +205,7 @@ bool TcpSocket::accept(std::string& info) {
     if (retry_eintr_call(
               ::recv, _fd, (char*)&meta[0], sizeof(meta), MSG_NOSIGNAL)
           != sizeof(meta)) {
+        SLOG(WARNING) << "recv meta error";
         return false;
     }
     int64_t magic = meta[0];
@@ -227,6 +230,7 @@ bool TcpSocket::accept(std::string& info) {
     }
 
     _fd2 = ::socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, IPPROTO_TCP);
+    SLOG(INFO) << "accept fd2 : " << _fd2;
     PSCHECK(_fd2 >= 0);
     set_sockopt(_fd2);
 
@@ -248,13 +252,14 @@ bool TcpSocket::accept(std::string& info) {
         PSLOG(WARNING) << "connect temporal failed. sleep for " << i << " seconds.";
         ::sleep(i);
     }
+    SLOG(INFO) << "accept socket fd is : " << _fd << " " << _fd2;
     return true;
 }
 
 ssize_t TcpSocket::recv_nonblock(char* ptr, size_t size) {
     ssize_t ret = retry_eintr_call(
           ::recv, _fd, ptr, size, MSG_NOSIGNAL | MSG_DONTWAIT);
-    SLOG(INFO) << "recv size : " << ret;
+    SLOG(INFO) << "fd : " << _fd << "recv size : " << ret;
     return ret;
 }
 
@@ -302,11 +307,11 @@ inline bool _send(int fd, RpcMessage::byte_cursor& cur, int flag) {
                 PSLOG(INFO) << "may be block. " << sent;
                 return true;
             } else {
-                PSLOG(WARNING) << "tcp send error";
+                PSLOG(WARNING) << "tcp send error fd is " << fd;
                 return false;
             }
         }
-        SLOG(INFO) << "sent : " << sent;
+        SLOG(INFO) << "fd : " << fd << " sent : " << sent;
     }
     return true;
 }
@@ -385,6 +390,7 @@ std::unique_ptr<RpcSocket> TcpAcceptor::accept() {
     socklen_t len = sizeof(remote_addr);
     int fd = ::accept4(_fd, (sockaddr*)&remote_addr, &len, SOCK_CLOEXEC);
     PSCHECK(fd != -1);
+    SLOG(INFO) << "accept fd1 : " << fd;
     SLOG(INFO) << "received a connection from "
                << inet_ntoa(remote_addr.sin_addr) << ":"
                << ntohs(remote_addr.sin_port) << " fd is : " << fd;

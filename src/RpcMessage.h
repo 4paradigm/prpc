@@ -29,7 +29,7 @@ enum RpcErrorCodeType:int16_t {
  * must be trival type
  */
 struct rpc_head_t {
-    uint32_t body_size;
+    uint32_t body_size = 0;
     comm_rank_t src_rank = -1;
     comm_rank_t dest_rank = -1;
     int32_t src_dealer = -1;
@@ -125,21 +125,22 @@ public:
         byte_cursor() = default;
 
         byte_cursor(RpcMessage* msg, bool zero_copy) {
+            auto& data = msg->_data;
             if (!zero_copy) {
                 _cur.emplace_back(
                       msg->_start, sizeof(rpc_head_t) + msg->head()->body_size);
+                if (data.size()) {
+                    _cur.emplace_back(reinterpret_cast<char*>(data.data()),
+                          data.size() * sizeof(data[0]));
+                }
             }
-            size_t n = msg->_data.size();
+            size_t n = data.size();
             for (size_t i = 0; i < n; ++i) {
-                if (zero_copy) {
-                    _cur.emplace_back(msg->_data[i].data, msg->_data[i].length);
-                } else {
-                    if (msg->_data[i].length < MIN_ZERO_COPY_SIZE) {
-                        if (msg->_data[i].length) {
-                            _cur.emplace_back(
-                                  msg->_data[i].data, msg->_data[i].length);
-                        }
-                    }
+                if (zero_copy && data[i].length >= MIN_ZERO_COPY_SIZE) {
+                    _cur.emplace_back(data[i].data, data[i].length);
+                }
+                if (!zero_copy && data[i].length < MIN_ZERO_COPY_SIZE) {
+                    _cur.emplace_back(data[i].data, data[i].length);
                 }
             }
         }
@@ -164,10 +165,9 @@ public:
         void advance(size_t nbytes) {
             SCHECK(_cur.front().second >= nbytes);
             _cur.front().second -= nbytes;
-            if (_cur.front().second == 0) {
+            _cur.front().first += nbytes;
+            while (!_cur.empty() && _cur.front().second == 0) {
                 _cur.pop_front();
-            } else {
-                _cur.front().first += nbytes;
             }
         }
 

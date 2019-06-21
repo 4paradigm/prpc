@@ -307,7 +307,9 @@ void Master::master_add(TcpSocket* tcp_socket, RpcRequest& req, RpcResponse& res
     std::string path;
     std::string value;
     req >> path >> value >> ephemeral;
-    
+    SLOG(INFO) << "master add : " << path << " " << value << " " << ephemeral
+               << " rpc id : " << req.head().rpc_id;
+
     if (!master_check_valid_path(path)) {
         SLOG(WARNING) << "master add path " << path << " invalid";
         resp << MasterStatus::ERROR;
