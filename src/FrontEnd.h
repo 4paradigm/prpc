@@ -36,13 +36,13 @@ public:
 
     bool connect();
 
-    bool send_msg_nonblock(RpcMessage&& msg);
+    void send_msg_nonblock(RpcMessage&& msg);
 
     /*
      * 多线程会调用，确保只有一个线程
      * keep_writing 其他线程直接退出
      */
-    void keep_writing();
+    void keep_writing(int cnt);
 
     // thread safe, may call ctx->send_msg when flush pending
     void send_msg(RpcMessage&& msg);

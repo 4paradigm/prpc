@@ -34,7 +34,6 @@ void FairQueue::add_server_dealer(int sid,
     lock_guard<RWSpinLock> _(_lk);
     auto it = _sid2dealers.find(sid);
     if (it == _sid2dealers.end()) {
-        SLOG(INFO) << "insert : " << sid;
         _sid2dealers.insert({sid, {dealer}});
     } else {
         it->second.push_back(dealer);
@@ -155,7 +154,7 @@ void RpcContext::bind(const std::string& ip, int backlog) {
 
 void RpcContext::begin_add_server() {
     _spin_lock.lock();
-    SLOG(INFO) << "begin add server ";
+    //SLOG(INFO) << "begin add server ";
 }
 
 void RpcContext::end_add_server(int rpc_id, int sid) {
@@ -165,13 +164,12 @@ void RpcContext::end_add_server(int rpc_id, int sid) {
               = _server_backend.emplace(rpc_id, std::make_shared<FairQueue>());
     }
     it->second->add_server(sid);
-    SLOG(INFO) << "add server : " << rpc_id << " " << sid;
+    //SLOG(INFO) << "add server : " << rpc_id << " " << sid;
     _spin_lock.unlock();
 }
 
 void RpcContext::remove_server(int rpc_id, int sid) {
     lock_guard<RWSpinLock> l(_spin_lock);
-    SLOG(INFO) << "remove server : " << rpc_id << " " << sid;
     auto it = _server_backend.find(rpc_id);
     SCHECK(it != _server_backend.end()) << _server_backend.size();
     // XXX 想一想死锁问题，fq里也有个锁
@@ -186,7 +184,6 @@ void RpcContext::add_server_dealer(int rpc_id,
       int sid,
       Dealer* dealer) {
     lock_guard<RWSpinLock> l(_spin_lock);
-    SLOG(INFO) << "add server dealer : " << rpc_id << " " << sid;
     auto it = _server_backend.find(rpc_id);
     if (it == _server_backend.end()) {
         std::tie(it, std::ignore)
@@ -199,7 +196,6 @@ void RpcContext::remove_server_dealer(int rpc_id,
       int sid,
       Dealer* dealer) {
     lock_guard<RWSpinLock> l(_spin_lock);
-    SLOG(INFO) << "remove server dealer : " << rpc_id << " " << sid;
     auto it = _server_backend.find(rpc_id);
     SCHECK(it != _server_backend.end()) << _server_backend.size();
     // XXX 想一想死锁问题，fq里也有个锁
@@ -268,7 +264,6 @@ void RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
     } else {
         f = get_client_frontend_by_rpc_id(rpc_id);
     }
-    SLOG(INFO) << "send request : " << *msg.head();
     if (!f) {
         RpcResponse resp(*msg.head());
         resp.set_error_code(RpcErrorCodeType::ENOSUCHSERVER);
@@ -300,11 +295,7 @@ void RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
                   std::move(msg));
             background.detach();
         } else {
-            if (!f->send_msg_nonblock(std::move(msg))) {
-                std::thread keep_writing
-                      = std::thread([f]() { f->keep_writing(); });
-                keep_writing.detach();
-            }
+            f->send_msg_nonblock(std::move(msg));
         }
     } else {
         if ((f->state() & FRONTEND_DISCONNECT) == FRONTEND_DISCONNECT) {
@@ -336,11 +327,7 @@ void RpcContext::send_response(RpcMessage&& resp, bool nonblcok) {
     }
 
     if (nonblcok) {
-        if (!f->send_msg_nonblock(std::move(resp))) {
-            std::thread keep_writing
-                  = std::thread([f]() { f->keep_writing(); });
-            keep_writing.detach();
-        }
+        f->send_msg_nonblock(std::move(resp));
     } else {
         f->send_msg(std::move(resp));
     }
@@ -582,7 +569,6 @@ void RpcContext::push_request(RpcRequest&& req) {
  * 假设外部已经抢到读锁
  */
 void RpcContext::push_response(RpcResponse&& resp) {
-    SLOG(INFO) << "push_response  " << resp.head();
     auto it = _client_backend.find(resp.head().dest_dealer);
     if (it != _client_backend.end()) {
         auto dealer = it->second;
@@ -603,7 +589,6 @@ void RpcContext::add_frontend_event(FrontEnd* f) {
         f->_epfd = _epfds[idx % _io_thread_num];
         ++idx;
         for (int fd : f->_socket->fds()) {
-            SLOG(INFO) << "add event : " << fd;
             add_event(fd, f->_epfd, true);
             _fd_map.emplace(fd, f);
         }
@@ -621,7 +606,6 @@ void RpcContext::remove_frontend(FrontEnd* f) {
     for (auto& fd : f->_socket->fds()) {
         _fd_map.erase(fd);
     }
-    SLOG(INFO) << "remove frontend " << f->_info;
     comm_rank_t rank = f->_info.global_rank;
     if (f->_is_client_socket) {
         _client_sockets.erase(rank);

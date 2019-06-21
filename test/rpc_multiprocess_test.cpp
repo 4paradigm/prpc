@@ -28,35 +28,28 @@ public:
         rpc_config.io_thread_num = 1;
         _rpc = std::make_unique<RpcService>();
         _rpc->initialize(_mc.get(), rpc_config);
+        _server = _rpc->create_server("asdf");
     }
 
     ~EchoService() {
+        _server.reset();
         _rpc->finalize();
         _mc->finalize();
     }
 
 
     void run() {
-        auto server = _rpc->create_server("asdf");
         std::vector<std::thread> ths(2);
         for (auto& th : ths) {
             th = std::thread(
                   [&]() {
-                      auto dealer = server->create_dealer();
+                      auto dealer = _server->create_dealer();
                       RpcRequest req;
                       std::string tmp;
-                      std::string id = Logger::singleton().get_id();
-                      int cnt = 0;
-                      int max_server = rand();
                       while (dealer->recv_request(req)) {
                           req >> tmp;
-                          SLOG(INFO) << "Server " << server->id() << " : "
-                                     << ++cnt << " ; max : " << max_server;
-                          if (cnt > max_server) {
-                              SLOG(FATAL) << "Server crash!!!!!";
-                          }
                           RpcResponse resp(req);
-                          resp << id;
+                          resp << tmp;
                           dealer->send_response(std::move(resp));
                       }
                   });
@@ -66,8 +59,13 @@ public:
         }
     }
 
-    std::unique_ptr<RpcService> _rpc;
+    void terminate() {
+        _server->terminate();
+    }
+
     std::unique_ptr<TcpMasterClient> _mc;
+    std::unique_ptr<RpcService> _rpc;
+    std::unique_ptr<RpcServer> _server;
 };
 
 class SimpleClient {
@@ -77,7 +75,7 @@ public:
         _master_ep = master_ep;
     }
 
-    void run() {
+    void run(int n) {
         auto mc = std::make_unique<TcpMasterClient>(_master_ep);
         while (!mc->initialize());
         RpcConfig rpc_config;
@@ -89,17 +87,18 @@ public:
         rpc->initialize(mc.get(), rpc_config);
         SLOG(INFO) << "waiting one server";
         auto client = rpc->create_client("asdf", 1);
-        size_t timeout_cnt = 0, error_cnt = 0;
-        size_t total = 0;
         auto func = [&]() {
             auto dealer = client->create_dealer();
-            while (true) {
+            size_t timeout_cnt = 0, error_cnt = 0;
+            size_t total = 0;
+            for (int i = 0; i < n; ++i) {
+                SLOG(INFO) << "timeout/err/total : " << timeout_cnt << " / "
+                    << error_cnt << " / " << total;
+
                 RpcRequest req;
                 RpcResponse resp;
                 std::string a = "asdf", b = "fdsas";
                 req << a;
-                SLOG(INFO) << "timeout/err/total : " << timeout_cnt << " / "
-                           << error_cnt << " / " << total;
                 dealer->send_request(std::move(req));
                 ++total;
                 if (dealer->recv_response(resp, 10)) {
@@ -110,7 +109,7 @@ public:
                         ++error_cnt;
                     } else {
                         resp >> b;
-                        SLOG(INFO) << b;
+                        EXPECT_TRUE(b == a);
                     }
                 } else {
                     dealer = client->create_dealer();
@@ -118,93 +117,187 @@ public:
                     ++timeout_cnt;
                 }
             }
+            SLOG(INFO) << "timeout/err/total : " << timeout_cnt << " / "
+                << error_cnt << " / " << total;
         };
         std::thread t1 = std::thread(func);
         std::thread t2 = std::thread(func);
         t1.join();
         t2.join();
-        SLOG(INFO) << "timeout/err/total : " << timeout_cnt << " / "
-                   << error_cnt << " / " << total;
         rpc->finalize();
         mc->finalize();
     }
 };
 
-TEST(RpcService, multiprocess) {
+
+class ProcessKiller {
+public:
+    void run() {
+        _stop.store(false);
+        killer = std::thread([&]() {
+            while (true) {
+                std::this_thread::sleep_for((rand() % 100) * 1ms);
+                pid_t pid;
+                {
+                    std::lock_guard<std::mutex> _(mu);
+                    if (children.empty()) {
+                        if (_stop.load()) {
+                            break;
+                        } else {
+                            continue;
+                        }
+                    }
+                    std::swap(children.back(),
+                          children[rand() % children.size() / 3]);
+                    pid = children.back();
+                    children.pop_back();
+                }
+                SLOG(INFO) << "kill pid : " << pid;
+                kill(pid, SIGTERM);
+                int status;
+                pid = waitpid(pid, &status, 0);
+                PSCHECK(pid != -1);
+            }
+
+            for (auto pid : children) {
+                kill(pid, SIGTERM);
+                int status;
+                pid = waitpid(pid, &status, 0);
+                PSCHECK(pid != -1);
+            }
+            SLOG(INFO) << "killer over";
+        });
+    }
+
+    void add(pid_t pid) {
+        std::lock_guard<std::mutex> _(mu);
+        children.push_back(pid);
+    }
+
+    void terminate() {
+        _stop.store(true);
+        killer.join();
+    }
+
+    std::vector<pid_t> children;
+    std::mutex mu;
+    std::atomic<bool> _stop;
+    std::thread killer;
+};
+
+
+TEST(RpcService, multithread) {
     std::unique_ptr<Master> master;
     master = std::make_unique<Master>("127.0.0.1");
     master->initialize();
     auto master_ep = master->endpoint();
-
-    std::mutex mu;
-    std::vector<pid_t> children;
-    std::atomic<bool> stop(false);
-
-    std::thread killer = std::thread([&]() {
-        while (!stop.load()) {
-            std::this_thread::sleep_for(100ms);
-            pid_t pid;
-            {
-                std::lock_guard<std::mutex> _(mu);
-                if (children.empty()) {
-                    continue;
-                }
-                std::swap(children.back(), children[rand() % children.size() / 3]);
-                pid = children.back();
-                children.pop_back();
-            }
-            SLOG(INFO) << "kill pid : " << pid;
-            kill(pid, SIGTERM);
-            int status;
-            pid = waitpid(pid, &status, 0);
-            PSCHECK(pid != -1);
-        }
-
-        for (auto pid : children) {
-            kill(pid, SIGTERM);
-            int status;
-            pid = waitpid(pid, &status, 0);
-            PSCHECK(pid != -1);
-        }
-    });
-
-    SLOG(INFO) << "my pid is " << getpid();
-    Logger::singleton().set_id("main");
-    for (int i = 0; i < 100; ++i) {
-        pid_t fpid = fork();
-        if (fpid == 0) {
-            // child
-            Logger::singleton().set_id(std::to_string(i));
-            if (rand() % 2) {
-                EchoService server(master_ep);
-                server.run();
-            } else {
-                SimpleClient client(master_ep);
-                client.run();
-            }
-            exit(0);
-        } else {
-            std::lock_guard<std::mutex> _(mu);
-            children.push_back(fpid);
-        }
-        std::this_thread::sleep_for(30ms);
+    {
+        EchoService echo_server(master_ep);
+        std::thread server = std::thread([&]() { echo_server.run(); });
+        std::thread client = std::thread([&]() {
+            SimpleClient client(master_ep);
+            client.run(10000);
+        });
+        client.join();
+        echo_server.terminate();
+        server.join();
     }
-    while (true) {
-        {
-            lock_guard<std::mutex> _(mu);
-            if (children.empty()) {
-                break;
-            }
-        }
-        sleep(1);
-    }
-    stop.store(true);
-    killer.join();
     master->exit();
     master->finalize();
 }
 
 
+
+TEST(RpcService, killserver) {
+    Logger::singleton().set_id("main");
+    std::unique_ptr<Master> master;
+    master = std::make_unique<Master>("127.0.0.1");
+    master->initialize();
+    auto master_ep = master->endpoint();
+    ProcessKiller killer;
+    killer.run();
+
+    std::thread t1 = std::thread([&]() {
+        std::this_thread::sleep_for((rand() % 100) * 1ms);
+        SimpleClient c(master_ep);
+        c.run(100000);
+    });
+
+    std::thread t2 = std::thread([&]() {
+        std::this_thread::sleep_for((rand() % 100) * 1ms);
+        SimpleClient c(master_ep);
+        c.run(100000);
+    });
+
+
+    for (int i = 0; i < 100; ++i) {
+        pid_t fpid = fork();
+        if (fpid == 0) {
+            // child
+            Logger::singleton().set_id(std::to_string(i));
+            EchoService server(master_ep);
+            server.run();
+            exit(0);
+        } else {
+            killer.add(fpid);
+        }
+        std::this_thread::sleep_for((rand() % 100) * 1ms);
+    }
+    t1.join();
+    t2.join();
+    killer.terminate();
+    master->exit();
+    master->finalize();
+}
+
+TEST(RpcService, killclient) {
+    std::unique_ptr<Master> master;
+    master = std::make_unique<Master>("127.0.0.1");
+    master->initialize();
+    auto master_ep = master->endpoint();
+    {
+        ProcessKiller killer;
+        killer.run();
+
+        EchoService s1(master_ep);
+        EchoService s2(master_ep);
+        std::thread t1 = std::thread([&]() {
+            std::this_thread::sleep_for((rand() % 100) * 1ms);
+            s1.run();
+        });
+
+        std::thread t2 = std::thread([&]() {
+            std::this_thread::sleep_for((rand() % 100) * 1ms);
+            s2.run();
+        });
+
+        Logger::singleton().set_id("main");
+        for (int i = 0; i < 100; ++i) {
+            pid_t fpid = fork();
+            if (fpid == 0) {
+                // child
+                Logger::singleton().set_id(std::to_string(i));
+                SimpleClient c(master_ep);
+                c.run(100000);
+                exit(0);
+            } else {
+                killer.add(fpid);
+            }
+            std::this_thread::sleep_for((rand() % 100) * 1ms);
+        }
+        killer.terminate();
+        s1.terminate();
+        s2.terminate();
+
+        t1.join();
+        t2.join();
+    }
+    SLOG(INFO) << "hererererere";
+    master->exit();
+    SLOG(INFO) << "hererererere";
+    master->finalize();
+    SLOG(INFO) << "hererererere";
+}
 
 } // namespace core
 } // namespace pico
@@ -212,7 +305,6 @@ TEST(RpcService, multiprocess) {
 
 int main(int argc, char* argv[]) {
     testing::InitGoogleTest(&argc, argv);
-
     int ret = RUN_ALL_TESTS();
     return ret;
 }

@@ -117,7 +117,6 @@ void Dealer::send_response(RpcResponse&& resp) {
     if (resp.head().dest_dealer == -1) {
         return;
     }
-    SLOG(INFO) << "send response " << resp.head();
     comm_rank_t dest_g_rank = resp.head().dest_rank;
     if (dest_g_rank == _g_rank) {
         _ctx->_spin_lock.lock_shared();

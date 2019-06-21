@@ -91,7 +91,6 @@ bool TcpSocket::try_recv_pending(std::function<void(RpcMessage&&)> func) {
 bool TcpSocket::connect(const std::string& endpoint,
       const std::string& info,
       int64_t magic) {
-    SLOG(INFO) << "connect fd : " << _fd;
     sockaddr_in addr = parse_rpc_endpoint(endpoint);
     int ret = 0;
     auto starttm = std::chrono::steady_clock::now();
@@ -127,8 +126,7 @@ bool TcpSocket::connect(const std::string& endpoint,
     retry_eintr_call(::listen, accept_fd, 1);
     PSCHECK(getsockname(accept_fd, (struct sockaddr*)&local_addr, &len) == 0);
 
-    SLOG(INFO) << "temporal bind local addr is  " << inet_ntoa(local_addr.sin_addr) << ":"
-               << ntohs(local_addr.sin_port);
+    //SLOG(INFO) << "temporal bind local addr is  " << inet_ntoa(local_addr.sin_addr) << ":"  << ntohs(local_addr.sin_port);
     _endpoint = inet_ntoa(local_addr.sin_addr);
     _endpoint += ":" + std::to_string(ntohs(local_addr.sin_port));
 
@@ -136,7 +134,7 @@ bool TcpSocket::connect(const std::string& endpoint,
     if (retry_eintr_call(
               ::send, _fd, (char*)&meta[0], sizeof(meta), MSG_NOSIGNAL)
           != sizeof(meta)) {
-        PSLOG(INFO) << "connect failed endpoint and ret is : " << endpoint
+        PSLOG(WARNING) << "connect failed endpoint and ret is : " << endpoint
                     << " " << ret;
         return false;
     }
@@ -144,14 +142,14 @@ bool TcpSocket::connect(const std::string& endpoint,
     if (retry_eintr_call(
               ::send, _fd, (char*)info.c_str(), info.size(), MSG_NOSIGNAL)
           != (int)info.size()) {
-        PSLOG(INFO) << "connect failed endpoint and ret is : " << endpoint
+        PSLOG(WARNING) << "connect failed endpoint and ret is : " << endpoint
                     << " " << ret;
         return false;
     }
 
     if (retry_eintr_call(::send, _fd, (char*)&local_addr, sizeof(local_addr), MSG_NOSIGNAL)
           != sizeof(addr)) {
-        PSLOG(INFO) << "connect failed endpoint and ret is : " << endpoint
+        PSLOG(WARNING) << "connect failed endpoint and ret is : " << endpoint
                     << " " << ret;
         return false;
     }
@@ -184,7 +182,6 @@ bool TcpSocket::connect(const std::string& endpoint,
 
     sockaddr_in remote_addr;
     _fd2 = ::accept4(accept_fd, (sockaddr*)&remote_addr, &len, SOCK_CLOEXEC);
-    SLOG(INFO) << "connect fd2 : " << _fd2;
     if (_fd2 == -1) {
         PSLOG(WARNING) << "temporal socket accept failed";
         return false;
@@ -192,7 +189,6 @@ bool TcpSocket::connect(const std::string& endpoint,
     set_sockopt(_fd2);
     ::close(accept_fd);
 
-    SLOG(INFO) << "close temporal bind.";
     return true;
 }
 
@@ -230,7 +226,6 @@ bool TcpSocket::accept(std::string& info) {
     }
 
     _fd2 = ::socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, IPPROTO_TCP);
-    SLOG(INFO) << "accept fd2 : " << _fd2;
     PSCHECK(_fd2 >= 0);
     set_sockopt(_fd2);
 
@@ -252,14 +247,12 @@ bool TcpSocket::accept(std::string& info) {
         PSLOG(WARNING) << "connect temporal failed. sleep for " << i << " seconds.";
         ::sleep(i);
     }
-    SLOG(INFO) << "accept socket fd is : " << _fd << " " << _fd2;
     return true;
 }
 
 ssize_t TcpSocket::recv_nonblock(char* ptr, size_t size) {
     ssize_t ret = retry_eintr_call(
           ::recv, _fd, ptr, size, MSG_NOSIGNAL | MSG_DONTWAIT);
-    SLOG(INFO) << "fd : " << _fd << "recv size : " << ret;
     return ret;
 }
 
@@ -304,14 +297,13 @@ inline bool _send(int fd, RpcMessage::byte_cursor& cur, int flag) {
                 sent += nbytes;
                 cur.advance(nbytes);
             } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                PSLOG(INFO) << "may be block. " << sent;
+                //PSLOG(INFO) << "may be block. " << sent;
                 return true;
             } else {
                 PSLOG(WARNING) << "tcp send error fd is " << fd;
                 return false;
             }
         }
-        SLOG(INFO) << "fd : " << fd << " sent : " << sent;
     }
     return true;
 }
@@ -390,7 +382,6 @@ std::unique_ptr<RpcSocket> TcpAcceptor::accept() {
     socklen_t len = sizeof(remote_addr);
     int fd = ::accept4(_fd, (sockaddr*)&remote_addr, &len, SOCK_CLOEXEC);
     PSCHECK(fd != -1);
-    SLOG(INFO) << "accept fd1 : " << fd;
     SLOG(INFO) << "received a connection from "
                << inet_ntoa(remote_addr.sin_addr) << ":"
                << ntohs(remote_addr.sin_port) << " fd is : " << fd;
