@@ -196,7 +196,10 @@ public:
     }
 */
     void initialize(const RdmaConfig& config) {
-        SCHECK(!_initialized);
+        if (_initialized) {
+            return;
+        }
+        //SCHECK(!_initialized);
         //PicoJsonNode node;
         //node.load(FLAGS_rdma_config_str);
         from_rdma_config(config); 
@@ -254,7 +257,7 @@ public:
     void print() {
         SLOG(INFO) << "start print rdma mr num : " << _mp.size();
         for (auto& i : _mp) {
-            SLOG(INFO) << (uint64_t)i.second.start << " " << i.second.len / 1e6 << " " << i.second.cnt / 1e6;
+            SLOG(INFO) << (void*)i.second.start << " " << i.second.len << " " << i.second.cnt / 1e6;
         }
         SLOG(INFO) << "end print rdma mr num : " << _mp.size();
     }

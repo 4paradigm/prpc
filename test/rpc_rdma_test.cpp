@@ -14,20 +14,27 @@ namespace pico {
 namespace core {
 
 const int kMaxRetry = 100;
+RpcConfig rpc_config;
 
 class FakeRpc {
 public:
     FakeRpc() {
-        _master = std::make_unique<Master>("127.0.0.1");
+        _master = std::make_unique<Master>("192.168.3.10");
         _master->initialize();
         auto master_ep = _master->endpoint();
         _mc1 = std::make_unique<TcpMasterClient>(master_ep);
         _mc2 = std::make_unique<TcpMasterClient>(master_ep);
         _mc1->initialize();
         _mc2->initialize();
-        RpcConfig rpc_config;
-        rpc_config.protocol = "tcp";
-        rpc_config.bind_ip = "127.0.0.1";
+        rpc_config.protocol = "rdma";
+        rpc_config.rdma.ib_devname = "rxe0";
+        rpc_config.rdma.gid_index = 1;
+        rpc_config.rdma.ib_port = 1;
+        rpc_config.rdma.mtu = 1024;
+        rpc_config.rdma.min_rnr_timer = 1;
+        rpc_config.rdma.retry_cnt = 7;
+        rpc_config.rdma.timeout = 1;
+        rpc_config.bind_ip = "192.168.3.10";
         rpc_config.io_thread_num = 1;
         _rpc1 = std::make_unique<RpcService>();
         _rpc2 = std::make_unique<RpcService>();
@@ -217,7 +224,6 @@ TEST(RpcService, RandMessage) {
         for (int i = 0; i < kMaxRetry; ++i) {
             size_t sz = rand() * rand();
             sz %= 1024 * 1024 * 5;
-            SLOG(INFO) << "send size : " << sz;
             check_str.resize(sz);
             RpcRequest request;
             request << check_str;

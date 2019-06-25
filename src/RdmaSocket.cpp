@@ -557,14 +557,21 @@ RdmaSocket::~RdmaSocket() {
     PSCHECK(ibv_destroy_comp_channel(_recv_cq_channel) == 0);
 }
 
-// unthread safe
-bool RdmaSocket::send_rpc_message(RpcMessage&& msg, bool more) {
-    std::unique_ptr<RpcMessage> m
-          = std::make_unique<RpcMessage>(std::move(msg));
-    RpcMessage* ptr = m.get();
-    std::vector<ibv_mr*> mrs;
-    auto zero_copy_block_cnt = 0;
-    if (!m->_data.empty()) {
+bool RdmaSocket::send_msg(RpcMessage& msg,
+      bool,
+      bool more,
+      RpcMessage::byte_cursor& it1,
+      RpcMessage::byte_cursor& it2) {
+
+    if (!msg._data.empty()) {
+        /*
+         * 含有zero copy block的消息
+         * 需要move到heap上
+         */
+        std::unique_ptr<RpcMessage> m
+              = std::make_unique<RpcMessage>(std::move(msg));
+        std::vector<ibv_mr*> mrs;
+        auto zero_copy_block_cnt = 0;
         for (auto& block : m->_data) {
             if (block.length >= MIN_ZERO_COPY_SIZE) {
                 ++zero_copy_block_cnt;
@@ -573,7 +580,7 @@ bool RdmaSocket::send_rpc_message(RpcMessage&& msg, bool more) {
                 if (mr == nullptr) {
                     SLOG(WARNING) << "unregisterd mr : " << (uint64_t)block.data
                                   << " " << block.length;
-                    RdmaContext::singleton().print();
+                    //RdmaContext::singleton().print();
                     ibv_mr* ib_mr = nullptr;
                     if (block.data == nullptr) {
                         ib_mr = nullptr;
@@ -602,12 +609,21 @@ bool RdmaSocket::send_rpc_message(RpcMessage&& msg, bool more) {
         }
     }
 
-    ptr->send(more,
-          [this](char* ptr, size_t size, bool more) {
-              return this->send(ptr, size, more) == static_cast<int>(size);
-          },
-          [this](char*, size_t, bool) { return true; });
+    while (it1.has_next()) {
+        auto front = it1.head();
+        it1.next();
+        send(front.first, front.second, it1.has_next() | more);
+    }
 
+
+    while (it2.has_next()) {
+        auto front = it2.head();
+        it2.next();
+        if (front.second < MIN_ZERO_COPY_SIZE) {
+            // 目前这个more也是糊的
+            send(front.first, front.second, it2.has_next() | more);
+        }
+    }
     return true;
 }
 

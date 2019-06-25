@@ -77,7 +77,7 @@ public:
         return {_recv_cq_channel->fd, _send_cq_channel->fd, _fd};
     }
 
-    bool accept(std::string& info);
+    bool accept(std::string& info) override;
 
     ssize_t recv_nonblock(char* ptr, size_t size) override;
     char* _recv_cursor;
@@ -88,7 +88,17 @@ public:
     virtual bool handle_event(int fd,
           std::function<void(RpcMessage&&)>) override;
 
-    virtual bool send_rpc_message(RpcMessage&& msg, bool more) override;
+    /*
+     * 直接把msg move给socket了
+     * RDMA情形下，不可恢复
+     * 这个函数always return true
+     * 并且output的it1和it2的has_next永远返回false
+     */
+    bool send_msg(RpcMessage& msg,
+          bool nonblock,
+          bool more,
+          RpcMessage::byte_cursor& it1,
+          RpcMessage::byte_cursor& it2) override;
 
 private:
     bool handle_in_event(std::function<void(RpcMessage&&)>);
@@ -128,7 +138,7 @@ private:
     // recv多一倍为了收ctrl msg
     buffer_t _recv_buffer[BNUM * 4];
 
-    int _send_id;
+    int _send_id = 0;
     buffer_t _send_buffer[BNUM];
     //struct ibv_mr* send_mr[BNUM];
     int64_t _uncomplete_ack_cnt = 0;

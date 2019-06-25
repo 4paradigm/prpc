@@ -123,6 +123,10 @@ public:
 
     struct byte_cursor {
         byte_cursor() = default;
+        byte_cursor(const byte_cursor& o) = default;
+        byte_cursor(byte_cursor&& o) = default;
+        byte_cursor& operator = (const byte_cursor&) = default;
+        byte_cursor& operator = (byte_cursor&&) = default;
 
         byte_cursor(RpcMessage* msg, bool zero_copy) {
             auto& data = msg->_data;
@@ -160,6 +164,10 @@ public:
         std::pair<char*, size_t> head() {
             auto ret = _cur.front();
             return ret;
+        }
+
+        void next() {
+            _cur.pop_front();
         }
 
         void advance(size_t nbytes) {

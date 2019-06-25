@@ -448,6 +448,7 @@ void RpcContext::update_comm_info(const std::vector<CommInfo>& list) {
         f->_ctx = this;
         f->_info = comm_info;
         f->is_client_socket() = true;
+        f->_is_use_rdma = _is_use_rdma;
         _client_sockets.emplace(comm_info.global_rank, f);
     }
 }
