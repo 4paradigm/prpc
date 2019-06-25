@@ -43,6 +43,7 @@ set(CORE_LIB ${PicoCoreDep_LIBRARIES} )
 set(MALLOC_DEFINITIONS -DUSE_JEMALLOC -DOVERRIDE_SYSTEM_MALLOC=0 -DOVERRIDE_SYSTEM_NEW=0)
 
 add_library(pico_core_obj OBJECT ${SRC})
+target_compile_definitions(pico_core_obj PRIVATE ${MALLOC_DEFINITIONS})
 
 add_library(pico_core SHARED $<TARGET_OBJECTS:pico_core_obj>)
 target_compile_definitions(pico_core PRIVATE ${MALLOC_DEFINITIONS})
