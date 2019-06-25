@@ -91,11 +91,8 @@ private:
 #define P_BLOG_1(level) \
     VLOG(level) << '[' << paradigm4::pico::core::Logger::singleton().get_id() << "] "
 
-#define PR_CHECK_1(condition) \
-    if (!(condition)) PR_LOG_1(FATAL) << "Check failed: " #condition " "
-
 #define P_PLOG_1(severity) \
-    GLOG_WRAPPER_ ## severity << '[' << paradigm4::pico::core::Logger::singleton().get_id() << "] "
+    PLOG_WRAPPER_ ## severity << '[' << paradigm4::pico::core::Logger::singleton().get_id() << "] "
 
 #define P_PCHECK_1(condition) \
     if (!(condition)) P_PLOG_1(FATAL) << "PCheck failed: " #condition " "

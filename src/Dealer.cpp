@@ -105,6 +105,7 @@ void Dealer::_send_request(RpcRequest&& req) {
     std::shared_ptr<frontend_t> f = nullptr;
     // 寻找可用的服务
     auto err = SUCC;
+    shared_lock_guard<RWSpinLock> lock(_ctx->_spin_lock);
     if (req.head().sid != -1) {
         f = _ctx->get_client_frontend_by_sid(_rpc_id, req.head().sid);
         errno = ENOSUCHSERVER;
@@ -126,9 +127,7 @@ void Dealer::_send_request(RpcRequest&& req) {
         return;
     }
     if (f->info.global_rank == _g_rank) {
-        _ctx->_spin_lock.lock_shared();
         _ctx->push_request(std::move(req));
-        _ctx->_spin_lock.unlock_shared();
     } else {
         // XXX 没有建立连接，自动连，最好启动另一个线程做这件事儿
         int state = f->state.load(std::memory_order_acquire);
@@ -141,7 +140,9 @@ void Dealer::_send_request(RpcRequest&& req) {
         if (!f->socket->send(std::move(req))) {
             SLOG(WARNING) << "sending request to " << dest_g_rank
                           << " failed. ";
+            _ctx->_spin_lock.unlock_shared();
             _ctx->epipe(f);
+            _ctx->_spin_lock.lock_shared();
         }
     }
 }
@@ -156,11 +157,10 @@ void Dealer::send_response(RpcResponse&& resp) {
     if (resp.head().dest_dealer == -1) {
         return;
     }
+    shared_lock_guard<RWSpinLock> lock(_ctx->_spin_lock);
     comm_rank_t dest_g_rank = resp.head().dest_rank;
     if (dest_g_rank == _g_rank) {
-        _ctx->_spin_lock.lock_shared();
         _ctx->push_response(std::move(resp));
-        _ctx->_spin_lock.unlock_shared();
     } else {
         auto f = _ctx->get_server_frontend_by_rank(resp.head().dest_rank);
         if (!f) {
@@ -170,7 +170,9 @@ void Dealer::send_response(RpcResponse&& resp) {
         if (!f->socket->send(std::move(resp))) {
             SLOG(WARNING) << "sending response to " << dest_g_rank
                           << " failed. ";
+            _ctx->_spin_lock.unlock_shared();
             _ctx->epipe(f);
+            _ctx->_spin_lock.lock_shared();
         }
     }
 }

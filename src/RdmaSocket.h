@@ -128,7 +128,7 @@ private:
     // recv多一倍为了收ctrl msg
     buffer_t _recv_buffer[BNUM * 4];
 
-    int _send_id;
+    int _send_id = 0;
     buffer_t _send_buffer[BNUM];
     //struct ibv_mr* send_mr[BNUM];
     int64_t _uncomplete_ack_cnt = 0;
