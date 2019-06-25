@@ -69,13 +69,13 @@ public:
     bool push_request(int sid, RpcRequest&& req);
 private:
 
-    RWSpinLock _lk;
+    SpinLock _lk;
     // 与server和stub共享dealer的所有权
     std::unordered_map<int, std::vector<Dealer*>> _sid2dealers;
     std::vector<int> _sids;
     std::atomic<int> _sids_rr_index;
-
-    std::unordered_map<int, std::vector<RpcRequest>> _sid2cache;
+    std::atomic<size_t> _dealer_id_rr_index;
+    std::unordered_map<int, std::unique_ptr<MpscQueue<RpcRequest>>> _sid2cache;
 };
 
 constexpr int FRONTEND_DISCONNECT = 0;

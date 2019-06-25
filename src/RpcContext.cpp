@@ -10,15 +10,15 @@ namespace core {
  */
 
 void FairQueue::add_server(int sid) {
-    std::vector<RpcRequest> vec;
-    SCHECK(_sid2cache.emplace(sid, std::move(vec)).second);
+    auto cache_que = std::make_unique<MpscQueue<RpcRequest>>();
+    SCHECK(_sid2cache.emplace(sid, std::move(cache_que)).second);
 }
 
 void FairQueue::remove_server(int sid) {
     auto cit = _sid2cache.find(sid);
     SCHECK(cit != _sid2cache.end());
-    if (!cit->second.empty()) {
-        auto& req = cit->second.front();
+    RpcRequest req;
+    if (cit->second->pop(req)) {
         SLOG(WARNING)
             << "remove server. Drop cached requests. "
             << " rpc_id is " << req.head().rpc_id
@@ -38,10 +38,11 @@ void FairQueue::add_server_dealer(int sid,
     }
     auto cit = _sid2cache.find(sid);
     if (cit != _sid2cache.end()) {
-        for (RpcRequest& req: cit->second) {
+        RpcRequest req;
+        //add server dealer之前会加写锁，所以应该不会少pop
+        while (cit->second->pop(req)) {
             dealer->push_request(std::move(req));
         }
-        cit->second.clear();
     }
 }
 
@@ -84,7 +85,13 @@ Dealer* FairQueue::next(int sid) {
     //SCHECK(it != _sid2dealers.end()) << sid << " " << _sid2dealers.size();
     auto& d = it->second;
     SCHECK(!d.empty()) << "no dealer.";
-    return d[rand() % d.size()];
+    size_t index =  _dealer_id_rr_index.load(std::memory_order_relaxed);
+    index += 1;
+    if (index >= d.size()) {
+        index = 0;
+    }
+    _dealer_id_rr_index.store(index, std::memory_order_relaxed);
+    return d[index];
 }
 
 bool FairQueue::push_request(int sid, RpcRequest&& req) {
@@ -96,7 +103,7 @@ bool FairQueue::push_request(int sid, RpcRequest&& req) {
     }
     auto cit = _sid2cache.find(sid);
     if (cit != _sid2cache.end()) {
-        cit->second.push_back(std::move(req));
+        cit->second->push(std::move(req));
         return true;
     }
     return false;
