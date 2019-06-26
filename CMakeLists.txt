@@ -30,6 +30,7 @@ endif()
 if (DEBUG)
     add_definitions(-O0 -g)
 else()
+    #add_definitions(-O0 -g)
     add_definitions(-O3 -DNDEBUG)
 endif()
 

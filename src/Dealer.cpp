@@ -98,13 +98,48 @@ void Dealer::reset() {
     }
 }*/
 
-// retry现在是摆设
+
+// 尽可能访问local server
 void Dealer::_send_request(RpcRequest&& req) {
     SCHECK(_initialized_client);
     req.head().src_rank = _g_rank;
     req.head().rpc_id = _rpc_id;
-    RpcMessage msg = std::move(req);
-    _ctx->send_request(std::move(msg), true);
+    if (req.head().sid != -1) {
+        int sid = req.head().sid;
+        auto it = _servers.find(sid);
+        if (it != _servers.end()) {
+            _ctx->_spin_lock.lock_shared();
+            _ctx->push_request(std::move(req));
+            _ctx->_spin_lock.unlock_shared();
+        } else {
+            SLOG(INFO) << req.head();
+            comm_rank_t rank = _ctx->send_request(std::move(req), true);
+            if (rank == _g_rank) {
+                _servers.insert(sid);
+                _available_rank = _g_rank;
+            }
+        }
+    } else if (req.head().dest_rank != -1) {
+        if (req.head().dest_rank == _g_rank) {
+            _ctx->_spin_lock.lock_shared();
+            _ctx->push_request(std::move(req));
+            _ctx->_spin_lock.unlock_shared();
+        } else {
+            comm_rank_t rank = _ctx->send_request(std::move(req), true);
+            if (_available_rank != _g_rank) {
+                _available_rank = rank;
+            }
+        }
+    } else {
+        if (_available_rank == _g_rank) {
+            _ctx->_spin_lock.lock_shared();
+            _ctx->push_request(std::move(req));
+            _ctx->_spin_lock.unlock_shared();
+        } else {
+            comm_rank_t rank = _ctx->send_request(std::move(req), true);
+            _available_rank = rank;
+        }
+    }
 }
 
 /*

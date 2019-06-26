@@ -140,6 +140,9 @@ private:
     bool _initialized_server = false;
     bool _initialized_client = false;
     bool _terminated = false;
+
+    comm_rank_t _available_rank = -1;
+    std::unordered_set<int> _servers; // local servers
 };
 
 } // namespace core

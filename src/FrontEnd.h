@@ -17,7 +17,6 @@ class RpcContext;
 constexpr int FRONTEND_DISCONNECT = 1;
 constexpr int FRONTEND_CONNECT = 2;
 constexpr int FRONTEND_EPIPE = 1 + 4;
-constexpr int FRONTEND_KEEP_WRITING = 2 + 8;
 
 class FrontEnd {
     friend RpcContext;
@@ -63,32 +62,28 @@ public:
         return _is_client_socket;
     }
 
-    std::atomic_flag& is_sending() {
-        return _is_sending;
-    }
-
     bool handle_event(int fd,  std::function<void(RpcMessage&&)> func) {
         return _socket->handle_event(fd, func);
     }
 
 private:
-    std::mutex _mu;
+    std::mutex _mu; // for connect
     std::unique_ptr<RpcSocket> _socket;
     CommInfo _info;
     bool _is_client_socket;
     bool _is_use_rdma;
     int _epfd = -1;
-
-    std::atomic<int> _state = {FRONTEND_DISCONNECT};
+    RpcContext* _ctx;
     std::chrono::time_point<std::chrono::system_clock> _epipe_time;
 
-    RpcContext* _ctx;
-    std::thread _background_thread;
-
-    std::atomic_flag _is_sending;
+    char __pad__1[64];
+    std::atomic<int> _state = {FRONTEND_DISCONNECT};
+    char __pad__2[64];
 
     RpcMessage _sending_msg;
     RpcMessage::byte_cursor _it1, _it2;
+
+    char __pad__3[64];
     std::atomic<int> _sending_queue_size;
     MpscQueue<RpcMessage> _sending_queue;
 };

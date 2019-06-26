@@ -51,6 +51,7 @@ void FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
                     return;
                 }
                 if (_it1.has_next() || _it2.has_next()) {
+                    // 对于RDMA的情况，一定走不到这里
                     std::thread tmp = std::thread(
                           [this](int cnt) { keep_writing(cnt); }, cnt);
                     tmp.detach();

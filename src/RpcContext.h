@@ -70,7 +70,7 @@ public:
     bool push_request(int sid, RpcRequest&& req);
 private:
 
-    RWSpinLock _lk;
+    //RWSpinLock _lk;
     // 与server和stub共享dealer的所有权
     std::unordered_map<int, std::vector<Dealer*>> _sid2dealers;
     std::vector<int> _sids;
@@ -163,9 +163,8 @@ public:
 
     bool get_rpc_service_info(const std::string rpc_name, RpcServiceInfo& out);
 
-    //void send_request(RpcRequest&& req, std::shared_ptr<LB> lb, bool nonblcok);
-    //void send_response(RpcResponse&& req);
-    void send_request(RpcMessage&& req, bool nonblcok);
+    // 返回选用了哪一个frontend
+    comm_rank_t send_request(RpcMessage&& req, bool nonblcok);
 
     void send_response(RpcMessage&& resp, bool nonblock);
 

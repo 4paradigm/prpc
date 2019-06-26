@@ -247,6 +247,7 @@ public:
 
     RpcRequest& operator=(RpcRequest&& req) {
         _head = std::move(req._head);
+        req._head = rpc_head_t();
         if (_msg) {
             _ar.release();
         }

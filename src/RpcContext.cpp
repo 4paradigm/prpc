@@ -10,13 +10,13 @@ namespace core {
  */
 
 void FairQueue::add_server(int sid) {
-    lock_guard<RWSpinLock> _(_lk);
+    //lock_guard<RWSpinLock> _(_lk);
     std::vector<RpcRequest> vec;
     SCHECK(_sid2cache.emplace(sid, std::move(vec)).second);
 }
 
 void FairQueue::remove_server(int sid) {
-    lock_guard<RWSpinLock> _(_lk);
+    //lock_guard<RWSpinLock> _(_lk);
     auto cit = _sid2cache.find(sid);
     SCHECK(cit != _sid2cache.end());
     if (!cit->second.empty()) {
@@ -31,7 +31,7 @@ void FairQueue::remove_server(int sid) {
 
 void FairQueue::add_server_dealer(int sid,
       Dealer* dealer) {
-    lock_guard<RWSpinLock> _(_lk);
+    //lock_guard<RWSpinLock> _(_lk);
     auto it = _sid2dealers.find(sid);
     if (it == _sid2dealers.end()) {
         _sid2dealers.insert({sid, {dealer}});
@@ -50,7 +50,7 @@ void FairQueue::add_server_dealer(int sid,
 
 void FairQueue::remove_server_dealer(int sid,
       Dealer* dealer) {
-    lock_guard<RWSpinLock> _(_lk);
+    //lock_guard<RWSpinLock> _(_lk);
     auto it = _sid2dealers.find(sid);
     SCHECK(it != _sid2dealers.end());
     auto& dealers = it->second;
@@ -73,12 +73,12 @@ void FairQueue::remove_server_dealer(int sid,
 }
 
 bool FairQueue::empty() {
-    shared_lock_guard<RWSpinLock> _(_lk);
+    //shared_lock_guard<RWSpinLock> _(_lk);
     return _sid2dealers.empty() && _sid2cache.empty();
 }
 
 Dealer* FairQueue::next() {
-    shared_lock_guard<RWSpinLock> _(_lk);
+    //shared_lock_guard<RWSpinLock> _(_lk);
     SCHECK(!_sids.empty()) << "no server.";
     int sid = _sids[_sids_rr_index.fetch_add(1, std::memory_order_relaxed)
                     % _sids.size()];
@@ -90,7 +90,7 @@ Dealer* FairQueue::next() {
 }
 
 Dealer* FairQueue::next(int sid) {
-    shared_lock_guard<RWSpinLock> _(_lk);
+    //shared_lock_guard<RWSpinLock> _(_lk);
     if (sid == -1) {
         if (_sids.empty()) {
             return nullptr;
@@ -108,7 +108,7 @@ Dealer* FairQueue::next(int sid) {
 }
 
 bool FairQueue::push_request(int sid, RpcRequest&& req) {
-    lock_guard<RWSpinLock> _(_lk);
+    //lock_guard<RWSpinLock> _(_lk);
     auto it = _sid2dealers.find(sid);
     if (it != _sid2dealers.end()) {
         SCHECK(!it->second.empty()) << "no dealer.";
@@ -235,7 +235,7 @@ void RpcContext::poll_wait(std::vector<epoll_event>& events,
 
 std::shared_ptr<FrontEnd> RpcContext::get_client_frontend_by_rank(
       comm_rank_t rank) {
-    shared_lock_guard<RWSpinLock> l(_spin_lock);
+    //shared_lock_guard<RWSpinLock> l(_spin_lock);
     auto it = _client_sockets.find(rank);
     if (it == _client_sockets.end()) {
         SLOG(WARNING) << "no client frontend of rank " << rank;
@@ -252,7 +252,8 @@ std::shared_ptr<FrontEnd> RpcContext::get_client_frontend_by_rank(
 /*
  * 这个msg只能是request
  */
-void RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
+comm_rank_t RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
+    shared_lock_guard<RWSpinLock> l(_spin_lock);
     std::shared_ptr<FrontEnd> f = nullptr;
     auto sid = msg.head()->sid;
     auto dest_rank = msg.head()->dest_rank;
@@ -267,16 +268,16 @@ void RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
     if (!f) {
         RpcResponse resp(*msg.head());
         resp.set_error_code(RpcErrorCodeType::ENOSUCHSERVER);
-        shared_lock();
+        //shared_lock();
         push_response(std::move(resp));
-        return;
+        return -1;
     }
+    comm_rank_t ret = f->info().global_rank;
+    SLOG(INFO) << "ret : " << ret;
 
     if (f->info() == _self) {
-        // TODO 可以再更外层判断，防止request与msg互转
-        shared_lock();
         push_request(std::move(msg));
-        return;
+        return ret;
     }
     if (nonblock) {
         if ((f->state() & FRONTEND_DISCONNECT) == FRONTEND_DISCONNECT) {
@@ -311,6 +312,7 @@ void RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
         }
         f->send_msg(std::move(msg));
     }
+    return ret;
 }
 
 void RpcContext::send_response(RpcMessage&& resp, bool nonblcok) {
@@ -341,7 +343,7 @@ void RpcContext::send_response(RpcMessage&& resp, bool nonblcok) {
  */
 std::shared_ptr<FrontEnd> RpcContext::get_client_frontend_by_rpc_id(
       int rpc_id) {
-    shared_lock_guard<RWSpinLock> l(_spin_lock);
+    //shared_lock_guard<RWSpinLock> l(_spin_lock);
     auto it1 = _rpc_server_frontend.find(rpc_id);
     if (it1 == _rpc_server_frontend.end()) {
         return nullptr;

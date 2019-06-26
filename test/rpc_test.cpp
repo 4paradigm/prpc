@@ -98,16 +98,18 @@ TEST(RpcTest, ok2) {
             c_dealer->send_request(std::move(req));
             bool ret = c_dealer->recv_response(resp);
             SCHECK(ret);
+            SCHECK(resp.error_code() == SUCC);
             resp >> e;
-            SCHECK(s == e);
+            ASSERT_EQ(s, e);
 
             req.head().sid = 1;
             req << s;
             c_dealer->send_request(std::move(req));
             ret = c_dealer->recv_response(resp);
             SCHECK(ret);
+            SCHECK(resp.error_code() == SUCC);
             resp >> e;
-            SCHECK(s == e);
+            ASSERT_EQ(s, e);
         });
 
         std::thread s1_th = std::thread([&]() {
@@ -172,7 +174,6 @@ TEST(RpcTest, p2p) {
         a->recv_request(req);
         RpcResponse resp(req);
         req >> e;
-        SLOG(INFO) << e;
         resp << e;
         a->send_response(std::move(resp));
     }
