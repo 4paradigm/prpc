@@ -102,6 +102,7 @@ TEST(RpcTest, ok2) {
             resp >> e;
             ASSERT_EQ(s, e);
 
+            req = RpcRequest();
             req.head().sid = 1;
             req << s;
             c_dealer->send_request(std::move(req));

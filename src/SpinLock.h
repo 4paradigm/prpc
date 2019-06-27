@@ -45,8 +45,7 @@ public:
  */
 class RWSpinLock {
     enum : int32_t { READER = 2, WRITER = 1 };
-    static const int MAX_TESTS;
-    static const int MAX_COLLISION;
+    enum : int32_t { MAX_TESTS = 1 << 10, MAX_COLLISION = 20 };
 public:
     constexpr RWSpinLock() : _(0) {}
 
@@ -65,7 +64,9 @@ public:
                 }
             }
             if (!try_lock()) {
-                collisions = std::min(MAX_COLLISION, collisions + 1);
+                if (collisions < MAX_COLLISION) {
+                    ++collisions;
+                }
                 static thread_local std::minstd_rand generator;
                 static std::uniform_int_distribution<int> distribution{0, 1 << collisions};
                 int z = distribution(generator);

@@ -4,7 +4,8 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/eventfd.h>
-
+#include <poll.h>
+#include <sys/socket.h>
 
 namespace paradigm4 {
 namespace pico {
@@ -250,8 +251,19 @@ bool RdmaSocket::handle_event(int fd, std::function<void(RpcMessage&&)> func) {
     } else if (fd == _send_cq_channel->fd) {
         return handle_out_event(func);
     } else if (fd == _fd) {
-        SLOG(WARNING) << "handle unexpected tcp socket event, maybe epipe.";
-        return false;
+        pollfd fds = {_fd, POLLIN | POLLPRI | POLLERR | POLLHUP | POLLRDHUP, 0};
+        PSCHECK(retry_eintr_call(::poll, &fds, (nfds_t)1, 0) != -1);
+        SLOG(WARNING) << "unexpected tcp socket event "
+            << (fds.revents & POLLIN) << " "
+            << (fds.revents & POLLPRI) << " "
+            << (fds.revents & POLLERR) << " "
+            << (fds.revents & POLLHUP) << " "
+            << (fds.revents & POLLRDHUP);
+        if (fds.revents & (POLLERR | POLLHUP | POLLRDHUP)) {
+            SLOG(WARNING) << "handle unexpected tcp socket event, maybe epipe.";
+            return false;
+        }
+        return true;
     } else {
         SLOG(FATAL) << "unknown file desc. " << fd;
     }
@@ -307,6 +319,7 @@ int RdmaSocket::send(const char* buffer, uint32_t size, bool more) {
 
 RdmaSocket::buffer_t* RdmaSocket::get_send_buffer() {
     // BNUM大于线程数的时候，百分百可以acquire到
+    SCHECK(_send_id < BNUM && _send_id >= 0) << (void*)this << " " << _send_id;
     for (;;) {
         if (!_get_send_buffer_blocker[_send_id].load(
                   std::memory_order_acquire)) {

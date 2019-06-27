@@ -152,11 +152,10 @@ void Dealer::send_response(RpcResponse&& resp) {
     if (resp.head().dest_dealer == -1) {
         return;
     }
+    shared_lock_guard<RWSpinLock> lock(_ctx->_spin_lock);
     comm_rank_t dest_g_rank = resp.head().dest_rank;
     if (dest_g_rank == _g_rank) {
-        _ctx->_spin_lock.lock_shared();
         _ctx->push_response(std::move(resp));
-        _ctx->_spin_lock.unlock_shared();
     } else {
         _ctx->send_response(std::move(resp), true);
     }

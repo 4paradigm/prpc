@@ -10,17 +10,17 @@ namespace core {
  */
 
 void FairQueue::add_server(int sid) {
-    //lock_guard<RWSpinLock> _(_lk);
-    std::vector<RpcRequest> vec;
-    SCHECK(_sid2cache.emplace(sid, std::move(vec)).second);
+    //std::vector<RpcRequest> vec;
+    //SCHECK(_sid2cache.emplace(sid, std::move(vec)).second);
+    auto cache_que = std::make_unique<MpscQueue<RpcRequest>>();
+    SCHECK(_sid2cache.emplace(sid, std::move(cache_que)).second);
 }
 
 void FairQueue::remove_server(int sid) {
-    //lock_guard<RWSpinLock> _(_lk);
     auto cit = _sid2cache.find(sid);
     SCHECK(cit != _sid2cache.end());
-    if (!cit->second.empty()) {
-        auto& req = cit->second.front();
+    RpcRequest req;
+    if (cit->second->pop(req)) {
         SLOG(WARNING)
             << "remove server. Drop cached requests. "
             << " rpc_id is " << req.head().rpc_id
@@ -31,7 +31,6 @@ void FairQueue::remove_server(int sid) {
 
 void FairQueue::add_server_dealer(int sid,
       Dealer* dealer) {
-    //lock_guard<RWSpinLock> _(_lk);
     auto it = _sid2dealers.find(sid);
     if (it == _sid2dealers.end()) {
         _sid2dealers.insert({sid, {dealer}});
@@ -41,16 +40,16 @@ void FairQueue::add_server_dealer(int sid,
     _sids.push_back(sid);
     auto cit = _sid2cache.find(sid);
     if (cit != _sid2cache.end()) {
-        for (RpcRequest& req: cit->second) {
+        RpcRequest req;
+        //add server dealer之前会加写锁，所以应该不会少pop
+        while (cit->second->pop(req)) {
             dealer->push_request(std::move(req));
         }
-        cit->second.clear();
     }
 }
 
 void FairQueue::remove_server_dealer(int sid,
       Dealer* dealer) {
-    //lock_guard<RWSpinLock> _(_lk);
     auto it = _sid2dealers.find(sid);
     SCHECK(it != _sid2dealers.end());
     auto& dealers = it->second;
@@ -73,12 +72,10 @@ void FairQueue::remove_server_dealer(int sid,
 }
 
 bool FairQueue::empty() {
-    //shared_lock_guard<RWSpinLock> _(_lk);
     return _sid2dealers.empty() && _sid2cache.empty();
 }
 
 Dealer* FairQueue::next() {
-    //shared_lock_guard<RWSpinLock> _(_lk);
     SCHECK(!_sids.empty()) << "no server.";
     int sid = _sids[_sids_rr_index.fetch_add(1, std::memory_order_relaxed)
                     % _sids.size()];
@@ -90,7 +87,6 @@ Dealer* FairQueue::next() {
 }
 
 Dealer* FairQueue::next(int sid) {
-    //shared_lock_guard<RWSpinLock> _(_lk);
     if (sid == -1) {
         if (_sids.empty()) {
             return nullptr;
@@ -104,11 +100,16 @@ Dealer* FairQueue::next(int sid) {
     }
     auto& d = it->second;
     SCHECK(!d.empty()) << "no dealer.";
-    return d[rand() % d.size()];
+    size_t index =  _dealer_id_rr_index.load(std::memory_order_relaxed);
+    index += 1;
+    if (index >= d.size()) {
+        index = 0;
+    }
+    _dealer_id_rr_index.store(index, std::memory_order_relaxed);
+    return d[index];
 }
 
 bool FairQueue::push_request(int sid, RpcRequest&& req) {
-    //lock_guard<RWSpinLock> _(_lk);
     auto it = _sid2dealers.find(sid);
     if (it != _sid2dealers.end()) {
         SCHECK(!it->second.empty()) << "no dealer.";
@@ -117,7 +118,7 @@ bool FairQueue::push_request(int sid, RpcRequest&& req) {
     }
     auto cit = _sid2cache.find(sid);
     if (cit != _sid2cache.end()) {
-        cit->second.push_back(std::move(req));
+        cit->second->push(std::move(req));
         return true;
     }
     return false;
@@ -363,7 +364,6 @@ std::shared_ptr<FrontEnd> RpcContext::get_client_frontend_by_rpc_id(
 
 std::shared_ptr<FrontEnd> RpcContext::get_client_frontend_by_sid(int rpc_id,
       int server_id) {
-    shared_lock_guard<RWSpinLock> l(_spin_lock);
     auto it1 = _rpc_server_info.find(rpc_id);
     if (it1 == _rpc_server_info.end()) {
         SLOG(WARNING) << "no rpc service " << rpc_id;
@@ -379,7 +379,6 @@ std::shared_ptr<FrontEnd> RpcContext::get_client_frontend_by_sid(int rpc_id,
 
 std::shared_ptr<FrontEnd> RpcContext::get_server_frontend_by_rank(
       comm_rank_t rank) {
-    shared_lock_guard<RWSpinLock> l(_spin_lock);
     auto it = _server_sockets.find(rank);
     if (it == _server_sockets.end()) {
         return nullptr;
