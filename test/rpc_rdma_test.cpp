@@ -9,6 +9,11 @@
 #include "RpcService.h"
 #include "macro.h"
 
+DEFINE_string(ip, "", "ip");
+DEFINE_string(ib_devname, "", "devname");
+DEFINE_int32(io_thread_num, 1, "io_thread_num");
+DEFINE_int32(gid_index, 1, "gid_index");
+
 namespace paradigm4 {
 namespace pico {
 namespace core {
@@ -19,7 +24,7 @@ RpcConfig rpc_config;
 class FakeRpc {
 public:
     FakeRpc() {
-        _master = std::make_unique<Master>("192.168.3.10");
+        _master = std::make_unique<Master>(FLAGS_ip);
         _master->initialize();
         auto master_ep = _master->endpoint();
         _mc1 = std::make_unique<TcpMasterClient>(master_ep);
@@ -27,15 +32,15 @@ public:
         _mc1->initialize();
         _mc2->initialize();
         rpc_config.protocol = "rdma";
-        rpc_config.rdma.ib_devname = "rxe0";
-        rpc_config.rdma.gid_index = 1;
+        rpc_config.rdma.ib_devname = FLAGS_ib_devname;
+        rpc_config.rdma.gid_index = FLAGS_gid_index;
         rpc_config.rdma.ib_port = 1;
         rpc_config.rdma.mtu = 1024;
         rpc_config.rdma.min_rnr_timer = 1;
         rpc_config.rdma.retry_cnt = 7;
-        rpc_config.rdma.timeout = 1;
-        rpc_config.bind_ip = "192.168.3.10";
-        rpc_config.io_thread_num = 1;
+        rpc_config.rdma.timeout = 7;
+        rpc_config.bind_ip = FLAGS_ip;
+        rpc_config.io_thread_num = FLAGS_io_thread_num;
         _rpc1 = std::make_unique<RpcService>();
         _rpc2 = std::make_unique<RpcService>();
         _rpc1->initialize(_mc1.get(), rpc_config);
@@ -296,8 +301,91 @@ TEST(RpcService, LazyArchive) {
     server_thread.join();
 }
 
+TEST(RpcService, MultiThread) {
+    int times = 10;
+    int server_thread_num = 10;
+    int client_thread_num = 20;
+    auto server_run = [=](RpcService* rpc) {
+        auto server = rpc->create_server("asdfasdf");
+        auto dealer = server->create_dealer();
+        int num = kMaxRetry * times * client_thread_num / server_thread_num;
+        for (int i = 0; i < num; ++i) {
+            RpcRequest request;
+            if (dealer->recv_request(request)) {
+                int id, th;
+                BinaryArchive ar1;
+                std::string msg1, msg2;
+                request.lazy() >> ar1;
+                ar1 >> msg1;
+                request >> id >> th >> msg2;
+                EXPECT_EQ(msg1, msg2);
+                SCHECK(msg1 == msg2) << ' ' << id << ' ' << th;
+                RpcResponse response(request);
+                BinaryArchive ar2(true);
+                ar2 << msg2;
+                response << msg1;
+                response.lazy() << std::move(ar2);
+                dealer->send_response(std::move(response));
+            }
+        }
+    };
 
+    auto client_run = [=](RpcService* rpc, int size, int th) {
+        std::string check_str;
+        for (int i = 0; i < kMaxRetry * times; ++i) {
+            size_t sz = rand() * rand();
+            sz %= size;
+            check_str.resize(sz);
+            for (size_t i = 0; i < sz; ++i) {
+                if (th % 2) {
+                    check_str[i] = 'A' + i % 26;
+                } else {
+                    check_str[i] = 'a' + i % 26;
+                }
+            }
+            RpcRequest request;
+            request.head().sid = i % server_thread_num;
+            BinaryArchive ar1(true);
+            ar1 << check_str;
+            int ar1len = ar1.length();
+            request << i << th << check_str;
+            request.lazy() << std::move(ar1);
+            
 
+            auto client = rpc->create_client("asdfasdf", 1);
+            auto dealer = client->create_dealer();
+            dealer->send_request(std::move(request));
+
+            RpcResponse response;
+            EXPECT_TRUE(dealer->recv_response(response));
+            BinaryArchive ar2;
+            std::string aa, bb;
+            response.lazy() >> ar2;
+            EXPECT_EQ(ar1len, ar2.length());
+            response >> aa;
+            ar2 >> bb;
+            EXPECT_EQ(aa.size(), sz);
+            EXPECT_EQ(bb.size(), sz);
+            EXPECT_EQ(bb, aa);
+        }
+    };
+    FakeRpc rpc;
+
+    std::thread server_thread[server_thread_num];
+    std::thread client_thread[client_thread_num];
+    for (int i = 0; i < server_thread_num; ++i) {
+        server_thread[i] = std::thread(server_run, rpc.rpc1());
+    }
+    for (int i = 0; i < client_thread_num; ++i) {
+        client_thread[i] = std::thread(client_run, rpc.rpc2(), i % 3 ? 50 : 5 << 20, i);
+    }
+    for (int i = 0; i < server_thread_num; ++i) {
+        server_thread[i].join();
+    }
+    for (int i = 0; i < client_thread_num; ++i) {
+        client_thread[i].join();
+    }
+}
 
 
 } // namespace core
@@ -305,6 +393,7 @@ TEST(RpcService, LazyArchive) {
 } // namespace paradigm4
 
 int main(int argc, char* argv[]) {
+    google::ParseCommandLineFlags(&argc, &argv, false);
     testing::InitGoogleTest(&argc, argv);
     int ret = RUN_ALL_TESTS();
     return ret;
