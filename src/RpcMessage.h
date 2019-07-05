@@ -49,6 +49,7 @@ struct rpc_head_t {
                << "), dest(rank:dealer):(" << head.dest_rank << ":" << head.dest_dealer
                << "), rpc_id:" << head.rpc_id 
                << ", sid:" << head.sid
+               << ", error:" << (int)head.error_code
                << ", extra_block(count:length):(" << head.extra_block_count 
                << ":" << head.extra_block_length << ")"
                << ", size:" << head.body_size << "]";
@@ -128,7 +129,7 @@ public:
         byte_cursor& operator = (const byte_cursor&) = default;
         byte_cursor& operator = (byte_cursor&&) = default;
 
-        byte_cursor(RpcMessage* msg, bool zero_copy) {
+        void attach(RpcMessage* msg, bool zero_copy) {
             auto& data = msg->_data;
             if (!zero_copy) {
                 _cur.emplace_back(
@@ -143,54 +144,55 @@ public:
                 if (zero_copy && data[i].length >= MIN_ZERO_COPY_SIZE) {
                     _cur.emplace_back(data[i].data, data[i].length);
                 }
-                if (!zero_copy && data[i].length < MIN_ZERO_COPY_SIZE) {
+                if (!zero_copy && data[i].length < MIN_ZERO_COPY_SIZE && data[i].length > 0) {
                     _cur.emplace_back(data[i].data, data[i].length);
                 }
             }
         }
 
+        void cursor(RpcMessage& msg) {
+            attach(&msg, false);
+        }
+
+        void zero_copy_cursor(RpcMessage& msg) {
+            attach(&msg, true);
+        }
+
         void reset() {
+            _i = 0;
             _cur.clear();
         }
 
         bool has_next() {
-            return !_cur.empty();
+            return _i != _cur.size();
         }
 
         size_t size() {
-            return _cur.size();
+            return _cur.size() - _i;
         }
 
         std::pair<char*, size_t> head() {
-            auto ret = _cur.front();
-            return ret;
+            return _cur[_i];
         }
 
         void next() {
-            _cur.pop_front();
+            ++_i;
         }
 
         void advance(size_t nbytes) {
-            SCHECK(_cur.front().second >= nbytes);
-            _cur.front().second -= nbytes;
-            _cur.front().first += nbytes;
-            while (!_cur.empty() && _cur.front().second == 0) {
-                _cur.pop_front();
+            SCHECK(_cur[_i].second >= nbytes);
+            _cur[_i].second -= nbytes;
+            _cur[_i].first += nbytes;
+            while (_i < _cur.size() && _cur[_i].second == 0) {
+                ++_i;
             }
         }
 
-        std::deque<std::pair<char*, size_t>> _cur;
+        size_t _i = 0;
+        pico::core::vector<std::pair<char*, size_t>> _cur;
     };
 
-    byte_cursor zero_copy_cursor() {
-        return byte_cursor(this, true);
-    }
-
-    byte_cursor cursor() {
-        return byte_cursor(this, false);
-    }
-
-    friend std::ostream& operator<< (std::ostream& stream, const RpcMessage& msg) {
+    friend std::ostream& operator<<(std::ostream& stream, const RpcMessage& msg) {
         stream << *((RpcMessage&)msg).head();
         return stream;
     }

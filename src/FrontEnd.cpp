@@ -35,25 +35,30 @@ bool FrontEnd::connect() {
 }
 
 void FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
-    _sending_queue.push(std::move(msg));
-    int sz = _sending_queue_size.fetch_add(1, std::memory_order_release);
+    int sz = _sending_queue_size.fetch_add(1, std::memory_order_acq_rel);
     if (sz == 0) {
         // 等keep writing结束 可能可以去掉这句话
         for (;;) {
             int cnt = 0;
+            bool more = true;
             // 只有一个线程能到这里
-            while (_sending_queue.pop(_sending_msg)) {
-                _it1 = _sending_msg.cursor();
-                _it2 = _sending_msg.zero_copy_cursor();
+            while (more) {
+                _sending_msg = std::move(msg);
+                more = _sending_queue.pop(msg);
+                _it1.cursor(_sending_msg);
+                _it2.zero_copy_cursor(_sending_msg);
                 ++cnt;
-                if (!_socket->send_msg(_sending_msg, true, false, _it1, _it2)) {
+                if (!_socket->send_msg(_sending_msg, true, more, _it1, _it2)) {
                     epipe(true);
                     return;
                 }
                 if (_it1.has_next() || _it2.has_next()) {
                     // 对于RDMA的情况，一定走不到这里
+                    SCHECK(!_is_use_rdma);
+                    // 保证读锁连续
+                    _ctx->_spin_lock.lock_shared();
                     std::thread tmp = std::thread(
-                          [this](int cnt) { keep_writing(cnt); }, cnt);
+                          &FrontEnd::keep_writing, this, cnt, more, std::move(msg));
                     tmp.detach();
                     return;
                 }
@@ -61,23 +66,29 @@ void FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
             sz = _sending_queue_size.fetch_add(-cnt, std::memory_order_acq_rel);
             if (sz == cnt) {
                 break;
+            } else {
+                while (!_sending_queue.pop(msg));
             }
         }
+    } else {
+        _sending_queue.push(std::move(msg));
     }
 }
 
 void FrontEnd::send_msg(RpcMessage&& msg) {
-    _sending_queue.push(std::move(msg));
-    int sz = _sending_queue_size.fetch_add(1, std::memory_order_release);
+    int sz = _sending_queue_size.fetch_add(1, std::memory_order_acq_rel);
     if (sz == 0) {
         for (;;) {
             int cnt = 0;
+            bool more = true;
             // 只有一个线程能到这里
-            while (_sending_queue.pop(_sending_msg)) {
-                _it1 = _sending_msg.cursor();
-                _it2 = _sending_msg.zero_copy_cursor();
+            while (more) {
+                _sending_msg = std::move(msg);
+                more = _sending_queue.pop(msg);
+                _it1.cursor(_sending_msg);
+                _it2.zero_copy_cursor(_sending_msg);
                 ++cnt;
-                if (!_socket->send_msg(_sending_msg, false, false, _it1, _it2)) {
+                if (!_socket->send_msg(_sending_msg, false, more, _it1, _it2)) {
                     epipe(true);
                     return;
                 }
@@ -89,9 +100,12 @@ void FrontEnd::send_msg(RpcMessage&& msg) {
             sz = _sending_queue_size.fetch_add(-cnt, std::memory_order_acq_rel);
             if (sz == cnt) {
                 break;
+            } else {
+                while (!_sending_queue.pop(msg));
             }
         }
     } else {
+        _sending_queue.push(std::move(msg));
     }
 }
 
@@ -100,7 +114,6 @@ void FrontEnd::send_msg(RpcMessage&& msg) {
  */
 void FrontEnd::epipe(bool nonblock) {
     {
-        _ctx->lock();
         _ctx->remove_frontend_event(this);
     }
     set_state(FRONTEND_EPIPE);
@@ -117,28 +130,35 @@ void FrontEnd::epipe(bool nonblock) {
     _sending_queue_size.store(0, std::memory_order_release);
 }
 
-void FrontEnd::keep_writing(int cnt) {
+void FrontEnd::keep_writing(int cnt, bool more, RpcMessage&& msg) {
     if (_it1.has_next() || _it2.has_next()) {
-        if (!_socket->send_msg(_sending_msg, false, false, _it1, _it2)) {
+        if (!_socket->send_msg(_sending_msg, false, more, _it1, _it2)) {
             epipe(false);
             return;
         }
     }
     for (;;) {
-        while (_sending_queue.pop(_sending_msg)) {
-            if (!_socket->send_msg(_sending_msg, true, false, _it1, _it2)) {
+        while (more) {
+            _sending_msg = std::move(msg);
+            more = _sending_queue.pop(msg);
+            _it1.cursor(_sending_msg);
+            _it2.zero_copy_cursor(_sending_msg);
+            ++cnt;
+            if (!_socket->send_msg(_sending_msg, false, more, _it1, _it2)) {
                 epipe(false);
                 return;
             }
-            ++cnt;
         }
         int sz = _sending_queue_size.fetch_add(-cnt, std::memory_order_acq_rel);
         if (sz == cnt) {
             break;
         } else {
             cnt = 0;
+            while (!_sending_queue.pop(msg));
+            more = true;
         }
     }
+    _ctx->_spin_lock.unlock_shared();
 }
 
 

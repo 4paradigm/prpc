@@ -41,7 +41,7 @@ public:
      * 多线程会调用，确保只有一个线程
      * keep_writing 其他线程直接退出
      */
-    void keep_writing(int cnt);
+    void keep_writing(int cnt, bool more, RpcMessage&& msg);
 
     // thread safe, may call ctx->send_msg when flush pending
     void send_msg(RpcMessage&& msg);

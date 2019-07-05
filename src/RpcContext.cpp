@@ -110,6 +110,17 @@ Dealer* FairQueue::next(int sid) {
 }
 
 bool FairQueue::push_request(int sid, RpcRequest&& req) {
+    if (sid == -1) {
+        if (_sid2cache.empty()) {
+            return false;
+        }
+        if (_sids.empty()) {
+            sid = _sid2cache.begin()->first;
+        } else {
+            sid = _sids[_sids_rr_index.fetch_add(1, std::memory_order_relaxed)
+                % _sids.size()];
+        }
+    }
     auto it = _sid2dealers.find(sid);
     if (it != _sid2dealers.end()) {
         SCHECK(!it->second.empty()) << "no dealer.";
@@ -274,7 +285,7 @@ comm_rank_t RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
         return -1;
     }
     comm_rank_t ret = f->info().global_rank;
-    SLOG(INFO) << "ret : " << ret;
+    // SLOG(INFO) << "ret : " << ret;
 
     if (f->info() == _self) {
         push_request(std::move(msg));
@@ -303,8 +314,10 @@ comm_rank_t RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
         if ((f->state() & FRONTEND_DISCONNECT) == FRONTEND_DISCONNECT) {
             if (f->connect()) {
                 {
-                    lock_guard<RWSpinLock> l(_spin_lock);
+                    _spin_lock.unlock_shared();
+                    _spin_lock.lock();
                     add_frontend_event(f.get());
+                    _spin_lock.downgrade();
                 }
                 f->send_msg(std::move(msg));
             } else {
@@ -579,13 +592,15 @@ void RpcContext::push_response(RpcResponse&& resp) {
             return;
         }
     }
-    SLOG(WARNING) << "recv resp, but dealer has been finalized. Drop "
-        "it. rpc_id is "
-        << resp.head().rpc_id;
+    SLOG(WARNING) << "recv resp, but dealer has been finalized. Drop it. "
+          << resp.head();
 }
 
 void RpcContext::add_frontend_event(FrontEnd* f) {
     SCHECK(f->state() == FRONTEND_CONNECT) << f->state();
+    if (f->_epfd != -1) {
+        return;
+    }
     if (!f->_socket->fds().empty()) {
         static int idx = 0;
         f->_epfd = _epfds[idx % _io_thread_num];
@@ -601,6 +616,7 @@ void RpcContext::remove_frontend_event(FrontEnd* f) {
     for (auto& fd : f->_socket->fds()) {
         del_event(fd, f->_epfd);
     }
+    f->_epfd = -1;
 }
 
 void RpcContext::remove_frontend(FrontEnd* f) {

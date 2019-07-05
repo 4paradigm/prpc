@@ -83,9 +83,11 @@ public:
         return false;
     }
 
+    // 现在Rpc不用这个了，只有Master用，byte_cursor不复用可能较为低效
     bool send_rpc_message(RpcMessage&& msg, bool more = false) {
-        auto it1 = msg.cursor();
-        auto it2 = msg.zero_copy_cursor();
+        RpcMessage::byte_cursor it1, it2;
+        it1.cursor(msg);
+        it2.zero_copy_cursor(msg);
         return send_msg(msg, false, more, it1, it2);
     }
 

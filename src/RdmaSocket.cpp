@@ -575,17 +575,10 @@ bool RdmaSocket::send_msg(RpcMessage& msg,
       bool more,
       RpcMessage::byte_cursor& it1,
       RpcMessage::byte_cursor& it2) {
-
     if (!msg._data.empty()) {
-        /*
-         * 含有zero copy block的消息
-         * 需要move到heap上
-         */
-        std::unique_ptr<RpcMessage> m
-              = std::make_unique<RpcMessage>(std::move(msg));
         std::vector<ibv_mr*> mrs;
         auto zero_copy_block_cnt = 0;
-        for (auto& block : m->_data) {
+        for (auto& block : msg._data) {
             if (block.length >= MIN_ZERO_COPY_SIZE) {
                 ++zero_copy_block_cnt;
                 auto mr
@@ -615,7 +608,8 @@ bool RdmaSocket::send_msg(RpcMessage& msg,
         }
         if (zero_copy_block_cnt) {
             std::unique_ptr<msg_mr_t> item = std::make_unique<msg_mr_t>();
-            item->msg = std::move(m);
+            // hold住msg中内容的所有权
+            item->msg = std::make_unique<RpcMessage>(std::move(msg));
             item->mrs = std::move(mrs);
             item->zero_copy_block_cnt = zero_copy_block_cnt;
             _sending_msgs.push(std::move(item));
@@ -627,16 +621,8 @@ bool RdmaSocket::send_msg(RpcMessage& msg,
         it1.next();
         send(front.first, front.second, it1.has_next() | more);
     }
-
-
-    while (it2.has_next()) {
-        auto front = it2.head();
-        it2.next();
-        if (front.second < MIN_ZERO_COPY_SIZE) {
-            // 目前这个more也是糊的
-            send(front.first, front.second, it2.has_next() | more);
-        }
-    }
+    // it2需要消耗掉
+    it2.reset();
     return true;
 }
 

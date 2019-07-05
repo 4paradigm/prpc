@@ -112,7 +112,7 @@ void Dealer::_send_request(RpcRequest&& req) {
             _ctx->push_request(std::move(req));
             _ctx->_spin_lock.unlock_shared();
         } else {
-            SLOG(INFO) << req.head();
+            // SLOG(INFO) << req.head();
             comm_rank_t rank = _ctx->send_request(std::move(req), true);
             if (rank == _g_rank) {
                 _servers.insert(sid);

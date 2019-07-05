@@ -282,6 +282,7 @@ inline int64_t _send_raw(int fd, char* ptr, size_t size, bool nonblock, bool mor
  */
 inline bool _send(int fd, RpcMessage::byte_cursor& cur, int flag) {
     errno = 0;
+    flag |= MSG_NOSIGNAL;
     while (cur.has_next()) {
         char* ptr;
         size_t size;
@@ -292,7 +293,7 @@ inline bool _send(int fd, RpcMessage::byte_cursor& cur, int flag) {
                   fd,
                   ptr + sent,
                   size - sent,
-                  flag | MSG_NOSIGNAL);
+                  cur.size() > 1 ? flag | MSG_MORE : flag);
             if (nbytes != -1) {
                 sent += nbytes;
                 cur.advance(nbytes);
@@ -317,12 +318,10 @@ bool TcpSocket::send_msg(RpcMessage&,
     if (nonblock) {
         flag |= MSG_DONTWAIT;
     }
-    if (more) {
-        flag |= MSG_MORE;
-    }
-    if (!_send(_fd, it1, flag)) {
+    if (!_send(_fd, it1, more ? flag | MSG_MORE : flag)) {
         return false;
     }
+    // 后面不一定有zero copy的消息
     if (!_send(_fd2, it2, flag)) {
         return false;
     }

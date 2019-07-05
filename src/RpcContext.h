@@ -82,6 +82,7 @@ class RpcContext {
 public:
     friend class Dealer;
     friend class RpcService;
+    friend class FrontEnd;
 
     typedef RpcChannel<RpcRequest> req_ch_t;
     typedef RpcChannel<RpcResponse> resp_ch_t;
