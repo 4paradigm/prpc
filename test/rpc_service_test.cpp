@@ -307,8 +307,9 @@ TEST(RpcService, LazyArchive) {
         std::string check_str;
         for (int i = 0; i < kMaxRetry; ++i) {
             size_t sz = rand() * rand();
-            sz %= 1024 * 1024 * 5;
+            sz %= 1024;
             check_str.resize(sz);
+            SLOG(INFO) << "send size : " << sz;
             RpcRequest request;
             request << check_str;
             request.lazy() << std::move(check_str);
@@ -364,6 +365,7 @@ TEST(RpcService, MultiThread) {
 
     auto client_run = [=](RpcService* rpc, int size) {
         std::string check_str;
+        auto client = rpc->create_client("asdfasdf", server_thread_num);
         for (int i = 0; i < kMaxRetry * times; ++i) {
             size_t sz = rand() * rand();
             sz %= size;
@@ -378,7 +380,6 @@ TEST(RpcService, MultiThread) {
             request << check_str;
             request.lazy() << std::move(ar1);
 
-            auto client = rpc->create_client("asdfasdf", 1);
             auto dealer = client->create_dealer();
             dealer->send_request(std::move(request));
 

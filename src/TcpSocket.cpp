@@ -161,7 +161,11 @@ bool TcpSocket::connect(const std::string& endpoint,
     while (true) {
         auto dur = std::chrono::steady_clock::now() - starttm;
         int ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-        ms =  60000 - ms;
+        int ac_timeout = 60000;
+        if (_use_tcp_config && _tcp_config.connect_timeout >= 0) {
+            ac_timeout = _tcp_config.connect_timeout * 1000;
+        }
+        ms =  ac_timeout - ms;
         if (ms <= 0) {
             SLOG(WARNING) << "temporal socket accept timeout";
             return false;

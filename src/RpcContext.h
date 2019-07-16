@@ -76,6 +76,9 @@ private:
     std::atomic<int> _sids_rr_index;
     std::atomic<size_t> _dealer_id_rr_index;
     std::unordered_map<int, std::unique_ptr<MpscQueue<RpcRequest>>> _sid2cache;
+
+    // 只有一个server时加速查表
+    std::vector<Dealer*> quick_dealer;
 };
 
 class RpcContext {
@@ -89,6 +92,10 @@ public:
     RpcContext() {}
 
     void initialize(bool is_use_rdma, comm_rank_t rank, int io_thread_num = 1);
+
+    void finalize();
+
+    void async(std::function<void()>);
 
     void bind(const std::string& ip, int backlog = 20);
 
@@ -125,19 +132,17 @@ public:
 
     void poll_wait(std::vector<epoll_event>& events, int tid, int timeout);
 
-    std::shared_ptr<FrontEnd> get_client_frontend_by_rank(comm_rank_t rank);
+    FrontEnd* get_client_frontend_by_rank(comm_rank_t rank);
     /*
      * 瞎写的，每次返回第一个，LB需要好好写
      */
-    std::shared_ptr<FrontEnd> get_client_frontend_by_rpc_id(int rpc_id);
+    FrontEnd* get_client_frontend_by_rpc_id(int rpc_id);
 
-    std::shared_ptr<FrontEnd> get_client_frontend_by_sid(int rpc_id, int server_id);
+    FrontEnd* get_client_frontend_by_sid(int rpc_id, int server_id);
 
-    std::shared_ptr<FrontEnd> get_server_frontend_by_rank(comm_rank_t rank);
+    FrontEnd* get_server_frontend_by_rank(comm_rank_t rank);
 
     void handle_message_event(int fd);
-
-    bool connect(std::shared_ptr<FrontEnd> f); 
 
     std::vector<CommInfo> get_comm_info();
     
@@ -221,6 +226,12 @@ private:
     std::unordered_map<int, std::unordered_map<int, ServerInfo*>> _rpc_server_info;
     std::unordered_map<int, std::vector<std::shared_ptr<FrontEnd>>>
           _rpc_server_frontend;
+    
+    /*
+     * 加速 get_client_frontend_by_sid
+     */
+    std::unordered_map<uint64_t, std::shared_ptr<FrontEnd>> _rpc_server_id_frontend;
+
     /*
      * 用于等待rpc info满足要求的
      */
@@ -228,10 +239,12 @@ private:
     std::mutex _rpc_mu;
 
     std::vector<int> _epfds;
-    int _n_events = 0;
+    std::atomic<int> _n_events = {0};
 
     CommInfo _self;
     int _io_thread_num;
+
+    std::atomic<size_t> _async_thread_num = {0};
 };
 
 } // namespace core

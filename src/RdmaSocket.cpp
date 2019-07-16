@@ -163,7 +163,7 @@ bool RdmaSocket::handle_in_event(std::function<void(RpcMessage&&)> pass) {
             }
             ctl_msg_cnt += ack_num(wc.imm_data);
             for (int j = 0; j < read_complete_num(wc.imm_data); ++j) {
-                std::unique_ptr<paradigm4::pico::core::RdmaSocket::msg_mr_t> t;
+                core::unique_ptr<paradigm4::pico::core::RdmaSocket::msg_mr_t> t;
                 //SLOG(INFO) << "read ok";
                 _sending_msgs.pop(t);
                 //SLOG(INFO) << "read ok";
@@ -576,7 +576,7 @@ bool RdmaSocket::send_msg(RpcMessage& msg,
       RpcMessage::byte_cursor& it1,
       RpcMessage::byte_cursor& it2) {
     if (!msg._data.empty()) {
-        std::vector<ibv_mr*> mrs;
+        core::vector<ibv_mr*> mrs;
         auto zero_copy_block_cnt = 0;
         for (auto& block : msg._data) {
             if (block.length >= MIN_ZERO_COPY_SIZE) {
@@ -607,9 +607,9 @@ bool RdmaSocket::send_msg(RpcMessage& msg,
             }
         }
         if (zero_copy_block_cnt) {
-            std::unique_ptr<msg_mr_t> item = std::make_unique<msg_mr_t>();
+            core::unique_ptr<msg_mr_t> item = core::make_unique<msg_mr_t>();
             // hold住msg中内容的所有权
-            item->msg = std::make_unique<RpcMessage>(std::move(msg));
+            item->msg = core::make_unique<RpcMessage>(std::move(msg));
             item->mrs = std::move(mrs);
             item->zero_copy_block_cnt = zero_copy_block_cnt;
             _sending_msgs.push(std::move(item));

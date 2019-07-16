@@ -50,9 +50,9 @@ public:
     friend void pico_deserialize(ArchiveReader& ar, 
           SharedArchiveReader& shared, mystring& s) {
         ar >> s._size;
-        std::unique_ptr<data_block_t> own;
+        data_block_t own;
         shared.get_shared_uncheck(s._data, s._size, own);
-        s._hold = std::shared_ptr<void>(std::move(own));
+        s._hold = std::make_shared<data_block_t>(std::move(own));
     };
     friend bool operator==(const mystring& a, const mystring& b) {
         EXPECT_EQ(reinterpret_cast<uintptr_t>(a.c_str()) % ALIGN, 0);

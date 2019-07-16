@@ -9,6 +9,10 @@ namespace core {
  * 一个好一点做法是Dealer来要请求
  */
 
+static inline uint64_t rpc_sid_pack(int rpc_id, int sid) {
+    return rpc_id * 1000000007LL + sid;
+}
+
 void FairQueue::add_server(int sid) {
     //std::vector<RpcRequest> vec;
     //SCHECK(_sid2cache.emplace(sid, std::move(vec)).second);
@@ -155,6 +159,23 @@ void RpcContext::initialize(bool is_use_rdma,
     }
 }
 
+void RpcContext::finalize() {
+    SLOG(INFO) << "join rpc async threads";
+    while (_async_thread_num.load() > 0) {
+        std::this_thread::yield();
+    }
+    SLOG(INFO) << "rpc async threads joined";
+}
+
+void RpcContext::async(std::function<void()> run) {
+    _async_thread_num.fetch_add(1);
+    std::thread th([this, run](){
+        run();
+        _async_thread_num.fetch_sub(1);
+    });
+    th.detach();
+}
+ 
 void RpcContext::bind(const std::string& ip, int backlog) {
     lock_guard<RWSpinLock> l(_spin_lock);
     PSCHECK(_acceptor->bind_on_random_port(ip) == 0);
@@ -238,14 +259,14 @@ void RpcContext::remove_client_dealer(Dealer* dealer) {
 void RpcContext::poll_wait(std::vector<epoll_event>& events,
       int tid,
       int timeout) {
-    events.resize(_n_events);
+    events.resize(_n_events.load(std::memory_order_acquire));
     int n = retry_eintr_call(
           ::epoll_wait, _epfds[tid], events.data(), events.size(), timeout);
     PSCHECK(n >= 0);
     events.resize(n);
 }
 
-std::shared_ptr<FrontEnd> RpcContext::get_client_frontend_by_rank(
+FrontEnd* RpcContext::get_client_frontend_by_rank(
       comm_rank_t rank) {
     //shared_lock_guard<RWSpinLock> l(_spin_lock);
     auto it = _client_sockets.find(rank);
@@ -254,7 +275,7 @@ std::shared_ptr<FrontEnd> RpcContext::get_client_frontend_by_rank(
         return nullptr;
     } else {
         if (it->second->available()) {
-            return it->second;
+            return it->second.get();
         } else {
             return nullptr;
         }
@@ -266,14 +287,14 @@ std::shared_ptr<FrontEnd> RpcContext::get_client_frontend_by_rank(
  */
 comm_rank_t RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
     shared_lock_guard<RWSpinLock> l(_spin_lock);
-    std::shared_ptr<FrontEnd> f = nullptr;
+    FrontEnd* f = nullptr;
     auto sid = msg.head()->sid;
     auto dest_rank = msg.head()->dest_rank;
     auto rpc_id = msg.head()->rpc_id;
-    if (dest_rank != -1) {
-        f = get_client_frontend_by_rank(dest_rank);
-    } else if (sid != -1) {
+    if (sid != -1) {
         f = get_client_frontend_by_sid(rpc_id, sid);
+    } else if (dest_rank != -1) {
+        f = get_client_frontend_by_rank(dest_rank);
     } else {
         f = get_client_frontend_by_rpc_id(rpc_id);
     }
@@ -292,45 +313,15 @@ comm_rank_t RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
         return ret;
     }
     if (nonblock) {
-        if ((f->state() & FRONTEND_DISCONNECT) == FRONTEND_DISCONNECT) {
-            std::thread background = std::thread(
-                  [this, f](RpcMessage&& msg) {
-                      if (f->connect()) {
-                          {
-                              lock_guard<RWSpinLock> l(_spin_lock);
-                              add_frontend_event(f.get());
-                          }
-                          f->send_msg(std::move(msg));
-                      } else {
-                          send_request(std::move(msg), false);
-                      }
-                  },
-                  std::move(msg));
-            background.detach();
-        } else {
-            f->send_msg_nonblock(std::move(msg));
-        }
+        f->send_msg_nonblock(std::move(msg));
     } else {
-        if ((f->state() & FRONTEND_DISCONNECT) == FRONTEND_DISCONNECT) {
-            if (f->connect()) {
-                {
-                    _spin_lock.unlock_shared();
-                    _spin_lock.lock();
-                    add_frontend_event(f.get());
-                    _spin_lock.downgrade();
-                }
-                f->send_msg(std::move(msg));
-            } else {
-                send_request(std::move(msg), false);
-            }
-        }
         f->send_msg(std::move(msg));
     }
     return ret;
 }
 
 void RpcContext::send_response(RpcMessage&& resp, bool nonblcok) {
-    std::shared_ptr<FrontEnd> f = nullptr;
+    FrontEnd* f = nullptr;
     auto dest_rank = resp.head()->dest_rank;
     f = get_server_frontend_by_rank(dest_rank);
     if (!f) {
@@ -355,7 +346,7 @@ void RpcContext::send_response(RpcMessage&& resp, bool nonblcok) {
  * 一个可用的，未来维护一个专门的数据结构，
  * 保存可用的
  */
-std::shared_ptr<FrontEnd> RpcContext::get_client_frontend_by_rpc_id(
+FrontEnd* RpcContext::get_client_frontend_by_rpc_id(
       int rpc_id) {
     //shared_lock_guard<RWSpinLock> l(_spin_lock);
     auto it1 = _rpc_server_frontend.find(rpc_id);
@@ -365,18 +356,22 @@ std::shared_ptr<FrontEnd> RpcContext::get_client_frontend_by_rpc_id(
     const auto& v = it1->second;
     auto ret = v[rand() % v.size()];
     if (ret->available()) {
-        return ret;
+        return ret.get();
     }
     for (const auto& i : v) {
         if (i->available()) {
-            return i;
+            return i.get();
         }
     }
     return nullptr;
 }
 
-std::shared_ptr<FrontEnd> RpcContext::get_client_frontend_by_sid(int rpc_id,
+FrontEnd* RpcContext::get_client_frontend_by_sid(int rpc_id,
       int server_id) {
+    auto it = _rpc_server_id_frontend.find(rpc_sid_pack(rpc_id, server_id));
+    if (it != _rpc_server_id_frontend.end()) {
+        return it->second.get();
+    }
     auto it1 = _rpc_server_info.find(rpc_id);
     if (it1 == _rpc_server_info.end()) {
         SLOG(WARNING) << "no rpc service " << rpc_id;
@@ -390,13 +385,17 @@ std::shared_ptr<FrontEnd> RpcContext::get_client_frontend_by_sid(int rpc_id,
     return get_client_frontend_by_rank(it2->second->global_rank);
 }
 
-std::shared_ptr<FrontEnd> RpcContext::get_server_frontend_by_rank(
+FrontEnd* RpcContext::get_server_frontend_by_rank(
       comm_rank_t rank) {
     auto it = _server_sockets.find(rank);
     if (it == _server_sockets.end()) {
         return nullptr;
     } else {
-        return it->second;
+        if (it->second->available()) {
+            return it->second.get();
+        } else {
+            return nullptr;
+        }
     }
 }
 
@@ -415,16 +414,10 @@ void RpcContext::handle_message_event(int fd) {
         return;
     }
     auto f = it->second;
-    {
-        bool ret = f->handle_event(fd, func);
-        if (!ret) {
-            _spin_lock.unlock_shared();
-            _spin_lock.lock();
-            // TODO 仔细想想要不要只删除server end
-            // client端的epipe只删除事件
-            remove_frontend(f);
-            _spin_lock.downgrade();
-        }
+    bool ret = f->handle_event(fd, func);
+    if (!ret) {
+        remove_frontend_event(f);
+        f->set_state(FRONTEND_EPIPE);
     }
 }
 
@@ -442,8 +435,9 @@ void RpcContext::update_comm_info(const std::vector<CommInfo>& list) {
     std::set<CommInfo> set(list.begin(), list.end());
     std::vector<std::shared_ptr<FrontEnd>> to_del;
     std::vector<CommInfo> to_add;
+    // lock()优先级低于upgrade()，以此保证析构安全，只删除client_socket
     lock_guard<RWSpinLock> l(_spin_lock);
-    for (auto& i : _server_sockets) {
+    for (auto& i : _client_sockets) {
         auto& f = i.second;
         if (set.count(f->info()) == 0) {
             to_del.push_back(f);
@@ -453,7 +447,7 @@ void RpcContext::update_comm_info(const std::vector<CommInfo>& list) {
         remove_frontend(ptr.get());
     }
     for (const auto& comm_info : list) {
-        if (_server_sockets.count(comm_info.global_rank) == 0) {
+        if (_client_sockets.count(comm_info.global_rank) == 0) {
             to_add.push_back(comm_info);
         }
     }
@@ -477,6 +471,7 @@ void RpcContext::update_service_info(const std::vector<RpcServiceInfo>& list) {
         _rpc_info.clear();
         _rpc_server_info.clear();
         _rpc_server_frontend.clear();
+        _rpc_server_id_frontend.clear();
         auto service_list = list;
         for (auto& service_info: service_list) {
             int num = 0;
@@ -497,6 +492,9 @@ void RpcContext::update_service_info(const std::vector<RpcServiceInfo>& list) {
                     = (ServerInfo*)&server_info;
                 _rpc_server_frontend[rpc_info.rpc_id].push_back(
                       _client_sockets[server_info.global_rank]);
+                SCHECK(_rpc_server_id_frontend.emplace(
+                      rpc_sid_pack(rpc_info.rpc_id, server_info.server_id), 
+                      _client_sockets[server_info.global_rank]).second);
             }
         }
         /* unique all frontend，但是觉得没必要
@@ -522,7 +520,6 @@ void RpcContext::accept() {
     auto f = std::make_shared<FrontEnd>();
     f->_ctx = this;
     f->_socket = _acceptor->accept();
-    f->set_state(FRONTEND_CONNECT);
     if (!f->_socket || !f->_socket->accept(info)) {
         return;
     }
@@ -533,10 +530,20 @@ void RpcContext::accept() {
     SCHECK(magic == 0);
     ar.release();
     SLOG(INFO) << "accept from " << f->info();
-    lock_guard<RWSpinLock> l(_spin_lock);
-    f->_is_client_socket = false;
-    _server_sockets.emplace(f->info().global_rank, f);
-    add_frontend_event(f.get());
+    // 不async可能会导致同时互相connect时死锁
+    async([this, f](){
+        lock_guard<RWSpinLock> l(_spin_lock);
+        f->_is_client_socket = false;
+        comm_rank_t rank = f->info().global_rank;
+        auto it = _server_sockets.find(rank);
+        if (it != _server_sockets.end()) {
+            remove_frontend(it->second.get());
+        }
+        _server_sockets.emplace(rank, f);
+        add_frontend_event(f.get());
+        f->set_state(FRONTEND_CONNECT);
+        SLOG(INFO) << "accept connected " << f->info();
+    });
 }
 
 bool RpcContext::get_rpc_service_info(const std::string rpc_name,
@@ -596,8 +603,9 @@ void RpcContext::push_response(RpcResponse&& resp) {
           << resp.head();
 }
 
+
+// 假设已有_spin_lock写锁
 void RpcContext::add_frontend_event(FrontEnd* f) {
-    SCHECK(f->state() == FRONTEND_CONNECT) << f->state();
     if (f->_epfd != -1) {
         return;
     }
@@ -612,17 +620,25 @@ void RpcContext::add_frontend_event(FrontEnd* f) {
     }
 }
 
+// 保证读锁内只有一个线程会访问f->_epfd即可
 void RpcContext::remove_frontend_event(FrontEnd* f) {
+    if (f->_epfd == -1) {
+        return;
+    }
     for (auto& fd : f->_socket->fds()) {
         del_event(fd, f->_epfd);
     }
     f->_epfd = -1;
 }
 
+
+// 假设已有_spin_lock写锁
 void RpcContext::remove_frontend(FrontEnd* f) {
     remove_frontend_event(f);
-    for (auto& fd : f->_socket->fds()) {
-        _fd_map.erase(fd);
+    if (f->_socket) {
+        for (auto& fd : f->_socket->fds()) {
+            _fd_map.erase(fd);
+        }
     }
     comm_rank_t rank = f->_info.global_rank;
     if (f->_is_client_socket) {
@@ -640,11 +656,12 @@ void RpcContext::add_event(int fd, int epfd, bool edge_trigger) {
         // event.events |= EPOLLET;
     }
     //PSCHECK(epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event) == 0) << fd << " " << errno;
+    ++_n_events;
     int ret = epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event);
     if (ret != 0) {
         PSLOG(WARNING) << "epoll ctl error";
+        --_n_events;
     }
-    ++_n_events;
 }
 
 void RpcContext::del_event(int fd, int epfd) {

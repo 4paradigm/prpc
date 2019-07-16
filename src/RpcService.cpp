@@ -47,6 +47,7 @@ void RpcService::initialize(MasterClient* master_client,
 }
 
 void RpcService::finalize() {
+    _ctx.finalize();
     int64_t _ = _ctx._io_thread_num;
     SCHECK(::write(_terminate_fd, &_, sizeof(_)) == sizeof(int64_t));
     for (auto& t : _proxy_threads) {

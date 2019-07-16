@@ -215,7 +215,7 @@ public:
     int _pending_block_cnt = 0;
 
     std::function<void()> _send_failure_func = [](){};
-    std::unique_ptr<LazyArchive> _hold;
+    core::unique_ptr<LazyArchive> _hold;
 };
 
 class RpcRequest {
@@ -240,7 +240,7 @@ public:
 
     RpcRequest(RpcMessage&& msg) {
         msg.finalize(_head, _ar, _lazy);
-        _msg = std::make_unique<RpcMessage>(std::move(msg));
+        _msg = core::make_unique<RpcMessage>(std::move(msg));
     }
 
     RpcRequest(RpcRequest&& req) {
@@ -305,7 +305,7 @@ private:
     rpc_head_t _head;
     BinaryArchive _ar;
     LazyArchive _lazy;
-    std::unique_ptr<RpcMessage> _msg = nullptr;
+    core::unique_ptr<RpcMessage> _msg = nullptr;
     std::function<void(int)> _send_failure_func = [](int){};
 };
 
@@ -332,7 +332,7 @@ public:
 
     RpcResponse(RpcMessage&& msg) {
         msg.finalize(_head, _ar, _lazy);
-        _msg = std::make_unique<RpcMessage>(std::move(msg));
+        _msg = core::make_unique<RpcMessage>(std::move(msg));
     }
 
     RpcResponse(RpcResponse&& resp) {
@@ -395,7 +395,7 @@ private:
     rpc_head_t _head;
     BinaryArchive _ar;
     LazyArchive _lazy;
-    std::unique_ptr<RpcMessage> _msg = nullptr;
+    core::unique_ptr<RpcMessage> _msg = nullptr;
 };
 
 } // namespace core

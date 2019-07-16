@@ -18,7 +18,7 @@ void RpcMessage::initialize(rpc_head_t&& head, BinaryArchive&& ar, LazyArchive&&
     _start = ar.buffer();
     *this->head() = head;
     _buffer = ar.release_shared();
-    _hold = std::make_unique<LazyArchive>(std::move(lazy));
+    _hold = core::make_unique<LazyArchive>(std::move(lazy));
 }
 
 void RpcMessage::finalize(rpc_head_t& head, BinaryArchive& ar, LazyArchive& lazy) {

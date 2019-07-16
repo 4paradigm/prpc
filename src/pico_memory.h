@@ -137,6 +137,7 @@ public:
         pico_free(p);
     }
 };
+
 template <int id>
 class MemPool {
 public:
@@ -233,6 +234,7 @@ public:
 namespace paradigm4 {
 namespace pico {
 namespace core {
+
 template <typename T, typename _Alloc = PicoAllocator<T>>
 using vector = std::vector<T, _Alloc>;
 template <typename T, typename _Alloc = PicoAllocator<T>>
@@ -281,6 +283,25 @@ template <typename _Tp>
 inline void pico_delete(_Tp* p) {
     p->~_Tp();
     pico_free(p);
+}
+
+template<class _Tp>
+struct PicoDelete {
+    PicoDelete() = default;
+    template<typename _Up, typename = typename
+          std::enable_if<std::is_convertible<_Up*, _Tp*>::value>::type>
+    PicoDelete(const PicoDelete<_Up>&) noexcept { }
+    void operator()(_Tp* p)const {
+        pico_delete(p);
+    }
+};
+
+template <typename T, typename _Deleter = PicoDelete<T>>
+using unique_ptr = std::unique_ptr<T, _Deleter>;
+
+template <typename _Tp, typename... _Args>
+inline core::unique_ptr<_Tp> make_unique(_Args&&... __args) {
+    return core::unique_ptr<_Tp>(pico_new<_Tp>(std::forward<_Args>(__args)...));
 }
 
 // template <class T>

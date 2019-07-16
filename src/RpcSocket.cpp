@@ -52,7 +52,6 @@ bool RpcSocket::try_recv_msgs(std::function<void(RpcMessage&&)> func) {
         }
 
         ssize_t n = recv_nonblock(_buffer.cursor, _buffer.avaliable_size());
-
         if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
             errno = 0;
             return true;
@@ -87,7 +86,6 @@ bool RpcSocket::try_recv_msgs(std::function<void(RpcMessage&&)> func) {
                 break;
             }
             char* expected_msg_end = _buffer.msg_cursor + msg_hd->msg_size();
-
             if (expected_msg_end <= _buffer.cursor) {
                 func({_buffer.msg_cursor, _buffer.ptr});
                 _buffer.msg_cursor = expected_msg_end;

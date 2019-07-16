@@ -13,18 +13,22 @@ namespace pico {
 namespace core {
 
 struct data_block_t {
+    typedef RpcAllocator<char> allocator_type;
+    struct delete_t {
+        int owner = 0;
+        void operator()(void* p)const {
+            SCHECK(owner <= 1);
+            if (owner == 1) {
+                allocator_type().deallocate((char*)p, 1);
+            }
+        }
+    };
     char* data;
     uint32_t length;
-    std::function<void(void*)> deleter = [](void*) {};
+    delete_t deleter;
 #ifdef USE_RDMA
     uint32_t lkey;
 #endif
-    typedef RpcAllocator<char> allocator_type;
-
-    static allocator_type allocator() {
-        static allocator_type ins;
-        return ins;
-    }
 
     data_block_t(const data_block_t&) = delete;
     data_block_t& operator=(const data_block_t&) = delete;
@@ -35,7 +39,7 @@ struct data_block_t {
 
     data_block_t& operator=(data_block_t&& o) {
         length = o.length;
-        deleter = std::move(o.deleter);
+        deleter.owner = o.deleter.owner;
 #ifdef USE_RDMA
         lkey = o.lkey;
         o.lkey = 0;
@@ -43,7 +47,7 @@ struct data_block_t {
         data = o.data;
         o.data = nullptr;
         o.length = 0;
-        o.deleter = [](void*) {};
+        o.deleter.owner = 0;
         return *this;
     }
 
@@ -59,8 +63,8 @@ struct data_block_t {
             data = nullptr;
             return;
         }
-        data = (char*)allocator().allocate(len);
-        deleter = [](void* data) { allocator().deallocate((char*)data, 1); };
+        data = (char*)allocator_type().allocate(len);
+        deleter.owner = 1;
 #ifdef USE_RDMA
         auto mr
               = RdmaContext::singleton().get(data, length);
@@ -68,6 +72,13 @@ struct data_block_t {
             lkey = mr->mr->lkey;
         }
 #endif
+    }
+
+    delete_t release_deleter() {
+        delete_t ret;
+        ret.owner = deleter.owner;
+        deleter.owner = 0;
+        return ret;
     }
 
     // 没有所有权
@@ -130,12 +141,12 @@ public:
 
     template <class T>
     std::enable_if_t<std::is_trivially_copyable<T>::value>
-          get_shared_uncheck(T*& p, size_t& size, std::unique_ptr<data_block_t>& own) {
+          get_shared_uncheck(T*& p, size_t& size, data_block_t& own) {
         size = _data[_pos].length / sizeof(T);
         SCHECK(_data[_pos].length == size * sizeof(T));
         p = reinterpret_cast<T*>(_data[_pos].data);
 
-        own = std::make_unique<data_block_t>(std::move(_data[_pos]));
+        own = std::move(_data[_pos]);
         ++_pos;
     }
 
@@ -187,7 +198,7 @@ public:
           std::declval<T&>()))>
     std::enable_if_t<!std::is_reference<T>::value, LazyArchive&>
     operator<<(T&& value) {
-        _lazy.push_back(make_lazy(std::move(value)));
+        _lazy.push_back(core::make_unique<Lazy<T>>(std::move(value)));
         return *this;
     }
 
@@ -254,29 +265,13 @@ private:
         }
     };
 
-    struct LazyDeleter {
-        void operator()(LazyBase* p)const {
-            p->~LazyBase();
-            pico_free(p);
-        }
-    };
-
-    using LazyPtr = std::unique_ptr<LazyBase, LazyDeleter>;
-
-    template<class T>
-    LazyPtr make_lazy(T&& value) {
-        void* p = pico_malloc(sizeof(Lazy<T>));
-        ::new (p) Lazy<T>(std::forward<T>(value));
-        return LazyPtr(static_cast<Lazy<T>*>(p));
-    }
-
     BinaryArchive _meta_ar;
     ArchiveReader _ar;
     SharedArchiveReader _shared;
-    pico::core::vector<LazyPtr> _lazy;
+    core::vector<core::unique_ptr<LazyBase>> _lazy;
     size_t _cur = 0;
 public: 
-    std::unique_ptr<LazyArchive> _hold;
+    core::unique_ptr<LazyArchive> _hold;
 };
 
 template<class T>
@@ -298,9 +293,8 @@ inline void pico_serialize(ArchiveWriter&, SharedArchiveWriter& shared, data_blo
 inline void pico_deserialize(ArchiveReader&, SharedArchiveReader& shared, data_block_t& data) {
     char* ptr;
     size_t len;
-    std::unique_ptr<data_block_t> own;
-    shared.get_shared_uncheck(ptr, len, own);
-    data = std::move(*own);
+    data_block_t own;
+    shared.get_shared_uncheck(ptr, len, data);
 }
 
 inline void pico_serialize(ArchiveWriter&, SharedArchiveWriter& shared, BinaryArchive& ar) {
@@ -310,11 +304,9 @@ inline void pico_serialize(ArchiveWriter&, SharedArchiveWriter& shared, BinaryAr
 inline void pico_deserialize(ArchiveReader&, SharedArchiveReader& shared, BinaryArchive& ar) {
     char* ptr;
     size_t len;
-    std::unique_ptr<data_block_t> own;
+    data_block_t own;
     shared.get_shared_uncheck(ptr, len, own);
-    auto deleter = own.get_deleter();
-    auto own_ptr = own.release();
-    ar.set_read_buffer(ptr, len, [deleter, own_ptr](void*) { deleter(own_ptr); });
+    ar.set_read_buffer(ptr, len, own.release_deleter());
 }
 
 template<class T>
@@ -337,7 +329,7 @@ std::enable_if_t<std::is_trivially_copyable<T>::value && !std::is_same<T, bool>:
 pico_deserialize(ArchiveReader&, SharedArchiveReader& shared, std::vector<T>& vec) {
     T* data; 
     size_t size;
-    std::unique_ptr<data_block_t> own;
+    data_block_t own;
     shared.get_shared_uncheck(data, size, own);
     vec.resize(size);
     memcpy(vec.data(), data, size * sizeof(T));

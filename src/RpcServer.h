@@ -33,6 +33,9 @@ public:
 
     void terminate();
 
+    // terminate()并join所有dealer后，可以restart()
+    void restart();
+
     RpcServer(int rpc_id,
           int server_id,
           const std::string& rpc_name,

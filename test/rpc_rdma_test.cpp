@@ -332,6 +332,7 @@ TEST(RpcService, MultiThread) {
 
     auto client_run = [=](RpcService* rpc, int size, int th) {
         std::string check_str;
+        auto client = rpc->create_client("asdfasdf", server_thread_num);
         for (int i = 0; i < kMaxRetry * times; ++i) {
             size_t sz = rand() * rand();
             sz %= size;
@@ -350,9 +351,7 @@ TEST(RpcService, MultiThread) {
             int ar1len = ar1.length();
             request << i << th << check_str;
             request.lazy() << std::move(ar1);
-            
 
-            auto client = rpc->create_client("asdfasdf", 1);
             auto dealer = client->create_dealer();
             dealer->send_request(std::move(request));
 

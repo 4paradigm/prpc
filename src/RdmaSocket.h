@@ -49,8 +49,8 @@ public:
     };
 
     struct msg_mr_t {
-        std::unique_ptr<RpcMessage> msg;
-        std::vector<ibv_mr*> mrs;
+        core::unique_ptr<RpcMessage> msg;
+        core::vector<ibv_mr*> mrs;
         int zero_copy_block_cnt;
         ~msg_mr_t() {
             for (auto& mr : mrs) {
@@ -158,7 +158,7 @@ private:
     char _pad2_[64];
     std::atomic<int64_t> _ack_cnt;
     char _pad3_[64];
-    MpscQueue<std::unique_ptr<msg_mr_t>> _sending_msgs;
+    MpscQueue<core::unique_ptr<msg_mr_t>> _sending_msgs;
 };
 
 class RdmaAcceptor : public RpcAcceptor {

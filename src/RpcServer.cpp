@@ -34,6 +34,11 @@ void RpcServer::terminate() {
     }
 }
 
+void RpcServer::restart() {
+    lock_guard<SpinLock> _(_lk);
+    _terminate = false;
+}
+
 RpcServer::~RpcServer() {
     lock_guard<SpinLock> _(_lk);
     int n_dealers = _dealers.size();
