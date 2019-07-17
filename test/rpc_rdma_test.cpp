@@ -302,7 +302,7 @@ TEST(RpcService, LazyArchive) {
 }
 
 TEST(RpcService, MultiThread) {
-    int times = 10;
+    int times = 1;
     int server_thread_num = 10;
     int client_thread_num = 20;
     auto server_run = [=](RpcService* rpc) {
@@ -349,8 +349,13 @@ TEST(RpcService, MultiThread) {
             BinaryArchive ar1(true);
             ar1 << check_str;
             int ar1len = ar1.length();
-            request << i << th << check_str;
-            request.lazy() << std::move(ar1);
+            for (int i = 0; i < 10; ++i) {
+                BinaryArchive ar1(true);
+                ar1 << check_str;
+                int ar1len = ar1.length();
+                request << i << th << check_str;
+                request.lazy() << std::move(ar1);
+            }
 
             auto dealer = client->create_dealer();
             dealer->send_request(std::move(request));

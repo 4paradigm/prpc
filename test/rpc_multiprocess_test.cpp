@@ -9,6 +9,7 @@
 
 #include "RpcService.h"
 #include "macro.h"
+#include <sys/prctl.h>
 
 namespace paradigm4 {
 namespace pico {
@@ -309,6 +310,9 @@ TEST(RpcService, killclient) {
 } // namespace paradigm4
 
 int main(int argc, char* argv[]) {
+#ifdef PR_SET_PTRACER
+    prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY, 0, 0, 0);
+#endif
     testing::InitGoogleTest(&argc, argv);
     int ret = RUN_ALL_TESTS();
     return ret;

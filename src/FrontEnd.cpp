@@ -42,14 +42,14 @@ void FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
         // 只有一个线程能到这里
         _msg = std::move(msg);
         _more = true;
-        _cnt = 0;
+        int cnt = 0;
         _it1.reset();
         _it2.reset();
         if (state() & FRONTEND_DISCONNECT) {
             // 保证读锁连续
             _ctx->_spin_lock.lock_shared();
-            _ctx->async([this](){
-                keep_writing();
+            _ctx->async([this, cnt](){
+                keep_writing(cnt);
                 _ctx->_spin_lock.unlock_shared();
             });
             return;
@@ -58,11 +58,11 @@ void FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
             while (_more) {
                 _sending_msg = std::move(_msg);
                 _more = _sending_queue.pop(_msg);
-                ++_cnt;
+                ++cnt;
                 _it1.cursor(_sending_msg);
                 _it2.zero_copy_cursor(_sending_msg);
                 if (!_socket->send_msg(_sending_msg, true, _more, _it1, _it2)) {
-                    epipe(true);
+                    epipe(cnt, true);
                     return;
                 }
                 if (_it1.has_next() || _it2.has_next()) {
@@ -70,20 +70,20 @@ void FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
                     SCHECK(!_is_use_rdma);
                     // 保证读锁连续
                     _ctx->_spin_lock.lock_shared();
-                    _ctx->async([this](){
-                        keep_writing();
+                    _ctx->async([this, cnt](){
+                        keep_writing(cnt);
                         _ctx->_spin_lock.unlock_shared();
                     });
                     return;
                 }
             }
-            sz = _sending_queue_size.fetch_add(-_cnt, std::memory_order_acq_rel);
-            if (sz == _cnt) {
-                break;
+            sz = _sending_queue_size.fetch_sub(cnt, std::memory_order_acq_rel);
+            if (sz == cnt) {
+                return;
             } else {
                 while (!_sending_queue.pop(_msg));
                 _more = true;
-                _cnt = 0;
+                cnt = 0;
             }
         }
     } else {
@@ -97,10 +97,9 @@ void FrontEnd::send_msg(RpcMessage&& msg) {
         // 只有一个线程能到这里
         _msg = std::move(msg);
         _more = true;
-        _cnt = 0;
         _it1.reset();
         _it2.reset();
-        keep_writing();
+        keep_writing(0);
     } else {
         _sending_queue.push(std::move(msg));
     }
@@ -109,9 +108,10 @@ void FrontEnd::send_msg(RpcMessage&& msg) {
 /*
  * 内部函数，外部保证只有一个线程调用
  */
-void FrontEnd::epipe(bool nonblock) {
-    _ctx->remove_frontend_event(this);
+void FrontEnd::epipe(int cnt, bool nonblock) {
     set_state(FRONTEND_EPIPE);
+    _ctx->remove_frontend_event(this);
+    // 对于server socket，等待重连时构造新的FrontEnd
     if (!_is_client_socket) {
         return;
     }
@@ -122,27 +122,29 @@ void FrontEnd::epipe(bool nonblock) {
     _ctx->send_request(std::move(_sending_msg), nonblock);
     if (_more) {
         _ctx->send_request(std::move(_msg), nonblock);
+        ++cnt;
     }
-    while (_sending_queue.pop(_sending_msg)) {
+    while (_sending_queue_size.fetch_sub(cnt) != cnt) {
+        while (!_sending_queue.pop(_sending_msg));
         _ctx->send_request(std::move(_sending_msg), nonblock);
+        cnt = 1;
     }
-    _sending_queue_size.store(0, std::memory_order_release);
     set_state(FRONTEND_DISCONNECT | FRONTEND_EPIPE);
 }
 
-void FrontEnd::keep_writing() {
+void FrontEnd::keep_writing(int cnt) {
     if (state() & FRONTEND_DISCONNECT) {
         if (!connect()) {
             _sending_msg = std::move(_msg);
             _more = _sending_queue.pop(_msg);
-            ++_cnt;
-            epipe(false);
+            ++cnt;
+            epipe(cnt, false);
             return;
         }
     }
     if (_it1.has_next() || _it2.has_next()) {
         if (!_socket->send_msg(_sending_msg, false, _more, _it1, _it2)) {
-            epipe(false);
+            epipe(cnt, false);
             return;
         }
     }
@@ -150,11 +152,11 @@ void FrontEnd::keep_writing() {
         while (_more) {
             _sending_msg = std::move(_msg);
             _more = _sending_queue.pop(_msg);
-            ++_cnt;
+            ++cnt;
             _it1.cursor(_sending_msg);
             _it2.zero_copy_cursor(_sending_msg);
             if (!_socket->send_msg(_sending_msg, false, _more, _it1, _it2)) {
-                epipe(false);
+                epipe(cnt, false);
                 return;
             }
             if (_it1.has_next() || _it2.has_next()) {
@@ -162,13 +164,14 @@ void FrontEnd::keep_writing() {
                 return;
             }
         }
-        int sz = _sending_queue_size.fetch_add(-_cnt, std::memory_order_acq_rel);
-        if (sz == _cnt) {
+        int sz = _sending_queue_size.fetch_sub(cnt, std::memory_order_acq_rel);
+        // 此时已有其他线程可能会进来，所以cnt必须是局部变量
+        if (sz == cnt) {
             return;
         } else {
             while (!_sending_queue.pop(_msg));
             _more = true;
-            _cnt = 0;
+            cnt = 0;
         }
     }
 }

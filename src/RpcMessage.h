@@ -130,6 +130,7 @@ public:
         byte_cursor& operator = (byte_cursor&&) = default;
 
         void attach(RpcMessage* msg, bool zero_copy) {
+            reset();
             auto& data = msg->_data;
             if (!zero_copy) {
                 _cur.emplace_back(
@@ -180,7 +181,7 @@ public:
         }
 
         void advance(size_t nbytes) {
-            SCHECK(_cur[_i].second >= nbytes);
+            SCHECK(_cur[_i].second >= nbytes) << _i << ' ' << _cur[_i].second << ' ' << nbytes;
             _cur[_i].second -= nbytes;
             _cur[_i].first += nbytes;
             while (_i < _cur.size() && _cur[_i].second == 0) {

@@ -16,8 +16,10 @@ class AsyncWatcher {
 public:
     typedef uint64_t Atomic;
     void notify() {
-        std::lock_guard<std::mutex> lock(_mutex);
-        ++_version;
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            ++_version;
+        }
         _cv.notify_all();
     }
     Atomic watch() {

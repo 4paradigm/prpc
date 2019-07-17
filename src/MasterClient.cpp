@@ -51,8 +51,8 @@ void WatcherTable::erase(WatcherHandle handle) {
 
 void WatcherTable::invoke(const std::string& key) {
     std::list<std::shared_ptr<Watcher>> watchers;
+    std::lock_guard<std::mutex> lk(_mu);
     {
-        std::lock_guard<std::mutex> lk(_mu);
         auto it = _mp.find(key);
         if (it != _mp.end()) {
             watchers = it->second;

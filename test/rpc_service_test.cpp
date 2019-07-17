@@ -307,7 +307,7 @@ TEST(RpcService, LazyArchive) {
         std::string check_str;
         for (int i = 0; i < kMaxRetry; ++i) {
             size_t sz = rand() * rand();
-            sz %= 1024;
+            sz %= 5 * 1024 * 1024;
             check_str.resize(sz);
             SLOG(INFO) << "send size : " << sz;
             RpcRequest request;

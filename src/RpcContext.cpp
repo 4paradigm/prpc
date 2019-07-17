@@ -410,14 +410,13 @@ void RpcContext::handle_message_event(int fd) {
     shared_lock_guard<RWSpinLock> l(_spin_lock);
     auto it = _fd_map.find(fd);
     if (it == _fd_map.end()) {
-        SLOG(WARNING) << "fuck!!!!";
+        SLOG(WARNING) << "no handle fd " << fd;
         return;
     }
     auto f = it->second;
     bool ret = f->handle_event(fd, func);
     if (!ret) {
         remove_frontend_event(f);
-        f->set_state(FRONTEND_EPIPE);
     }
 }
 
@@ -435,8 +434,14 @@ void RpcContext::update_comm_info(const std::vector<CommInfo>& list) {
     std::set<CommInfo> set(list.begin(), list.end());
     std::vector<std::shared_ptr<FrontEnd>> to_del;
     std::vector<CommInfo> to_add;
-    // lock()优先级低于upgrade()，以此保证析构安全，只删除client_socket
+    // lock()优先级低于upgrade()，以此保证析构安全
     lock_guard<RWSpinLock> l(_spin_lock);
+    for (auto& i : _server_sockets) {
+        auto& f = i.second;
+        if (set.count(f->info()) == 0) {
+            to_del.push_back(f);
+        }
+    }
     for (auto& i : _client_sockets) {
         auto& f = i.second;
         if (set.count(f->info()) == 0) {
@@ -542,7 +547,6 @@ void RpcContext::accept() {
         _server_sockets.emplace(rank, f);
         add_frontend_event(f.get());
         f->set_state(FRONTEND_CONNECT);
-        SLOG(INFO) << "accept connected " << f->info();
     });
 }
 
@@ -604,35 +608,30 @@ void RpcContext::push_response(RpcResponse&& resp) {
 }
 
 
-// 假设已有_spin_lock写锁
+// 必须在_spin_lock写锁中
 void RpcContext::add_frontend_event(FrontEnd* f) {
-    if (f->_epfd != -1) {
-        return;
-    }
     if (!f->_socket->fds().empty()) {
         static int idx = 0;
         f->_epfd = _epfds[idx % _io_thread_num];
         ++idx;
         for (int fd : f->_socket->fds()) {
             add_event(fd, f->_epfd, true);
-            _fd_map.emplace(fd, f);
+            _fd_map[fd] = f;
         }
     }
 }
 
-// 保证读锁内只有一个线程会访问f->_epfd即可
+// 保证f只有一个线程在访问
 void RpcContext::remove_frontend_event(FrontEnd* f) {
-    if (f->_epfd == -1) {
-        return;
+    if (f->_epfd != -1) {
+        for (auto& fd : f->_socket->fds()) {
+            del_event(fd, f->_epfd);
+        }
     }
-    for (auto& fd : f->_socket->fds()) {
-        del_event(fd, f->_epfd);
-    }
-    f->_epfd = -1;
 }
 
 
-// 假设已有_spin_lock写锁
+// 必须在_spin_lock写锁中
 void RpcContext::remove_frontend(FrontEnd* f) {
     remove_frontend_event(f);
     if (f->_socket) {
@@ -659,7 +658,7 @@ void RpcContext::add_event(int fd, int epfd, bool edge_trigger) {
     ++_n_events;
     int ret = epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event);
     if (ret != 0) {
-        PSLOG(WARNING) << "epoll ctl error";
+        PSLOG(WARNING) << "epoll ctl error " << fd;
         --_n_events;
     }
 }
@@ -668,7 +667,7 @@ void RpcContext::del_event(int fd, int epfd) {
     if (epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL) == 0) {
         --_n_events;
     } else if (errno == ENOENT) {
-        PSLOG(WARNING) << "no such event";
+        PSLOG(WARNING) << "no such event " << fd;
     } else {
         PSLOG(FATAL) << errno;
     }
