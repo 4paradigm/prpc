@@ -38,10 +38,7 @@ void WatcherTable::erase(WatcherHandle handle) {
     auto it = _mp.find(handle._key);
     SCHECK(it != _mp.end());
     auto watcher = (*handle._watcher);
-    {
-        std::lock_guard<std::mutex> lkcb(watcher->mutex);
-        it->second.erase(handle._watcher);
-    }
+    it->second.erase(handle._watcher);
     BLOG(DCLIENT) << "erase one callback of " << handle._key;
     if (it->second.empty()) {
         _mp.erase(it);
@@ -49,18 +46,14 @@ void WatcherTable::erase(WatcherHandle handle) {
     }
 }
 
+// 注意回调函数不能再调用insert erase，或者与其他回调有依赖关系
 void WatcherTable::invoke(const std::string& key) {
-    std::list<std::shared_ptr<Watcher>> watchers;
     std::lock_guard<std::mutex> lk(_mu);
-    {
-        auto it = _mp.find(key);
-        if (it != _mp.end()) {
-            watchers = it->second;
+    auto it = _mp.find(key);
+    if (it != _mp.end()) {
+        for (auto watcher: it->second) {
+            watcher->callback();
         }
-    }
-    for (auto watcher: watchers) {
-        std::lock_guard<std::mutex> lkcb(watcher->mutex);
-        watcher->callback();
     }
 }
 

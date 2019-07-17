@@ -26,7 +26,6 @@ namespace core {
 class WatcherTable {
 public:
     struct Watcher {
-        std::mutex mutex;
         std::function<void()> callback;
     };
 
