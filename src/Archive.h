@@ -1079,6 +1079,23 @@ Archive<AR>& operator>>(Archive<AR>& ar, T& x) {
     }
 #endif
 
+template<class AR, typename T, typename = std::enable_if_t<std::is_enum<T>::value>, typename = void>
+bool pico_deserialize(AR& ar, T& val) {
+    int t;
+    if (!pico_deserialize(ar, t))
+        return false;
+    val = static_cast<T>(t);
+    return true;
+}
+
+template<class AR, typename T, typename = std::enable_if_t<std::is_enum<T>::value>, typename = void>
+bool pico_serialize(AR& ar, const T& val) {
+    if (!pico_serialize(ar, static_cast<int>(val)))
+        return false;
+    return true;
+}
+
+
 struct SerializableObject : public Object {
     virtual bool _binary_archive_serialize_internal_(BinaryArchive&) const {
         return true;
@@ -1164,6 +1181,10 @@ std::enable_if_t<!serialize_helper::can_serialized_size<T>::value &&
 std::is_trivially_copyable<T>::value, size_t>
 pico_serialized_size(const T&) {
     return sizeof(T);
+}
+
+inline size_t pico_serialized_size(const std::string& value) {
+    return sizeof(size_t) + value.size() * sizeof(char) + 1;
 }
 
 template <class T>

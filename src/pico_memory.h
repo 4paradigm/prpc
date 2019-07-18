@@ -138,13 +138,13 @@ public:
     }
 };
 
-template <int id>
+template <typename id>
 class MemPool {
 public:
     typedef std::atomic_size_t allocated_size_t;
     typedef volatile size_t max_size_t;
 
-    template <class T, int PoolId, bool NoExcept>
+    template <class T, typename PoolId, bool NoExcept>
     friend class PicoLimitedAllocator;
     static size_t current_size() { return _allocated_size; }
     static void set_max_size(size_t size) { _max_size = size; }
@@ -153,13 +153,13 @@ public:
     static allocated_size_t _allocated_size;
     static max_size_t _max_size;
 };
-template <int id>
+template <typename id>
 typename MemPool<id>::max_size_t MemPool<id>::_max_size =
     std::numeric_limits<size_t>::max();
-template <int id>
+template <typename id>
 typename MemPool<id>::allocated_size_t MemPool<id>::_allocated_size;
 
-template <class T, int PoolId = 0, bool NoExcept = false>
+template <class T, typename PoolId = void, bool NoExcept = false>
 class PicoLimitedAllocator : public std::allocator<T> {
 public:
     typedef std::size_t size_type;
@@ -173,7 +173,7 @@ public:
 
     static size_t current_size() { return pool_t::current_size(); }
     static void set_max_size(size_t size) { pool_t::set_max_size(size); }
-    static size_t get_max_size(size_t size) { return pool_t::get_max_size(); }
+    static size_t get_max_size() { return pool_t::get_max_size(); }
     template <class U>
     struct rebind {
         typedef PicoLimitedAllocator<U> other;
@@ -207,6 +207,28 @@ public:
             }
         }
         return static_cast<pointer>(ptr);
+    }
+
+    pointer reallocate(pointer ptr, size_type n) {
+        size_t old_real_size = pico_malloc_size(ptr);
+        size_t new_size = n* sizeof(T);
+        if (unlikely(pool_t::_allocated_size + new_size-old_real_size > pool_t::_max_size)) {
+            if (!NoExcept)
+                std::__throw_bad_alloc();
+            return nullptr;
+        }
+        pointer new_ptr= static_cast<pointer>(pico_realloc(ptr, n * sizeof(value_type)));
+        if (likely(ptr != nullptr)) {
+            size_t real_size = pico_malloc_size(ptr);
+            pool_t::_allocated_size += real_size - old_real_size;
+            if (unlikely(pool_t::_allocated_size > pool_t::_max_size)) {
+                deallocate(static_cast<pointer>(ptr), n);
+                if (!NoExcept)
+                    std::__throw_bad_alloc();
+                return nullptr;
+            }
+        }
+        return new_ptr;
     }
 
     void deallocate(pointer ptr, size_type /*num*/) {

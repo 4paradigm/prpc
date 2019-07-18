@@ -239,6 +239,10 @@ public:
         _ar.set_cursor(_ar.end());
     }
 
+    void set_sid(int sid) {
+        head().sid = sid;
+    }
+
     RpcRequest(RpcMessage&& msg) {
         msg.finalize(_head, _ar, _lazy);
         _msg = core::make_unique<RpcMessage>(std::move(msg));
