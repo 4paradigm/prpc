@@ -11,14 +11,15 @@ namespace core {
  */
 bool FrontEnd::connect() {
     if (state() & FRONTEND_DISCONNECT) {
+        std::unique_ptr<RpcSocket> socket;
         if (_is_use_rdma) {
 #ifdef USE_RDMA
-            _socket = std::make_unique<RdmaSocket>();
+            socket = std::make_unique<RdmaSocket>();
 #else
             SLOG(FATAL) << "rdma not supported.";
 #endif
         } else {
-            _socket = std::make_unique<TcpSocket>();
+            socket = std::make_unique<TcpSocket>();
         }
         BinaryArchive ar;
         ar << uint16_t(0);
@@ -26,10 +27,11 @@ bool FrontEnd::connect() {
         std::string info;
         info.resize(ar.readable_length());
         memcpy(&info[0], ar.buffer(), info.size());
-        if (!_socket->connect(_info.endpoint, info, 0)) {
+        if (!socket->connect(_info.endpoint, info, 0)) {
             return false;
         }
         upgrade_guard<RWSpinLock> l(_ctx->_spin_lock);
+        _socket = std::move(socket);
         _ctx->add_frontend_event(this);
         set_state(FRONTEND_CONNECT);
     }
