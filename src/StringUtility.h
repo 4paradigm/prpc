@@ -6,6 +6,8 @@
 
 #include "VirtualObject.h"
 #include "pico_log.h"
+#include "pico_lexical_cast.h"
+
 namespace paradigm4 {
 namespace pico {
 namespace core {
@@ -92,6 +94,7 @@ public:
     PICO_DEFINE_TO_STRING_ORIGIN(unsigned long);
     PICO_DEFINE_TO_STRING_ORIGIN(unsigned long long);
 
+/*
 #ifndef PICO_DEFINE_TO_STRING_NEW
 #define PICO_DEFINE_TO_STRING_NEW(type, Fs)                 \
     inline static std::string to_string(type value) {       \
@@ -115,6 +118,18 @@ public:
     PICO_DEFINE_TO_STRING_NEW(float, "%.18f");
     PICO_DEFINE_TO_STRING_NEW(double, "%.18lf");
     PICO_DEFINE_TO_STRING_NEW(long double, "%.18LF");
+*/
+
+#ifndef PICO_DEFINE_TO_STRING_HEX
+#define PICO_DEFINE_TO_STRING_HEX(type) \
+    inline static std::string to_string(type value) { \
+        return paradigm4::pico::core::decimal_to_hex(value); \
+    }
+#endif
+
+    PICO_DEFINE_TO_STRING_HEX(float);
+    PICO_DEFINE_TO_STRING_HEX(double);
+    PICO_DEFINE_TO_STRING_HEX(long double);
 };
 
 } // namespace core

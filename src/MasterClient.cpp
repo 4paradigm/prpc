@@ -140,10 +140,10 @@ bool MasterClient::get_task_node(const std::string& role, std::vector<comm_rank_
     for (const auto& rank : ranks) {
         std::string rank_role;
         if (role == "") {
-            g_rank.push_back(check_stoi(rank));
+            g_rank.push_back(pico_lexical_cast_check<int>(rank));
         } else if (tree_node_get(_root_path + PATH_TASK_STATE + "/node/" + rank, rank_role)) {
             if (rank_role == role || role == "") {
-                g_rank.push_back(check_stoi(rank));
+                g_rank.push_back(pico_lexical_cast_check<int>(rank));
             }
         }
     }
@@ -171,7 +171,7 @@ bool MasterClient::get_comm_info(std::vector<CommInfo>& info) {
     info.reserve(ranks.size());
     for (const auto& rank : ranks) {
         CommInfo tmp;
-        if (get_comm_info(check_stoi(rank), tmp)) {
+        if (get_comm_info(pico_lexical_cast_check<int>(rank), tmp)) {
             info.push_back(tmp);
         }
     }
@@ -227,7 +227,7 @@ void MasterClient::alloc_role_rank(const std::string& role,
     tree_node_sub(path, children);
     SCHECK(children.size() == role_num);
     for (size_t i = 0; i < role_num; ++i) {
-        comm_rank_t rank = static_cast<comm_rank_t>(check_stoi(children[i]));
+        comm_rank_t rank = static_cast<comm_rank_t>(pico_lexical_cast_check<int>(children[i]));
         if (rank == global_rank) {
             role_rank = i;
         }
@@ -319,7 +319,7 @@ std::vector<int32_t> MasterClient::get_storage_list() {
     std::vector<std::string> storage_ids;
     SCHECK(tree_node_sub(_root_path + PATH_CONTEXT, storage_ids));
     for (auto& storage_id: storage_ids) {
-        storage_list.push_back(check_stoi(storage_id));
+        storage_list.push_back(pico_lexical_cast_check<int>(storage_id));
     }
     return storage_list;
 }
@@ -375,7 +375,7 @@ bool MasterClient::get_rpc_service_info(const std::string& rpc_service_api,
     if (!tree_node_get(path, rpc_id)) {
         return false;
     }
-    out.rpc_id = check_stoi(rpc_id);
+    out.rpc_id = pico_lexical_cast_check<int>(rpc_id);
     std::vector<std::string> sids;
     if (!tree_node_sub(path, sids)) {
         return false;
@@ -388,7 +388,7 @@ bool MasterClient::get_rpc_service_info(const std::string& rpc_service_api,
             continue;
         }
         out.servers.push_back(
-              {check_stoi(sid), static_cast<comm_rank_t>(check_stoi(g_rank))});
+              {pico_lexical_cast_check<int>(sid), static_cast<comm_rank_t>(pico_lexical_cast_check<int>(g_rank))});
     }
     return true;
 }
@@ -427,7 +427,7 @@ void MasterClient::register_rpc_service(const std::string& rpc_service_api,
         rpc_id = generate_id(rpc_service_api);
         tree_node_add(path, std::to_string(rpc_id));
     } else {
-        rpc_id = check_stoi(info_str);
+        rpc_id = pico_lexical_cast_check<int>(info_str);
     }
     SLOG(INFO) << "register service :  " << rpc_service_api << " " 
               << rpc_name << " " << rpc_id;

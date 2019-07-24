@@ -15,7 +15,6 @@
 #include <queue>
 #include <type_traits>
 
-#include <boost/lexical_cast.hpp>
 #include <sparsehash/dense_hash_map>
 #include "HashTable.h"
 #include "PicoJsonNode.h"
@@ -23,6 +22,7 @@
 #include "macro.h"
 #include "ArenaAllocator.h"
 #include "pico_log.h"
+#include "pico_lexical_cast.h"
 #include "throwable_shared_ptr.h"
 
 namespace paradigm4 {
@@ -759,7 +759,7 @@ public:
         SCHECK(finish > start);
         SCHECK(finish != end());
         advance_cursor(1);
-        val = boost::lexical_cast<T>(start, finish - start);
+        val = pico_lexical_cast<T>(start, finish - start);
     }
 
     template<class T>
@@ -899,7 +899,7 @@ public:
     PICO_DEPRECATED("")
     void read_arithmetic(T& val) {
         std::pair<char*, size_t> p = getdelim(' ');
-        val = boost::lexical_cast<T>(p.first, p.second);
+        val = pico_lexical_cast<T>(p.first, p.second);
     }
 
     void read_arithmetic(int8_t& val) {
@@ -920,7 +920,7 @@ public:
         if (unlikely(p.first == nullptr)) {
             return false;
         }
-        val = boost::lexical_cast<T>(p.first, p.second);
+        val = pico_lexical_cast<T>(p.first, p.second);
         return true;
     }
 

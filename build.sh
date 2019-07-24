@@ -11,7 +11,7 @@ echo ${PROJECT_ROOT}
 
 function setup() {
     if [ 0"${THIRD_PARTY_SRC}" == "0" ]; then
-        git submodule update --init --recursive --checkout
+        #git submodule update --init --recursive --checkout
         THIRD_PARTY_SRC=${PROJECT_ROOT}/third-party
     fi
     if [ 0"${THIRD_PARTY_PREFIX}" == "0" ]; then

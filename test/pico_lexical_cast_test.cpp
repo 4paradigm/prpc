@@ -99,6 +99,11 @@ TEST(PicoCast, string_to_number) {
         str = #STR; \
         ASSERT_TRUE(pico_lexical_cast(str, num)); \
         EXPECT_EQ(num, STR); \
+        size_t len = str.size(); \
+        ASSERT_TRUE(pico_lexical_cast(str + "123", num, len)); \
+        EXPECT_EQ(num, STR); \
+        ASSERT_TRUE(pico_lexical_cast(str + " 123", num, len)); \
+        EXPECT_EQ(num, STR); \
     }
 
 #define TEST_DEF_FALSE(T, STR) \
@@ -107,6 +112,9 @@ TEST(PicoCast, string_to_number) {
         T num; \
         str = #STR; \
         ASSERT_FALSE(pico_lexical_cast(str, num)); \
+        size_t len = str.size(); \
+        ASSERT_FALSE(pico_lexical_cast(str + "123", num, len)); \
+        ASSERT_FALSE(pico_lexical_cast(str + " 123", num, len)); \
     }
 
 #define TEST_DEF_U(T) \
@@ -151,7 +159,7 @@ TEST(PicoCast, string_to_bool) {
     ASSERT_FALSE(pico_lexical_cast("true1", res));
     ASSERT_FALSE(pico_lexical_cast("false1", res));
     ASSERT_FALSE(pico_lexical_cast("TRue", res));
-    ASSERT_FALSE(pico_lexical_cast("FAluse", res));
+    ASSERT_FALSE(pico_lexical_cast("FAlse", res));
 }
 
 TEST(PicoCast, const_char_ptr_to_number) {
@@ -167,6 +175,58 @@ TEST(PicoCast, const_char_ptr_to_number) {
     ASSERT_FALSE(pico_lexical_cast("", f));
     ASSERT_FALSE(pico_lexical_cast("", i8));
     ASSERT_FALSE(pico_lexical_cast("", i32));
+}
+
+TEST(PicoCast, string_to_floating) {
+    std::vector<std::pair<std::string, double>> cases = {
+        {"0.0", 0.0},
+        {"-0.0", 0.0},
+        {"1e-7", 1e-7},
+        {"-1e-7", -1e-7},
+        {"123.456", 123.456},
+        {"0x0.0p+0", 0.0},
+        {"0x0p+0", 0.0},
+        {"-0x0p+0", 0.0},
+        {"-0x0p-0", 0.0},
+        {"-0x0p+100", 0.0},
+        {"0x0p-100", 0.0},
+        {"0x1.edd2f1a9fbe77p+6", 123.456},
+        {"0x1.ad7f29abcaf48p-24", 1e-7},
+        {"-0x1.12e0be826d695p-30", -1e-9},
+        {"-0x1.4216ca930d75ap+186", -1.234e56},
+        {"inf", std::numeric_limits<double>::infinity()},
+        {"-inf", -std::numeric_limits<double>::infinity()}
+    };
+    double tmp;
+    for (auto& item : cases) {
+        ASSERT_TRUE(pico_lexical_cast(item.first, tmp));
+        EXPECT_EQ(tmp, item.second);
+        ASSERT_TRUE(pico_lexical_cast(item.first + "123", tmp, item.first.size()));
+        EXPECT_EQ(tmp, item.second);
+        ASSERT_TRUE(pico_lexical_cast(item.first + " 123", tmp, item.first.size()));
+        EXPECT_EQ(tmp, item.second);
+    }
+    ASSERT_TRUE(pico_lexical_cast("nan", tmp));
+    EXPECT_TRUE(std::isnan(tmp));
+}
+
+TEST(PicoCast, decimal_to_hex) {
+    std::vector<std::pair<std::string, double>> cases = {
+        {"0x0p+0", 0.0},
+        {"0x1.edd2f1a9fbe77p+6", 123.456},
+        {"0x1.ad7f29abcaf48p-24", 1e-7},
+        {"-0x1.12e0be826d695p-30", -1e-9},
+        {"-0x1.4216ca930d75ap+186", -1.234e56},
+        {"nan", std::numeric_limits<double>::quiet_NaN()},
+        {"inf", std::numeric_limits<double>::infinity()},
+        {"-inf", -std::numeric_limits<double>::infinity()}
+
+    };
+    for (auto& item : cases) {
+        std::string tmp;
+        tmp = decimal_to_hex(item.second);
+        EXPECT_EQ(tmp, item.first);
+    }
 }
 
 TEST(PicoCast, pico_common_value_type_conversion_check) {
