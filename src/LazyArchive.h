@@ -27,7 +27,7 @@ struct data_block_t {
     uint32_t length;
     delete_t deleter;
 #ifdef USE_RDMA
-    uint32_t lkey;
+    uint32_t lkey = 0;
 #endif
 
     data_block_t(const data_block_t&) = delete;

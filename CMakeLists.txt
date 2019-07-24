@@ -15,7 +15,8 @@ find_package(PicoCoreDep REQUIRED)
 set(CMAKE_CXX_COMPILER $ENV{CXX})
 set(CMAKE_C_COMPILER $ENV{CC})
 
-add_definitions(--std=c++14 -Wall -Wextra -Wno-deprecated-declarations -frecord-gcc-switches -fPIC)
+# !!!严禁去掉-Werror，没有任何例外!!!
+add_definitions(--std=c++14 -Wall -Wextra -Wno-deprecated-declarations -Werror -frecord-gcc-switches -fPIC)
 
 option(USE_RDMA "whether build with rdma support" OFF)
 if (USE_RDMA)

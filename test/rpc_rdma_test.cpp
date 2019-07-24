@@ -352,7 +352,6 @@ TEST(RpcService, MultiThread) {
             for (int i = 0; i < 10; ++i) {
                 BinaryArchive ar1(true);
                 ar1 << check_str;
-                int ar1len = ar1.length();
                 request << i << th << check_str;
                 request.lazy() << std::move(ar1);
             }
