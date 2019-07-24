@@ -143,9 +143,7 @@ TEST(RpcService, RegisterService) {
                 dealer->send_request(std::move(request));
 
                 RpcResponse response;
-                if (!dealer->recv_response(response, 10)){
-                    continue;
-                }
+                dealer->recv_response(response);
                 if (response.error_code() != 0) {
                     continue;
                 }
