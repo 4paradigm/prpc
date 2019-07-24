@@ -165,7 +165,9 @@ size_t Memory::get_used_pmem() {
         return used_pmem;
     }
     size_t vm = 0, rss = 0, share = 0, text = 0, lib = 0, data = 0, dt = 0;
-    fscanf(statm, "%lu%lu%lu%lu%lu%lu%lu", &vm, &rss, &share, &text, &lib, &data, &dt);
+    if (fscanf(statm, "%lu%lu%lu%lu%lu%lu%lu", &vm, &rss, &share, &text, &lib, &data, &dt) != 7) {
+        return 0;
+    }
     fclose(statm);
     int page  = sysconf(_SC_PAGESIZE);
     used_pmem = rss * page;
@@ -191,7 +193,9 @@ size_t Memory::get_used_vmem() {
         return used_vmem;
     }
     size_t vm = 0, rss = 0, share = 0, text = 0, lib = 0, data = 0, dt = 0;
-    fscanf(statm, "%lu%lu%lu%lu%lu%lu%lu", &vm, &rss, &share, &text, &lib, &data, &dt);
+    if (fscanf(statm, "%lu%lu%lu%lu%lu%lu%lu", &vm, &rss, &share, &text, &lib, &data, &dt) != 7) {
+        return 0;
+    }
     fclose(statm);
     int page  = sysconf(_SC_PAGESIZE);
     used_vmem = vm * page;
