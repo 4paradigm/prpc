@@ -122,8 +122,12 @@ do { \
     } \
 } while(0)
 
+#ifdef __GNUC__
+#if __GUNC__ >= 7
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnoexcept-type"
+#endif
+#endif
 template<typename T>
 inline T strntox(T (&func)(const char*, char**, int), 
             const char* str, char** endptr, int base, size_t num) {
@@ -151,7 +155,11 @@ inline T strntox(T (&func)(const char*, char**),
         return func(str, endptr);
     }
 }
+#ifdef __GNUC__
+#if __GNUC__ >= 7
 #pragma GCC diagnostic pop
+#endif
+#endif
 
 template<>
 inline uint8_t inner_lexical_cast(const char* const& s, const size_t count) {
@@ -412,7 +420,7 @@ inline bool pico_lexical_cast(const S& s, T& t, const size_t count = 0) {
 
 template<typename T, typename S>
 inline T pico_lexical_cast_check(const S& s, const size_t count = 0) {
-    T t;
+    T t = T();
     SCHECK((pico_lexical_cast<T, S>(s, t, count))) 
         << "pico_lexical_cast failed, s=" << s << ", count=" << count;
     return t;
