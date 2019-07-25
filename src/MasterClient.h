@@ -243,6 +243,7 @@ private:
     std::string _hosts;
     int32_t _recv_timeout;
     int32_t _disconnect_timeout_sec;
+    std::mutex _connected_mu;
     bool _connected = false;
     std::string _endpoint;
     zhandle_t* _zh = nullptr;

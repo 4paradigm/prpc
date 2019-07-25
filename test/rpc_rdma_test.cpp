@@ -9,11 +9,6 @@
 #include "RpcService.h"
 #include "macro.h"
 
-DEFINE_string(ip, "", "ip");
-DEFINE_string(ib_devname, "", "devname");
-DEFINE_int32(io_thread_num, 1, "io_thread_num");
-DEFINE_int32(gid_index, 1, "gid_index");
-
 namespace paradigm4 {
 namespace pico {
 namespace core {
@@ -23,8 +18,32 @@ RpcConfig rpc_config;
 
 class FakeRpc {
 public:
+    template<class T>
+    void set_env(T& a, const char* env) {
+        SLOG(INFO) << env;
+        const char* s;
+        s = std::getenv(env);
+        if (s) {
+            SLOG(INFO) << "herrerer";
+            pico_lexical_cast(s, a);
+        } else {
+            SLOG(WARNING) << "env error.";
+            exit(0);
+        }
+    }
+
+    std::string ip;
+    std::string ib_devname;
+    int io_thread_num;
+    int gid_index;
+
+
     FakeRpc() {
-        _master = std::make_unique<Master>(FLAGS_ip);
+        set_env(ip, "ip");
+        set_env(ib_devname, "ib_devname");
+        set_env(io_thread_num, "io_thread_num");
+        set_env(gid_index, "gid_index");
+        _master = std::make_unique<Master>(ip);
         _master->initialize();
         auto master_ep = _master->endpoint();
         _mc1 = std::make_unique<TcpMasterClient>(master_ep);
@@ -32,15 +51,15 @@ public:
         _mc1->initialize();
         _mc2->initialize();
         rpc_config.protocol = "rdma";
-        rpc_config.rdma.ib_devname = FLAGS_ib_devname;
-        rpc_config.rdma.gid_index = FLAGS_gid_index;
+        rpc_config.rdma.ib_devname = ib_devname;
+        rpc_config.rdma.gid_index = gid_index;
         rpc_config.rdma.ib_port = 1;
         rpc_config.rdma.mtu = 1024;
         rpc_config.rdma.min_rnr_timer = 1;
         rpc_config.rdma.retry_cnt = 7;
         rpc_config.rdma.timeout = 7;
-        rpc_config.bind_ip = FLAGS_ip;
-        rpc_config.io_thread_num = FLAGS_io_thread_num;
+        rpc_config.bind_ip = ip;
+        rpc_config.io_thread_num = io_thread_num;
         _rpc1 = std::make_unique<RpcService>();
         _rpc2 = std::make_unique<RpcService>();
         _rpc1->initialize(_mc1.get(), rpc_config);
@@ -143,7 +162,9 @@ TEST(RpcService, RegisterService) {
                 dealer->send_request(std::move(request));
 
                 RpcResponse response;
-                dealer->recv_response(response);
+                if (!dealer->recv_response(response, 100)){
+                    continue;
+                }
                 if (response.error_code() != 0) {
                     continue;
                 }
