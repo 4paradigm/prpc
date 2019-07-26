@@ -22,9 +22,6 @@ function setup() {
     if [ "${USE_RDMA}" == "1" ];then
         prefix=${THIRD_PARTY_PREFIX} ${THIRD_PARTY_SRC}/prepare.sh build rdma-core
     fi
-    export zk_recv_timeout='1000'
-    export zk_disconnect_timeout='1000'
-    export zk_root_path='ut'
 }
 
 function build() {
@@ -57,25 +54,39 @@ clientPort=54321
 server.1=127.0.0.1:42330:43330
 EOF
     ${THIRD_PARTY_PREFIX}/zookeeper/bin/zkServer.sh start ${PROJECT_ROOT}/.ut/zoo.cfg
+    trap "${THIRD_PARTY_PREFIX}/zookeeper/bin/zkServer.sh stop ${PROJECT_ROOT}/.ut/zoo.cfg; rm -rf ${PROJECT_ROOT}/.ut" \
+        INT TERM EXIT
 
-    for ((i=1;i>0;i++)); do
+    set +e
+    zk_fail=1
+    for ((i=1;i<=10;i++)); do
         ${THIRD_PARTY_PREFIX}/zookeeper/bin/zkServer.sh status ${PROJECT_ROOT}/.ut/zoo.cfg
         if [ $? -eq 0 ]; then
+            zk_fail=0
             break
         fi
         sleep 5
     done
+    if [ $zk_fail -ne 0 ]; then
+        echo "zk start failed" >&2
+        exit 1
+    fi
+    set -e
     export zk_endpoint='127.0.0.1:54321'
-    tests=`find /home/yiming/pico/pico-core/build/ -path *_test`
+    export zk_recv_timeout='1000'
+    export zk_disconnect_timeout='1000'
+    export zk_root_path='ut'
+
+    tests=`find ${PROJECT_ROOT}/build/ -type f -executable -path *_test`
     for i in $tests; do
         echo "running $i"
-        $i > ${PROJECT_ROOT}/.ut/stdout 2> ${PROJECT_ROOT}/.ut/stderr
+        $i > ${PROJECT_ROOT}/.ut/stdout_`basename ${i}` 2> ${PROJECT_ROOT}/.ut/stderr_`basename ${i}`
         echo "Success!"
     done
     #tests=`find ${PROJECT_ROOT}/build/ -path *_test`
-    ${THIRD_PARTY_PREFIX}/zookeeper/bin/zkServer.sh stop ${PROJECT_ROOT}/.ut/zoo.cfg
+    #${THIRD_PARTY_PREFIX}/zookeeper/bin/zkServer.sh stop ${PROJECT_ROOT}/.ut/zoo.cfg
     popd
-    rm -rf ${PROJECT_ROOT}/.ut 
+    #rm -rf ${PROJECT_ROOT}/.ut 
 }
 
 function publish() {
