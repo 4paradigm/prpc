@@ -74,9 +74,16 @@ EOF
     fi
     set -e
     export zk_endpoint='127.0.0.1:54321'
-    export zk_recv_timeout='1000'
-    export zk_disconnect_timeout='1000'
     export zk_root_path='ut'
+    if [ -z $zk_recv_timeout ]; then
+        zk_recv_timeout='1000'
+    fi
+    export zk_recv_timeout
+
+    if [ -z $zk_disconnect_timeout ]; then
+        zk_disconnect_timeout='1000'
+    fi
+    export zk_disconnect_timeout
 
     tests=`find ${PROJECT_ROOT}/build/ -type f -executable -path *_test`
     for i in $tests; do
