@@ -41,6 +41,7 @@ function build() {
 }
 
 function ut() {
+    rm -rf ${PROJECT_ROOT}/.ut
     mkdir -p ${PROJECT_ROOT}/.ut
     pushd ${PROJECT_ROOT}/.ut
     #cp -r ${THIRD_PARTY_PREFIX}/zookeeper .
@@ -54,7 +55,7 @@ clientPort=54321
 server.1=127.0.0.1:42330:43330
 EOF
     ${THIRD_PARTY_PREFIX}/zookeeper/bin/zkServer.sh start ${PROJECT_ROOT}/.ut/zoo.cfg
-    trap "${THIRD_PARTY_PREFIX}/zookeeper/bin/zkServer.sh stop ${PROJECT_ROOT}/.ut/zoo.cfg; rm -rf ${PROJECT_ROOT}/.ut" \
+    trap "${THIRD_PARTY_PREFIX}/zookeeper/bin/zkServer.sh stop ${PROJECT_ROOT}/.ut/zoo.cfg;" \
         INT TERM EXIT
 
     set +e
@@ -79,14 +80,14 @@ EOF
 
     tests=`find ${PROJECT_ROOT}/build/ -type f -executable -path *_test`
     for i in $tests; do
-        echo "running $i"
+        echo "[`date +'%Y%m%d-%H%m%S'`] running $i"
         $i > ${PROJECT_ROOT}/.ut/stdout_`basename ${i}` 2> ${PROJECT_ROOT}/.ut/stderr_`basename ${i}`
-        echo "Success!"
+        echo "[`date +'%Y%m%d-%H%m%S'`] Success!"
     done
     #tests=`find ${PROJECT_ROOT}/build/ -path *_test`
     #${THIRD_PARTY_PREFIX}/zookeeper/bin/zkServer.sh stop ${PROJECT_ROOT}/.ut/zoo.cfg
     popd
-    #rm -rf ${PROJECT_ROOT}/.ut 
+    rm -rf ${PROJECT_ROOT}/.ut 
 }
 
 function publish() {
