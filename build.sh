@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e -x
+set -e
 PROJECT_ROOT=`pwd`
 echo ${PROJECT_ROOT}
 #THIRD_PARTY_PREFIX=
@@ -68,7 +68,9 @@ EOF
     export zk_endpoint='127.0.0.1:54321'
     tests=`find /home/yiming/pico/pico-core/build/ -path *_test`
     for i in $tests; do
-        $i
+        echo "running $i"
+        $i > ${PROJECT_ROOT}/.ut/stdout 2> ${PROJECT_ROOT}/.ut/stderr
+        echo "Success!"
     done
     #tests=`find ${PROJECT_ROOT}/build/ -path *_test`
     ${THIRD_PARTY_PREFIX}/zookeeper/bin/zkServer.sh stop ${PROJECT_ROOT}/.ut/zoo.cfg
