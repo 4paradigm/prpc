@@ -87,13 +87,14 @@ EOF
 
     tests=`find ${PROJECT_ROOT}/build/ -type f -executable -path *_test`
     for i in $tests; do
-        echo "[`date +'%Y%m%d-%H%m%S'`] running $i"
+        echo "[`date +'%Y-%m-%d %H:%M:%S'`] running $i"
         $i > ${PROJECT_ROOT}/.ut/stdout_`basename ${i}` 2> ${PROJECT_ROOT}/.ut/stderr_`basename ${i}`
-        echo "[`date +'%Y%m%d-%H%m%S'`] Success!"
+        echo "[`date +'%Y-%m-%d-%H:%M:%S'`] Success!"
     done
     #tests=`find ${PROJECT_ROOT}/build/ -path *_test`
-    #${THIRD_PARTY_PREFIX}/zookeeper/bin/zkServer.sh stop ${PROJECT_ROOT}/.ut/zoo.cfg
     popd
+    trap - INT TERM EXIT
+    ${THIRD_PARTY_PREFIX}/zookeeper/bin/zkServer.sh stop ${PROJECT_ROOT}/.ut/zoo.cfg
     rm -rf ${PROJECT_ROOT}/.ut 
 }
 
