@@ -370,7 +370,9 @@ FrontEnd* RpcContext::get_client_frontend_by_sid(int rpc_id,
       int server_id) {
     auto it = _rpc_server_id_frontend.find(rpc_sid_pack(rpc_id, server_id));
     if (it != _rpc_server_id_frontend.end()) {
-        return it->second.get();
+        if (it->second->available()) {
+            return it->second.get();
+        }
     }
     auto it1 = _rpc_server_info.find(rpc_id);
     if (it1 == _rpc_server_info.end()) {
