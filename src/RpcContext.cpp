@@ -451,7 +451,7 @@ void RpcContext::update_comm_info(const std::vector<CommInfo>& list, MasterClien
         if (!ret) {
             SLOG(WARNING) << "get comm info failed.";
         }
-        set = std::set<CommInfo>(list.begin(), list.end());
+        set = std::set<CommInfo>(comm_info.begin(), comm_info.end());
         for (auto& i : _server_sockets) {
             auto& f = i.second;
             if (set.count(f->info()) == 0) {
