@@ -146,7 +146,7 @@ public:
 
     std::vector<CommInfo> get_comm_info();
     
-    void update_comm_info(const std::vector<CommInfo>& list);
+    void update_comm_info(const std::vector<CommInfo>& list, MasterClient* master);
        
     void update_service_info(const std::vector<RpcServiceInfo>& list);
 

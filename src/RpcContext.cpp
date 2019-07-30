@@ -432,7 +432,7 @@ std::vector<CommInfo> RpcContext::get_comm_info() {
     return ret;
 }
 
-void RpcContext::update_comm_info(const std::vector<CommInfo>& list) {
+void RpcContext::update_comm_info(const std::vector<CommInfo>& list, MasterClient* mc) {
     std::set<CommInfo> set(list.begin(), list.end());
     std::vector<std::shared_ptr<FrontEnd>> to_del;
     std::vector<CommInfo> to_add;
@@ -442,6 +442,21 @@ void RpcContext::update_comm_info(const std::vector<CommInfo>& list) {
         auto& f = i.second;
         if (set.count(f->info()) == 0) {
             to_del.push_back(f);
+        }
+    }
+    if (!to_del.empty()) {
+        to_del.clear();
+        std::vector<CommInfo> comm_info;
+        auto ret = mc->get_comm_info(comm_info);
+        if (!ret) {
+            SLOG(WARNING) << "get comm info failed.";
+        }
+        set = std::set<CommInfo>(list.begin(), list.end());
+        for (auto& i : _server_sockets) {
+            auto& f = i.second;
+            if (set.count(f->info()) == 0) {
+                to_del.push_back(f);
+            }
         }
     }
     for (auto& i : _client_sockets) {
