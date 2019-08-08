@@ -72,6 +72,10 @@ public:
         return _bind_ip;
     }
 
+    const std::string& rpc_service_api() {
+        return _rpc_service_api;
+    }
+
 private:
 
     void handle_accept_event();
