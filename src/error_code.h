@@ -29,8 +29,6 @@ enum class CoreErrorCode: int {
     CFG_LOAD              = 102,
     CFG_SAVE              = 103,
     CFG_PARSE             = 104,
-    META_SAVE             = 105,
-    META_LOAD             = 106,
 
     // 3xx: filesystem related
     FS_UNKNOWN_TYPE       = 301,
@@ -42,8 +40,8 @@ enum class CoreErrorCode: int {
 };
 
 
-#define ERRCODE(base, code) (paradigm4::pico::core::ErrorCode::to_string(base, code))
-#define PICO_CORE_ERRCODE(code) (ERRCODE(205000, (int)paradigm4::pico::core::CoreErrorCode::code))
+#define PICO_ERRCODE(base, code) (paradigm4::pico::core::ErrorCode::to_string(base, code))
+#define PICO_CORE_ERRCODE(code) (PICO_ERRCODE(205000, (int)paradigm4::pico::core::CoreErrorCode::code))
 
 }
 

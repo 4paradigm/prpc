@@ -516,7 +516,7 @@ class name: public type
     bool dummy_##type##_register PICO_UNUSED = []() -> bool {                           \
         type tmp_conf = type();                                                         \
         tmp_conf.__initialize__();                                                      \
-        inner_app_struct_config_helper().register_desc(                                 \
+        paradigm4::pico::core::inner_app_struct_config_helper().register_desc(                                 \
             #name, tmp_conf.helper_info(""));                                           \
         return true;                                                                    \
     }();
@@ -524,7 +524,7 @@ class name: public type
 
 #ifndef PICO_APP_CONFIG_REGISTER_VALUE_INFO
 #define PICO_APP_CONFIG_REGISTER_VALUE_INFO(name, value) \
-    inner_app_struct_config_helper().register_node(name, &value);
+    paradigm4::pico::core::inner_app_struct_config_helper().register_node(name, &value);
 #endif
 
 #ifndef PICO_CONFIGURE_CONTENT
@@ -536,20 +536,20 @@ class name: public type
     auto inner_config_load_func = [](                                                   \
             ConfigNode* base_ptr, const Configure& conf, bool is_missing) {             \
         auto ptr = static_cast<this_type*>(base_ptr);                                   \
-        return ConfigureHelper::template_config_loader<type>(                           \
+        return core::ConfigureHelper::template_config_loader<type>(                           \
                 conf, ptr->name, #name, is_missing, is_missing_ok);                     \
     };                                                                                  \
     _inner_config_loader[#name] = inner_config_load_func;                               \
     auto inner_config_to_json_func = [](ConfigNode* base_ptr) {                         \
         auto ptr = static_cast<this_type*>(base_ptr);                                   \
-        PicoJsonNode ret = ConfigureHelper::template_unit_to_json(                      \
-            ptr->name##_unit, ConfigureHelper::template_config_value(ptr->name));       \
+        PicoJsonNode ret = core::ConfigureHelper::template_unit_to_json(                      \
+            ptr->name##_unit, core::ConfigureHelper::template_config_value(ptr->name));       \
         return ret;                                                                     \
     };                                                                                  \
     _inner_config_to_json[#name] = inner_config_to_json_func;                           \
     auto inner_config_to_yaml_func = [](ConfigNode* base_ptr) {                         \
         auto ptr = static_cast<this_type*>(base_ptr);                                   \
-        return ConfigureHelper::conf_to_yaml(ptr->name);                                \
+        return core::ConfigureHelper::conf_to_yaml(ptr->name);                                \
     };                                                                                  \
     _inner_config_to_yaml[#name] = inner_config_to_yaml_func;                           \
     static auto inner_checker = cfg_checker;                                            \
@@ -560,13 +560,13 @@ class name: public type
     _inner_config_check_func.push_back(inner_config_check_func);                        \
     auto inner_config_value_func = [](ConfigNode* base_ptr, const std::string&) {       \
         auto ptr = static_cast<this_type*>(base_ptr);                                   \
-        auto ret = ConfigureHelper::template_config_value(ptr->name);                   \
+        auto ret = core::ConfigureHelper::template_config_value(ptr->name);                   \
         return ret.size() == 0 ? "\"\"" : ret;                                          \
     };                                                                                  \
     _inner_config_value_func[#name] = inner_config_value_func;                          \
     auto inner_config_descriptor = [](ConfigNode* base_ptr, const std::string& tab) {   \
         auto ptr = static_cast<this_type*>(base_ptr);                                   \
-        return ConfigureHelper::template_helper_info(tab, ptr->name##_unit, ptr->name); \
+        return core::ConfigureHelper::template_helper_info(tab, ptr->name##_unit, ptr->name); \
     };                                                                                  \
     _inner_config_descriptor.push_back(inner_config_descriptor);
 #endif
@@ -579,13 +579,13 @@ class name: public type
     auto inner_config_load_func = [](                                                   \
             ConfigNode* base_ptr, const Configure& conf, bool is_missing) {             \
         auto ptr = static_cast<this_type*>(base_ptr);                                   \
-        return ConfigureHelper::template_config_loader<type>(                           \
+        return core::ConfigureHelper::template_config_loader<type>(                           \
                 conf, ptr->name, #name, is_missing, is_missing_ok);                     \
     };                                                                                  \
     _inner_config_loader[#name] = inner_config_load_func;                               \
     auto inner_config_to_json_func = [](ConfigNode* base_ptr) {                         \
         auto ptr = static_cast<this_type*>(base_ptr);                                   \
-        PicoJsonNode ret = ConfigureHelper::template_unit_to_json(                      \
+        PicoJsonNode ret = core::ConfigureHelper::template_unit_to_json(                      \
             ptr->name##_unit, ptr->name.value_info_as_json());                          \
         return ret;                                                                     \
     };                                                                                  \
@@ -634,7 +634,7 @@ class name: public type
     _inner_enum_config_loader[key] = inner_config_load_func;                            \
     auto inner_config_to_json_func = [](ConfigNode* base_ptr) {                         \
         auto ptr = static_cast<this_type*>(base_ptr);                                   \
-        PicoJsonNode ret = ConfigureHelper::template_unit_to_json(                      \
+        PicoJsonNode ret = core::ConfigureHelper::template_unit_to_json(                      \
             ptr->name##_unit, ptr->name.value_info_as_json());                          \
         return ret;                                                                     \
     };                                                                                  \

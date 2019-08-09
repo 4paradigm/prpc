@@ -301,7 +301,7 @@ private:
 
 };
 
-#define STDERR_LOG() paradigm4::pico::StdErrLog(__FILE__, __LINE__).stream()
+#define STDERR_LOG() paradigm4::pico::core::StdErrLog(__FILE__, __LINE__).stream()
 
 } // namespace core
 } // namespace pico
