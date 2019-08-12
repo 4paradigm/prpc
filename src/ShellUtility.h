@@ -131,12 +131,17 @@ public:
      */
     static std::vector<std::string> get_file_list(const std::string& reg_path);
 
+    static std::vector<std::string> get_file_list(const std::vector<std::string>& reg_path);
+    
     /*!
      * \brief return file list under hdfs path $reg_path
      */
     static std::vector<std::string> get_hdfs_file_list(const std::string& hadoop_bin,
           const std::string& reg_path);
 
+    static std::vector<std::string> get_hdfs_file_list(const std::string& hadoop_bin,
+	  	  const std::vector<std::string>& reg_path);
+    
     /*!
      * \brief generate cmd to use origin_cmd's output as pipe_cmd's input
      */

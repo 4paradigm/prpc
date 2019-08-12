@@ -263,6 +263,17 @@ shared_ptr<FILE> ShellUtility::open_read(const std::string& path,
     return open(cmd, "r", is_pipe);
 }
 
+
+std::vector<std::string> pico::ShellUtility::get_file_list(
+      const std::vector<std::string>& reg_path) {
+    std::vector<std::string> file_list;
+    for (auto& path : reg_path) {
+        std::vector<std::string> tmp = get_file_list(path);
+        core::vector_move_append<std::string>(file_list, tmp);
+    }
+    return file_list;
+}
+
 std::vector<std::string> ShellUtility::get_file_list(const std::string& reg_path) {
     std::string path
           = boost::algorithm::trim_copy_if(reg_path, boost::algorithm::is_any_of("\t\r\n "));
@@ -308,6 +319,18 @@ std::vector<std::string> ShellUtility::get_hdfs_file_list(const std::string& had
     return file_list;
 }
 
+std::vector<std::string> pico::ShellUtility::get_hdfs_file_list(const std::string& hadoop_bin,
+      const std::vector<std::string>& reg_path) {
+    std::vector<std::string> file_list;
+    for (auto& path : reg_path) {
+        std::vector<std::string> tmp = get_hdfs_file_list(hadoop_bin, path);
+        core::vector_move_append<std::string>(file_list, tmp);
+    }
+
+    return file_list;
+}
+
+          
 void ShellUtility::add_pipecmd(std::string& origin_cmd,
       bool& is_pipe,
       const std::string& pipe_cmd) {
