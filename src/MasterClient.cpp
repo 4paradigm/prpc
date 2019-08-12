@@ -359,10 +359,9 @@ bool MasterClient::get_rpc_service_info(const std::string& rpc_service_api,
     }
     for (const auto& name : names) {
         RpcServiceInfo info;
-        if (!get_rpc_service_info(rpc_service_api, name, info)) {
-            return false;
+        if (get_rpc_service_info(rpc_service_api, name, info)) {
+            out.push_back(std::move(info));
         }
-        out.push_back(std::move(info));
     }
     return true;
 }
