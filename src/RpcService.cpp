@@ -134,7 +134,7 @@ void RpcService::update_ctx() {
     std::vector<CommInfo> comm_info;
     ret = _master_client->get_comm_info(comm_info);
     if (ret) {
-        _ctx.update_comm_info(comm_info);
+        _ctx.update_comm_info(comm_info, _master_client);
     } else {
         SLOG(WARNING) << "get comm info failed.";
     }

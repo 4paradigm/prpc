@@ -396,12 +396,7 @@ bool MasterClient::get_rpc_service_info(const std::string& rpc_service_api,
 bool MasterClient::del_rpc_service_info(const std::string& rpc_service_api,
       const std::string& rpc_name) {
     std::string path = _root_path + PATH_RPC + '/' + rpc_service_api + '/' + rpc_name;
-    if (tree_node_get(path)) {
-        tree_clear_path(path);
-        return true;
-    } else {
-        return false;
-    }
+    return tree_node_del(path);
 }
 
 WatcherHandle MasterClient::watch_rpc_service_info(

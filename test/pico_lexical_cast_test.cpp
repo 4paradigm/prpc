@@ -156,6 +156,12 @@ TEST(PicoCast, string_to_bool) {
     EXPECT_FALSE(res);
     ASSERT_TRUE(pico_lexical_cast("False", res));
     EXPECT_FALSE(res);
+    ASSERT_TRUE(pico_lexical_cast("1", res));
+    EXPECT_TRUE(res);
+    ASSERT_TRUE(pico_lexical_cast("0", res));
+    EXPECT_FALSE(res);
+    ASSERT_TRUE(pico_lexical_cast("2", res));
+    EXPECT_TRUE(res);
     ASSERT_FALSE(pico_lexical_cast("true1", res));
     ASSERT_FALSE(pico_lexical_cast("false1", res));
     ASSERT_FALSE(pico_lexical_cast("TRue", res));

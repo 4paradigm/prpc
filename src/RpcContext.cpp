@@ -370,7 +370,9 @@ FrontEnd* RpcContext::get_client_frontend_by_sid(int rpc_id,
       int server_id) {
     auto it = _rpc_server_id_frontend.find(rpc_sid_pack(rpc_id, server_id));
     if (it != _rpc_server_id_frontend.end()) {
-        return it->second.get();
+        if (it->second->available()) {
+            return it->second.get();
+        }
     }
     auto it1 = _rpc_server_info.find(rpc_id);
     if (it1 == _rpc_server_info.end()) {
@@ -430,7 +432,7 @@ std::vector<CommInfo> RpcContext::get_comm_info() {
     return ret;
 }
 
-void RpcContext::update_comm_info(const std::vector<CommInfo>& list) {
+void RpcContext::update_comm_info(const std::vector<CommInfo>& list, MasterClient* mc) {
     std::set<CommInfo> set(list.begin(), list.end());
     std::vector<std::shared_ptr<FrontEnd>> to_del;
     std::vector<CommInfo> to_add;
@@ -440,6 +442,21 @@ void RpcContext::update_comm_info(const std::vector<CommInfo>& list) {
         auto& f = i.second;
         if (set.count(f->info()) == 0) {
             to_del.push_back(f);
+        }
+    }
+    if (!to_del.empty()) {
+        to_del.clear();
+        std::vector<CommInfo> comm_info;
+        auto ret = mc->get_comm_info(comm_info);
+        if (!ret) {
+            SLOG(WARNING) << "get comm info failed.";
+        }
+        set = std::set<CommInfo>(comm_info.begin(), comm_info.end());
+        for (auto& i : _server_sockets) {
+            auto& f = i.second;
+            if (set.count(f->info()) == 0) {
+                to_del.push_back(f);
+            }
         }
     }
     for (auto& i : _client_sockets) {
