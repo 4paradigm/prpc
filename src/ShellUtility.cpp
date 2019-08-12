@@ -264,7 +264,7 @@ shared_ptr<FILE> ShellUtility::open_read(const std::string& path,
 }
 
 
-std::vector<std::string> pico::ShellUtility::get_file_list(
+std::vector<std::string> ShellUtility::get_file_list(
       const std::vector<std::string>& reg_path) {
     std::vector<std::string> file_list;
     for (auto& path : reg_path) {
@@ -319,7 +319,7 @@ std::vector<std::string> ShellUtility::get_hdfs_file_list(const std::string& had
     return file_list;
 }
 
-std::vector<std::string> pico::ShellUtility::get_hdfs_file_list(const std::string& hadoop_bin,
+std::vector<std::string> ShellUtility::get_hdfs_file_list(const std::string& hadoop_bin,
       const std::vector<std::string>& reg_path) {
     std::vector<std::string> file_list;
     for (auto& path : reg_path) {
