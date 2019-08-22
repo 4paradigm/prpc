@@ -142,20 +142,20 @@ public:
     void cancle_watch(WatcherHandle);
 
 
-    std::string tree_node_gen(const std::string& path,
+    std::string tree_node_gen(std::string path,
           const std::string& value = "",
           bool ephemeral = false);
-    void tree_clear_path(const std::string& path);
-    bool tree_node_add(const std::string& path,
+    void tree_clear_path(std::string path);
+    bool tree_node_add(std::string path,
           const std::string& value = "",
           bool ephemeral = false);
-    bool tree_node_set(const std::string& path, const std::string& value);
-    bool tree_node_get(const std::string& path, std::string& value);
-    bool tree_node_get(const std::string& path);
-    bool tree_node_del(const std::string& path);
-    bool tree_node_sub(const std::string& path,
+    bool tree_node_set(std::string path, const std::string& value);
+    bool tree_node_get(std::string path, std::string& value);
+    bool tree_node_get(std::string path);
+    bool tree_node_del(std::string path);
+    bool tree_node_sub(std::string path,
           std::vector<std::string>& children);
-    WatcherHandle tree_watch(const std::string& path, std::function<void()>);
+    WatcherHandle tree_watch(std::string path, std::function<void()>);
 
 
 protected:
@@ -187,14 +187,14 @@ private:
     std::mutex _client_mtx;
     std::unordered_map<std::string, std::string> _acquired_lock;
 
-    static const char* PATH_NODE;
-    static const char* PATH_TASK_STATE;
-    static const char* PATH_GENERATE_ID;
-    static const char* PATH_LOCK;
-    static const char* PATH_BARRIER;
-    static const char* PATH_RPC;
-    static const char* PATH_CONTEXT;
-    static const char* PATH_MODEL;
+    static const std::string PATH_NODE;
+    static const std::string PATH_TASK_STATE;
+    static const std::string PATH_GENERATE_ID;
+    static const std::string PATH_LOCK;
+    static const std::string PATH_BARRIER;
+    static const std::string PATH_RPC;
+    static const std::string PATH_CONTEXT;
+    static const std::string PATH_MODEL;
 };
 
 class ZkMasterClient : public MasterClient {
