@@ -141,6 +141,23 @@ public:
 
     void cancle_watch(WatcherHandle);
 
+
+    std::string tree_node_gen(const std::string& path,
+          const std::string& value = "",
+          bool ephemeral = false);
+    void tree_clear_path(const std::string& path);
+    bool tree_node_add(const std::string& path,
+          const std::string& value = "",
+          bool ephemeral = false);
+    bool tree_node_set(const std::string& path, const std::string& value);
+    bool tree_node_get(const std::string& path, std::string& value);
+    bool tree_node_get(const std::string& path);
+    bool tree_node_del(const std::string& path);
+    bool tree_node_sub(const std::string& path,
+          std::vector<std::string>& children);
+    WatcherHandle tree_watch(const std::string& path, std::function<void()>);
+
+
 protected:
     void notify_watchers(const std::string& path);
     virtual MasterStatus master_gen(const std::string& path,
@@ -164,21 +181,6 @@ protected:
           = 0;
 
 private:
-    std::string tree_node_gen(const std::string& path,
-          const std::string& value = "",
-          bool ephemeral = false);
-    void tree_clear_path(const std::string& path);
-    bool tree_node_add(const std::string& path,
-          const std::string& value = "",
-          bool ephemeral = false);
-    bool tree_node_set(const std::string& path, const std::string& value);
-    bool tree_node_get(const std::string& path, std::string& value);
-    bool tree_node_get(const std::string& path);
-    bool tree_node_del(const std::string& path);
-    bool tree_node_sub(const std::string& path,
-          std::vector<std::string>& children);
-    WatcherHandle tree_watch(const std::string& path, std::function<void()>);
-
     std::string _root_path;
     WatcherTable _table;
 
