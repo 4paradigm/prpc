@@ -48,7 +48,7 @@ public:
     // thread safe, may call ctx->send_msg when flush pending
     void send_msg(RpcMessage&& msg);
 
-    void epipe(int cnt, bool nonblock);
+    void epipe(int cnt);
 
     bool available() const {
         if (state() & FRONTEND_EPIPE) {

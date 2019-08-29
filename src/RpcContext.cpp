@@ -285,7 +285,7 @@ std::shared_ptr<FrontEnd>* RpcContext::get_client_frontend_by_rank(
 /*
  * 这个msg只能是request
  */
-comm_rank_t RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
+comm_rank_t RpcContext::send_request(RpcMessage&& msg) {
     shared_lock_guard<RWSpinLock> l(_spin_lock);
     std::shared_ptr<FrontEnd>* f = nullptr;
     auto sid = msg.head()->sid;
@@ -312,11 +312,7 @@ comm_rank_t RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
         push_request(std::move(msg));
         return ret;
     }
-    if (nonblock) {
-        (*f)->send_msg_nonblock(std::move(msg), *f);
-    } else {
-        (*f)->send_msg(std::move(msg));
-    }
+    (*f)->send_msg_nonblock(std::move(msg), *f);
     return ret;
 }
 

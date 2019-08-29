@@ -170,7 +170,7 @@ public:
     bool get_rpc_service_info(const std::string rpc_name, RpcServiceInfo& out);
 
     // 返回选用了哪一个frontend
-    comm_rank_t send_request(RpcMessage&& req, bool nonblcok);
+    comm_rank_t send_request(RpcMessage&& req);
 
     void send_response(RpcMessage&& resp, bool nonblock);
 

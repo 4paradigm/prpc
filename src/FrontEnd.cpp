@@ -64,7 +64,7 @@ void FrontEnd::send_msg_nonblock(RpcMessage&& msg, std::shared_ptr<FrontEnd>& th
                 _it1.cursor(_sending_msg);
                 _it2.zero_copy_cursor(_sending_msg);
                 if (!_socket->send_msg(_sending_msg, true, _more, _it1, _it2)) {
-                    epipe(cnt, true);
+                    epipe(cnt);
                     return;
                 }
                 if (_it1.has_next() || _it2.has_next()) {
@@ -110,7 +110,7 @@ void FrontEnd::send_msg(RpcMessage&& msg) {
 /*
  * 内部函数，外部保证只有一个线程调用
  */
-void FrontEnd::epipe(int cnt, bool nonblock) {
+void FrontEnd::epipe(int cnt) {
     set_state(FRONTEND_EPIPE);
     _ctx->remove_frontend_event(this);
     // 对于server socket，等待重连时构造新的FrontEnd
@@ -121,14 +121,14 @@ void FrontEnd::epipe(int cnt, bool nonblock) {
     _it1.reset();
     _it2.reset();
 
-    _ctx->send_request(std::move(_sending_msg), nonblock);
+    _ctx->send_request(std::move(_sending_msg));
     if (_more) {
-        _ctx->send_request(std::move(_msg), nonblock);
+        _ctx->send_request(std::move(_msg));
         ++cnt;
     }
     while (_sending_queue_size.fetch_sub(cnt) != cnt) {
         while (!_sending_queue.pop(_sending_msg));
-        _ctx->send_request(std::move(_sending_msg), nonblock);
+        _ctx->send_request(std::move(_sending_msg));
         cnt = 1;
     }
     set_state(FRONTEND_DISCONNECT | FRONTEND_EPIPE);
@@ -140,13 +140,13 @@ void FrontEnd::keep_writing(int cnt) {
             _sending_msg = std::move(_msg);
             _more = _sending_queue.pop(_msg);
             ++cnt;
-            epipe(cnt, false);
+            epipe(cnt);
             return;
         }
     }
     if (_it1.has_next() || _it2.has_next()) {
         if (!_socket->send_msg(_sending_msg, false, _more, _it1, _it2)) {
-            epipe(cnt, false);
+            epipe(cnt);
             return;
         }
     }
@@ -158,7 +158,7 @@ void FrontEnd::keep_writing(int cnt) {
             _it1.cursor(_sending_msg);
             _it2.zero_copy_cursor(_sending_msg);
             if (!_socket->send_msg(_sending_msg, false, _more, _it1, _it2)) {
-                epipe(cnt, false);
+                epipe(cnt);
                 return;
             }
             if (_it1.has_next() || _it2.has_next()) {
