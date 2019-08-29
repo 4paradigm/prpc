@@ -30,7 +30,7 @@ bool FrontEnd::connect() {
         if (!socket->connect(_info.endpoint, info, 0)) {
             return false;
         }
-        upgrade_guard<RWSpinLock> l(_ctx->_spin_lock);
+        lock_guard<RWSpinLock> l(_ctx->_spin_lock);
         _socket = std::move(socket);
         _ctx->add_frontend_event(this);
         set_state(FRONTEND_CONNECT);
@@ -38,7 +38,7 @@ bool FrontEnd::connect() {
     return true;
 }
 
-void FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
+void FrontEnd::send_msg_nonblock(RpcMessage&& msg, std::shared_ptr<FrontEnd>& this_holder) {
     int sz = _sending_queue_size.fetch_add(1, std::memory_order_acq_rel);
     if (sz == 0) {
         // 只有一个线程能到这里
@@ -49,10 +49,10 @@ void FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
         _it2.reset();
         if (state() & FRONTEND_DISCONNECT) {
             // 保证读锁连续
-            _ctx->_spin_lock.lock_shared();
-            _ctx->async([this, cnt](){
+            //_ctx->_spin_lock.lock_shared();
+            _ctx->async([this, cnt, this_holder](){
                 keep_writing(cnt);
-                _ctx->_spin_lock.unlock_shared();
+                //_ctx->_spin_lock.unlock_shared();
             });
             return;
         }
@@ -71,10 +71,10 @@ void FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
                     // 对于RDMA的情况，一定走不到这里
                     SCHECK(!_is_use_rdma);
                     // 保证读锁连续
-                    _ctx->_spin_lock.lock_shared();
-                    _ctx->async([this, cnt](){
+                    //_ctx->_spin_lock.lock_shared();
+                    _ctx->async([this, cnt, this_holder](){
                         keep_writing(cnt);
-                        _ctx->_spin_lock.unlock_shared();
+                        //_ctx->_spin_lock.unlock_shared();
                     });
                     return;
                 }

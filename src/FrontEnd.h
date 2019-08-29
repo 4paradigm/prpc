@@ -36,7 +36,8 @@ public:
 
     bool connect();
 
-    void send_msg_nonblock(RpcMessage&& msg);
+    void send_msg_nonblock(RpcMessage&& msg,
+          std::shared_ptr<FrontEnd>& this_holder);
 
     /*
      * 多线程会调用，确保只有一个线程

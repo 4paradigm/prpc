@@ -266,7 +266,7 @@ void RpcContext::poll_wait(std::vector<epoll_event>& events,
     events.resize(n);
 }
 
-FrontEnd* RpcContext::get_client_frontend_by_rank(
+std::shared_ptr<FrontEnd>* RpcContext::get_client_frontend_by_rank(
       comm_rank_t rank) {
     //shared_lock_guard<RWSpinLock> l(_spin_lock);
     auto it = _client_sockets.find(rank);
@@ -275,7 +275,7 @@ FrontEnd* RpcContext::get_client_frontend_by_rank(
         return nullptr;
     } else {
         if (it->second->available()) {
-            return it->second.get();
+            return &it->second;
         } else {
             return nullptr;
         }
@@ -287,7 +287,7 @@ FrontEnd* RpcContext::get_client_frontend_by_rank(
  */
 comm_rank_t RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
     shared_lock_guard<RWSpinLock> l(_spin_lock);
-    FrontEnd* f = nullptr;
+    std::shared_ptr<FrontEnd>* f = nullptr;
     auto sid = msg.head()->sid;
     auto dest_rank = msg.head()->dest_rank;
     auto rpc_id = msg.head()->rpc_id;
@@ -305,38 +305,39 @@ comm_rank_t RpcContext::send_request(RpcMessage&& msg, bool nonblock) {
         push_response(std::move(resp));
         return -1;
     }
-    comm_rank_t ret = f->info().global_rank;
+    comm_rank_t ret = (*f)->info().global_rank;
     // SLOG(INFO) << "ret : " << ret;
 
-    if (f->info() == _self) {
+    if ((*f)->info() == _self) {
         push_request(std::move(msg));
         return ret;
     }
     if (nonblock) {
-        f->send_msg_nonblock(std::move(msg));
+        (*f)->send_msg_nonblock(std::move(msg), *f);
     } else {
-        f->send_msg(std::move(msg));
+        (*f)->send_msg(std::move(msg));
     }
     return ret;
 }
 
 void RpcContext::send_response(RpcMessage&& resp, bool nonblcok) {
-    FrontEnd* f = nullptr;
+    shared_lock_guard<RWSpinLock> l(_spin_lock);
+    std::shared_ptr<FrontEnd>* f = nullptr;
     auto dest_rank = resp.head()->dest_rank;
     f = get_server_frontend_by_rank(dest_rank);
     if (!f) {
         SLOG(WARNING) << "no server frontend";
         return;
     }
-    if (f->state() & FRONTEND_DISCONNECT) {
+    if ((*f)->state() & FRONTEND_DISCONNECT) {
         SLOG(WARNING) << "no server frontend";
         return;
     }
 
     if (nonblcok) {
-        f->send_msg_nonblock(std::move(resp));
+        (*f)->send_msg_nonblock(std::move(resp), *f);
     } else {
-        f->send_msg(std::move(resp));
+        (*f)->send_msg(std::move(resp));
     }
 }
 
@@ -346,32 +347,32 @@ void RpcContext::send_response(RpcMessage&& resp, bool nonblcok) {
  * 一个可用的，未来维护一个专门的数据结构，
  * 保存可用的
  */
-FrontEnd* RpcContext::get_client_frontend_by_rpc_id(
+std::shared_ptr<FrontEnd>* RpcContext::get_client_frontend_by_rpc_id(
       int rpc_id) {
     //shared_lock_guard<RWSpinLock> l(_spin_lock);
     auto it1 = _rpc_server_frontend.find(rpc_id);
     if (it1 == _rpc_server_frontend.end()) {
         return nullptr;
     }
-    const auto& v = it1->second;
-    auto ret = v[rand() % v.size()];
+    auto& v = it1->second;
+    auto& ret = v[rand() % v.size()];
     if (ret->available()) {
-        return ret.get();
+        return &ret;
     }
-    for (const auto& i : v) {
+    for (auto& i : v) {
         if (i->available()) {
-            return i.get();
+            return &i;
         }
     }
     return nullptr;
 }
 
-FrontEnd* RpcContext::get_client_frontend_by_sid(int rpc_id,
+std::shared_ptr<FrontEnd>* RpcContext::get_client_frontend_by_sid(int rpc_id,
       int server_id) {
     auto it = _rpc_server_id_frontend.find(rpc_sid_pack(rpc_id, server_id));
     if (it != _rpc_server_id_frontend.end()) {
         if (it->second->available()) {
-            return it->second.get();
+            return &it->second;
         }
     }
     auto it1 = _rpc_server_info.find(rpc_id);
@@ -387,14 +388,14 @@ FrontEnd* RpcContext::get_client_frontend_by_sid(int rpc_id,
     return get_client_frontend_by_rank(it2->second->global_rank);
 }
 
-FrontEnd* RpcContext::get_server_frontend_by_rank(
+std::shared_ptr<FrontEnd>* RpcContext::get_server_frontend_by_rank(
       comm_rank_t rank) {
     auto it = _server_sockets.find(rank);
     if (it == _server_sockets.end()) {
         return nullptr;
     } else {
         if (it->second->available()) {
-            return it->second.get();
+            return &it->second;
         } else {
             return nullptr;
         }
@@ -419,6 +420,9 @@ void RpcContext::handle_message_event(int fd) {
     bool ret = f->handle_event(fd, func);
     if (!ret) {
         remove_frontend_event(f);
+        if (_to_del_client_sockets.count(f->info().global_rank)) {
+            remove_frontend(f);
+        }
     }
 }
 
@@ -466,7 +470,11 @@ void RpcContext::update_comm_info(const std::vector<CommInfo>& list, MasterClien
         }
     }
     for (auto ptr : to_del) {
-        remove_frontend(ptr.get());
+        if (!ptr->available()) {
+            remove_frontend(ptr.get());
+        } else {
+            _to_del_client_sockets.insert(ptr->info().global_rank);
+        }
     }
     for (const auto& comm_info : list) {
         if (_client_sockets.count(comm_info.global_rank) == 0) {
