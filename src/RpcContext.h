@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <set>
 
 #include "Master.h"
 #include "RpcChannel.h"
@@ -132,15 +133,15 @@ public:
 
     void poll_wait(std::vector<epoll_event>& events, int tid, int timeout);
 
-    FrontEnd* get_client_frontend_by_rank(comm_rank_t rank);
+    std::shared_ptr<FrontEnd>* get_client_frontend_by_rank(comm_rank_t rank);
     /*
      * 瞎写的，每次返回第一个，LB需要好好写
      */
-    FrontEnd* get_client_frontend_by_rpc_id(int rpc_id);
+    std::shared_ptr<FrontEnd>* get_client_frontend_by_rpc_id(int rpc_id);
 
-    FrontEnd* get_client_frontend_by_sid(int rpc_id, int server_id);
+    std::shared_ptr<FrontEnd>* get_client_frontend_by_sid(int rpc_id, int server_id);
 
-    FrontEnd* get_server_frontend_by_rank(comm_rank_t rank);
+    std::shared_ptr<FrontEnd>* get_server_frontend_by_rank(comm_rank_t rank);
 
     void handle_message_event(int fd);
 
@@ -169,7 +170,7 @@ public:
     bool get_rpc_service_info(const std::string rpc_name, RpcServiceInfo& out);
 
     // 返回选用了哪一个frontend
-    comm_rank_t send_request(RpcMessage&& req, bool nonblcok);
+    comm_rank_t send_request(RpcMessage&& req);
 
     void send_response(RpcMessage&& resp, bool nonblock);
 
@@ -213,6 +214,7 @@ private:
     /*
      * frontend相关
      */
+    std::set<comm_rank_t> _to_del_client_sockets;
     std::unordered_map<comm_rank_t, std::shared_ptr<FrontEnd>> _client_sockets; // rank->socket
     std::unordered_map<comm_rank_t, std::shared_ptr<FrontEnd>> _server_sockets; // rank->socket
     std::unordered_map<int, FrontEnd*> _fd_map;

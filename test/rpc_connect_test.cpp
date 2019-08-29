@@ -64,8 +64,11 @@ TEST(RpcService, Connect) {
     auto server_run = [=](RpcServer* server) {
         auto dealer = server->create_dealer();
         RpcRequest req;
+        std::string data;
         while (dealer->recv_request(req)) {
+            req >> data;
             RpcResponse resp(req);
+            resp << data;
             dealer->send_response(std::move(resp));
         }
     };
@@ -74,11 +77,18 @@ TEST(RpcService, Connect) {
         auto client = rpc->create_client("asdfasdf", nodes);
         auto dealer = client->create_dealer();
         for (int i = 0; i < nodes * 3; ++i) {
+            size_t sz = rand() * rand() * rand();
+            sz %= 1024 * 1024 * 4;
+            std::string d1, d2;
+            d1.resize(sz);
             RpcRequest req;
             req.head().sid = rand() % nodes;
+            req << d1;
             dealer->send_request(std::move(req));
             RpcResponse resp;
             dealer->recv_response(resp);
+            resp >> d2;
+            EXPECT_TRUE(d1 == d2);
         }
     };
     std::unique_ptr<FakeRpc> rpc[nodes];
