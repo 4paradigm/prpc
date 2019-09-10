@@ -15,7 +15,7 @@ int getpid(){
     return _pid;
 }
 void set_thread_name(const std::string& name){
-#if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR >= 12
+#if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR >= 12)
     pthread_setname_np(pthread_self(), name.data());
 #else
     (void)name;
