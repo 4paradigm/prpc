@@ -35,6 +35,13 @@ inline std::string inner_lexical_cast(const bool& b, const size_t count) {
 template<>
 inline bool inner_lexical_cast(const char* const & s, const size_t count) {
     size_t actual_len = count > 0 ? count : std::strlen(s);
+    if (actual_len == 1) {
+        if (std::strncmp(s, "0", 1) == 0) {
+            return false;
+        } else {
+            return true;
+        }
+    }
     if (actual_len == 4 &&
             (std::strncmp(s, "True", 4) == 0 || std::strncmp(s, "true", 4) == 0)) {
         return true;

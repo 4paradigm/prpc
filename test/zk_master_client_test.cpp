@@ -7,24 +7,32 @@
 #include "Master.h"
 #include "MasterClient.h"
 
-
 namespace paradigm4 {
 namespace pico {
 namespace core {
 
-DEFINE_string(endpoint, "", "");
-DEFINE_string(rootpath, "", "");
-DEFINE_uint64(recv_timeout, 0, "");
-DEFINE_uint64(disconnect_timeout, 0, "");
 const std::string RANK_KEY="asdf";
 
 class ZkMasterClientTest : public ::testing::Test {
 public:
+
+    template<class T>
+    void set_env(T& a, const char* env) {
+        const char* s;
+        s = std::getenv(env);
+        if (s) {
+            pico_lexical_cast(s, a);
+        } else {
+            SLOG(WARNING) << "env error.";
+            exit(0);
+        }
+    }
+
     void SetUp() override {
-        server_list = FLAGS_endpoint;
-        recv_timeout = FLAGS_recv_timeout;
-        disconnect_timeout = FLAGS_disconnect_timeout;
-        root_path = FLAGS_rootpath;
+        set_env(server_list, "zk_endpoint");
+        set_env(recv_timeout, "zk_recv_timeout");
+        set_env(disconnect_timeout, "zk_disconnect_timeout");
+        set_env(root_path, "zk_root_path");
         sub_id = 0;
     }
 

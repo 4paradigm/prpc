@@ -48,8 +48,11 @@ bool ZkMasterClient::initialize() {
 void ZkMasterClient::finalize() {
     MasterClient::finalize();
     SLOG(INFO) << "zk master client finalize";
+    {
+        std::lock_guard<std::mutex> _(_connected_mu);
+        _connected = false;
+    }
     std::unique_lock<std::mutex> lock(_mu);
-    _connected = false;
     if (_zh) {
         zookeeper_close(_zh);
         _zh = NULL;
@@ -322,7 +325,13 @@ void ZkMasterClient::handle_event(int type, int state, const char* path) {
           type == ZOO_DELETED_EVENT || 
           type == ZOO_CHANGED_EVENT || 
           type == ZOO_CHILD_EVENT) {
-        notify_watchers(path);
+        std::lock_guard<std::mutex> _(_connected_mu);
+        if (_connected) {
+            std::vector<std::string> tmp;
+            master_get(path);
+            master_sub(path, tmp);
+            notify_watchers(path);
+        }
     }
 }
 

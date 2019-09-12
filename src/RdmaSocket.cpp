@@ -410,6 +410,9 @@ void RdmaSocket::init() {
     }
    PSCHECK(ibv_req_notify_cq(_recv_cq, 0) == 0);
    PSCHECK(ibv_req_notify_cq(_send_cq, 0) == 0);
+   int64_t _;
+   PSCHECK(retry_eintr_call(::send, _fd, &_, sizeof(_), MSG_NOSIGNAL) == sizeof(_));
+   PSCHECK(retry_eintr_call(::recv, _fd, &_, sizeof(_), MSG_WAITALL) == sizeof(_));
 }
 
 void RdmaSocket::init_mr() {

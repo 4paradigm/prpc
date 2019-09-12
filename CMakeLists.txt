@@ -15,6 +15,18 @@ find_package(PicoCoreDep REQUIRED)
 set(CMAKE_CXX_COMPILER $ENV{CXX})
 set(CMAKE_C_COMPILER $ENV{CC})
 
+# check gcc version
+if(CMAKE_COMPILER_IS_GNUCXX)
+    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+    if(GCC_VERSION VERSION_GREATER 5.2.0 OR GCC_VERSION VERSION_EQUAL 5.2.0)
+        message(STATUS "C++14 activated.")
+    else()
+        message(FATAL_ERROR "C++14 needed. Therefore a gcc compiler with a version higher than 5.2 is needed.")
+    endif()
+else(CMAKE_COMPILER_IS_GNUCXX)
+    message(FATAL_ERROR "only gcc supported")
+endif(CMAKE_COMPILER_IS_GNUCXX)
+
 # !!!严禁去掉-Werror，没有任何例外!!!
 add_definitions(--std=c++14 -Wall -Wextra -Wno-deprecated-declarations -Werror -frecord-gcc-switches -fPIC)
 

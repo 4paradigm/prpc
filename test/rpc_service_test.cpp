@@ -131,7 +131,9 @@ TEST(RpcService, RegisterService) {
                 dealer->send_request(std::move(request));
 
                 RpcResponse response;
-                dealer->recv_response(response);
+                if (!dealer->recv_response(response, 10000)) {
+                    continue;
+                }
                 if (response.error_code() != 0) {
                     continue;
                 }
@@ -147,7 +149,6 @@ TEST(RpcService, RegisterService) {
     auto client_thread = std::thread(client_run, rpc.rpc2());
     client_thread.join();
     server_thread.join();
-
 }
 
 TEST(RpcService, SmallMessage) {

@@ -113,7 +113,7 @@ void Dealer::_send_request(RpcRequest&& req) {
             _ctx->_spin_lock.unlock_shared();
         } else {
             // SLOG(INFO) << req.head();
-            comm_rank_t rank = _ctx->send_request(std::move(req), true);
+            comm_rank_t rank = _ctx->send_request(std::move(req));
             if (rank == _g_rank) {
                 _servers.insert(sid);
                 _available_rank = _g_rank;
@@ -125,7 +125,7 @@ void Dealer::_send_request(RpcRequest&& req) {
             _ctx->push_request(std::move(req));
             _ctx->_spin_lock.unlock_shared();
         } else {
-            comm_rank_t rank = _ctx->send_request(std::move(req), true);
+            comm_rank_t rank = _ctx->send_request(std::move(req));
             if (_available_rank != _g_rank) {
                 _available_rank = rank;
             }
@@ -136,7 +136,7 @@ void Dealer::_send_request(RpcRequest&& req) {
             _ctx->push_request(std::move(req));
             _ctx->_spin_lock.unlock_shared();
         } else {
-            comm_rank_t rank = _ctx->send_request(std::move(req), true);
+            comm_rank_t rank = _ctx->send_request(std::move(req));
             _available_rank = rank;
         }
     }

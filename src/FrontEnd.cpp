@@ -30,7 +30,7 @@ bool FrontEnd::connect() {
         if (!socket->connect(_info.endpoint, info, 0)) {
             return false;
         }
-        upgrade_guard<RWSpinLock> l(_ctx->_spin_lock);
+        lock_guard<RWSpinLock> l(_ctx->_spin_lock);
         _socket = std::move(socket);
         _ctx->add_frontend_event(this);
         set_state(FRONTEND_CONNECT);
@@ -38,7 +38,7 @@ bool FrontEnd::connect() {
     return true;
 }
 
-void FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
+void FrontEnd::send_msg_nonblock(RpcMessage&& msg, std::shared_ptr<FrontEnd>& this_holder) {
     int sz = _sending_queue_size.fetch_add(1, std::memory_order_acq_rel);
     if (sz == 0) {
         // 只有一个线程能到这里
@@ -49,10 +49,10 @@ void FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
         _it2.reset();
         if (state() & FRONTEND_DISCONNECT) {
             // 保证读锁连续
-            _ctx->_spin_lock.lock_shared();
-            _ctx->async([this, cnt](){
+            //_ctx->_spin_lock.lock_shared();
+            _ctx->async([this, cnt, this_holder](){
                 keep_writing(cnt);
-                _ctx->_spin_lock.unlock_shared();
+                //_ctx->_spin_lock.unlock_shared();
             });
             return;
         }
@@ -64,17 +64,17 @@ void FrontEnd::send_msg_nonblock(RpcMessage&& msg) {
                 _it1.cursor(_sending_msg);
                 _it2.zero_copy_cursor(_sending_msg);
                 if (!_socket->send_msg(_sending_msg, true, _more, _it1, _it2)) {
-                    epipe(cnt, true);
+                    epipe(cnt);
                     return;
                 }
                 if (_it1.has_next() || _it2.has_next()) {
                     // 对于RDMA的情况，一定走不到这里
                     SCHECK(!_is_use_rdma);
                     // 保证读锁连续
-                    _ctx->_spin_lock.lock_shared();
-                    _ctx->async([this, cnt](){
+                    //_ctx->_spin_lock.lock_shared();
+                    _ctx->async([this, cnt, this_holder](){
                         keep_writing(cnt);
-                        _ctx->_spin_lock.unlock_shared();
+                        //_ctx->_spin_lock.unlock_shared();
                     });
                     return;
                 }
@@ -110,7 +110,7 @@ void FrontEnd::send_msg(RpcMessage&& msg) {
 /*
  * 内部函数，外部保证只有一个线程调用
  */
-void FrontEnd::epipe(int cnt, bool nonblock) {
+void FrontEnd::epipe(int cnt) {
     set_state(FRONTEND_EPIPE);
     _ctx->remove_frontend_event(this);
     // 对于server socket，等待重连时构造新的FrontEnd
@@ -121,14 +121,14 @@ void FrontEnd::epipe(int cnt, bool nonblock) {
     _it1.reset();
     _it2.reset();
 
-    _ctx->send_request(std::move(_sending_msg), nonblock);
+    _ctx->send_request(std::move(_sending_msg));
     if (_more) {
-        _ctx->send_request(std::move(_msg), nonblock);
+        _ctx->send_request(std::move(_msg));
         ++cnt;
     }
     while (_sending_queue_size.fetch_sub(cnt) != cnt) {
         while (!_sending_queue.pop(_sending_msg));
-        _ctx->send_request(std::move(_sending_msg), nonblock);
+        _ctx->send_request(std::move(_sending_msg));
         cnt = 1;
     }
     set_state(FRONTEND_DISCONNECT | FRONTEND_EPIPE);
@@ -140,13 +140,13 @@ void FrontEnd::keep_writing(int cnt) {
             _sending_msg = std::move(_msg);
             _more = _sending_queue.pop(_msg);
             ++cnt;
-            epipe(cnt, false);
+            epipe(cnt);
             return;
         }
     }
     if (_it1.has_next() || _it2.has_next()) {
         if (!_socket->send_msg(_sending_msg, false, _more, _it1, _it2)) {
-            epipe(cnt, false);
+            epipe(cnt);
             return;
         }
     }
@@ -158,7 +158,7 @@ void FrontEnd::keep_writing(int cnt) {
             _it1.cursor(_sending_msg);
             _it2.zero_copy_cursor(_sending_msg);
             if (!_socket->send_msg(_sending_msg, false, _more, _it1, _it2)) {
-                epipe(cnt, false);
+                epipe(cnt);
                 return;
             }
             if (_it1.has_next() || _it2.has_next()) {

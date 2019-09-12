@@ -36,7 +36,8 @@ public:
 
     bool connect();
 
-    void send_msg_nonblock(RpcMessage&& msg);
+    void send_msg_nonblock(RpcMessage&& msg,
+          std::shared_ptr<FrontEnd>& this_holder);
 
     /*
      * 多线程会调用，确保只有一个线程
@@ -47,7 +48,7 @@ public:
     // thread safe, may call ctx->send_msg when flush pending
     void send_msg(RpcMessage&& msg);
 
-    void epipe(int cnt, bool nonblock);
+    void epipe(int cnt);
 
     bool available() const {
         if (state() & FRONTEND_EPIPE) {
