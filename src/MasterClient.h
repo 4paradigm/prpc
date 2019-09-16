@@ -256,7 +256,7 @@ private:
 
 class TcpMasterClient : public MasterClient {
 public:
-    TcpMasterClient(const std::string& master_ep);
+    TcpMasterClient(const std::string& master_ep, const std::string& root_path = "root");
     ~TcpMasterClient() override;
 
     bool initialize() override;

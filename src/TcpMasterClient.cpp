@@ -8,8 +8,8 @@ namespace pico {
 namespace core {
 
 
-TcpMasterClient::TcpMasterClient(const std::string& master_ep)
-      : MasterClient("root"), _master_ep(std::move(master_ep)), _id_gen(0) {}
+TcpMasterClient::TcpMasterClient(const std::string& master_ep, const std::string& root_path)
+      : MasterClient(root_path), _master_ep(std::move(master_ep)), _id_gen(0) {}
 
 TcpMasterClient::~TcpMasterClient() {}
 
