@@ -40,6 +40,10 @@ function build() {
     popd
 }
 
+function clean() {
+    rm -r -f ${PROJECT_ROOT}/build
+}
+
 function ut() {
     rm -rf ${PROJECT_ROOT}/.ut
     mkdir -p ${PROJECT_ROOT}/.ut
@@ -107,12 +111,19 @@ function publish() {
     popd
 }
 
-setup
-if [ "$1" == "ut" ];then
-    build
-    ut
-else
-    build $*
-fi
-publish
+case "$1" in
+    ut)
+        setup
+        build
+        ut
+    ;;
+    clean)
+        clean
+    ;;
+    *)
+        setup
+        build $*
+        publish
+    ;;
+esac
 
