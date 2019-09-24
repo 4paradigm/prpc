@@ -582,6 +582,24 @@ bool RpcContext::get_rpc_service_info(const std::string rpc_name,
     return true;
 }
 
+bool RpcContext::get_avaliable_servers(const std::string& rpc_name,
+      std::vector<int>& servers) {
+    shared_lock_guard<RWSpinLock> _(_spin_lock);
+    RpcServiceInfo info;
+    auto it = _rpc_info.find(rpc_name);
+    if (it == _rpc_info.end()) {
+        return false;
+    }
+    info = it->second;
+    for (auto& server : info.servers) {
+        auto f = get_client_frontend_by_sid(info.rpc_id, server.server_id);
+        if (f && (*f)->available()) {
+            servers.push_back(server.server_id);
+        }
+    }
+    return true;
+}
+
 /*
  * only for proxy
  * 假设外部已经抢到读锁
