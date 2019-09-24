@@ -82,14 +82,11 @@ std::unique_ptr<RpcClient> RpcService::create_client(
         register_rpc_service(rpc_name);
         SLOG(WARNING) << "expected server num 0, client register rpc service";
     }
-    _ctx.wait([rpc_name, expected_server_num](RpcContext* ctx) {
-        RpcServiceInfo info;
+    RpcServiceInfo info;
+    _ctx.wait([rpc_name, expected_server_num, &info](RpcContext* ctx) {
         bool ret = ctx->get_rpc_service_info(rpc_name, info);
         return ret && (int)info.servers.size() >= expected_server_num;
-    }); 
-    RpcServiceInfo info;
-    SCHECK(_ctx.get_rpc_service_info(rpc_name, info));
-    //SCHECK(ret && info.servers.size() >= expected_server_num);
+    });
     return std::make_unique<RpcClient>(info, this);
 }
 
