@@ -53,14 +53,24 @@ public:
 
     static bool is_directory(const std::string& path, const std::string& hb = "");
 
+    static bool is_directory(const URIConfig& uri);
+
     static bool is_file(const std::string& path, const std::string& hb = "");
+
+    static bool is_file(const URIConfig& uri);
     
     static void mv(const std::string& src_path, const std::string& dst_path, const std::string& hb = "");
+
+    static void mv(const URIConfig& src_uri, const URIConfig& dst_uri);
     
     // equiv to: rm -rf dst_path; mv src_path dst_path
     static void mvf(const std::string& src_path, const std::string& dst_path, const std::string& hb = "");
+    
+    static void mvf(const URIConfig& src_uri, const URIConfig& dst_uri);
 
     static void copy(const std::string& src_path, const std::string& dst_path, const std::string& hb = "");
+
+    static void copy(const URIConfig& src_uri, const URIConfig& dst_uri);
 
 private:
     static std::string static_default_hadoop_bin;
