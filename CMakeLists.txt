@@ -8,8 +8,6 @@ message(STATUS "third party: ${THIRD_PARTY}")
 file(GLOB SRC src/*.cpp)
 file(GLOB HRDS src/*.h)
 find_package(Jemalloc REQUIRED)
-find_package(GLOG REQUIRED)
-find_package(GFLAGS REQUIRED)
 find_package(PicoCoreDep REQUIRED)
 
 set(CMAKE_CXX_COMPILER $ENV{CXX})
@@ -53,6 +51,7 @@ set(CMAKE_EXE_LINKER_FLAGS "-pthread -Wl,--whole-archive -lrt -Wl,--no-whole-arc
 include_directories(SYSTEM src ${THIRD_PARTY}/include)
 link_directories(${THIRD_PARTY}/lib ${THIRD_PARTY}/lib64)
 set(CORE_LIB ${PicoCoreDep_LIBRARIES} )
+set(CORE_STATIC_LIB ${PicoCoreDep_STATIC_LIBRARIES} )
 
 set(MALLOC_DEFINITIONS -DUSE_JEMALLOC -DOVERRIDE_SYSTEM_MALLOC=0 -DOVERRIDE_SYSTEM_NEW=0)
 
@@ -67,7 +66,7 @@ add_dependencies(pico_core pico_core_obj)
 
 add_library(pico_core_static STATIC  $<TARGET_OBJECTS:pico_core_obj>)
 target_compile_definitions(pico_core_static PRIVATE ${MALLOC_DEFINITIONS})
-target_link_libraries(pico_core_static PUBLIC ${Jemalloc_pic_LIBRARIES} ${RDMA_LIBRARIES} ${CORE_LIB} dl)
+target_link_libraries(pico_core_static PUBLIC ${Jemalloc_pic_STATIC_LIBRARIES} ${RDMA_LIBRARIES} ${CORE_STATIC_LIB} dl)
 add_dependencies(pico_core_static pico_core_obj)
 
 
