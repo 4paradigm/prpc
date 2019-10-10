@@ -61,7 +61,7 @@ bool http_process(const std::string& host, const std::string& port,
         if (error != boost::asio::error::eof) {
             return false;
         }
-    } catch (std::exception e) {
+    } catch (std::exception&) {
         return false;
     }
     return true;

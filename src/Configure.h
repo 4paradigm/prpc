@@ -28,6 +28,11 @@ public:
         }
     }
 
+    Configure(const Configure& cfg) {
+        _node.reset(cfg._node);
+        _key = cfg._key;
+    }
+
     Configure& operator=(const Configure& cfg) {
         _node.reset(cfg._node);
         _key = cfg._key;

@@ -18,6 +18,8 @@ public:
     shared_ptr_count() : pn(NULL) {}
     shared_ptr_count(const shared_ptr_count& count) : pn(count.pn) {}
 
+    shared_ptr_count& operator=(const shared_ptr_count& count) = default;
+
     void swap(shared_ptr_count& lhs) {
         std::swap(pn, lhs.pn);
     }

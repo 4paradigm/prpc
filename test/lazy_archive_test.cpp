@@ -22,7 +22,7 @@ public:
         _size = size / sizeof(TestValue) + 1;
         _data = reinterpret_cast<TestValue*>(pico_memalign(ALIGN, _size * ALIGN));
         _hold = std::shared_ptr<void>(reinterpret_cast<void*>(_data), pico_free);
-        memset(_data, 0, _size * ALIGN);
+        memset(static_cast<void*>(_data), 0, _size * ALIGN);
     }
     mystring(const mystring& s) {
         *this = s;
@@ -31,7 +31,7 @@ public:
         _size = s._size;
         _data = reinterpret_cast<TestValue*>(pico_memalign(ALIGN, _size * ALIGN));
         _hold = std::shared_ptr<void>(reinterpret_cast<void*>(_data), pico_free);
-        memcpy(_data, s._data, _size * ALIGN);
+        memcpy(static_cast<void*>(_data), static_cast<void*>(s._data), _size * ALIGN);
         return *this;
     }
     mystring(mystring&&) = default;
