@@ -5,4 +5,6 @@ find_lib(PicoCoreDep_LIBRARIES        SHARED LIBS glog gflags boost_regex yaml-c
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(PicoCoreDep DEFAULT_MSG PicoCoreDep_LIBRARIES)
+find_package_handle_standard_args(PicoCoreDep_STATIC DEFAULT_MSG PicoCoreDep_STATIC_LIBRARIES)
 mark_as_advanced(PicoCoreDep_LIBRARIES)
+mark_as_advanced(PicoCoreDep_STATIC_LIBRARIES)
