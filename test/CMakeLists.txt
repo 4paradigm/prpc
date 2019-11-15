@@ -2,6 +2,7 @@ set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -pthread -Wl,--whol
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ppc64le")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lgcc_s")
 endif()
+add_definitions(-O0 -g ${MALLOC_DEFINITIONS})
 link_libraries(pico_core_static gtest gtest_main)
 add_executable(channel_test channel_test.cpp)
 add_executable(archive_test archive_test.cpp)
