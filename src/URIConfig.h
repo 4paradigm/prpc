@@ -37,7 +37,7 @@ public:
         auto iter = params.find(key);
         if (iter == params.end())
             return false;
-        return pico_lexical_cast<T>(iter->second.first, val);
+        return pico_lexical_cast(iter->second.first, val);
     }
 
     template<class T>
