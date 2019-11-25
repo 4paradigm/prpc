@@ -11,12 +11,6 @@
 #include "RpcContext.h"
 #endif
 
-/*
- * 每次构造RpcArena的时候，把jemalloc的变量修改
- * 等价于 JE_MALLOC_CONF=retain:false
- */
-extern bool je_opt_retain;
-
 namespace paradigm4 {
 namespace pico {
 namespace core {
@@ -130,7 +124,7 @@ bool RpcArena::dalloc(extent_hooks_t* extent_hooks, void* addr, size_t size,
 extent_hooks_t rdma_hook;
 
 RpcArena::RpcArena() {
-    je_opt_retain = false;
+    //je_opt_retain = false;
     rdma_hook       = original_hooks_;
     rdma_hook.alloc = alloc;
     rdma_hook.merge = NULL;

@@ -57,10 +57,10 @@ TEST(pico_memory, max_memory) {
     pico_print_memstats();
 
     void* p = pico_malloc(201 MB);
-    //    EXPECT_EQ(p, nullptr);
+    ASSERT_EQ(p, nullptr);
     pico_mem().set_max_managed_vmem(400 MB);
     p = pico_malloc(201 MB);
-    EXPECT_NE(p, nullptr);
+    ASSERT_NE(p, nullptr);
 }
 TEST(pico_memory, get_rss) {
     using namespace paradigm4::pico;
@@ -69,7 +69,7 @@ TEST(pico_memory, get_rss) {
 
     LOG(INFO) << "malloc 100MB";
     char* pInt = static_cast<char*>(pico_malloc(100 MB));
-    EXPECT_NE(pInt, nullptr);
+    ASSERT_NE(pInt, nullptr);
 
     pico_print_memstats();
     EXPECT_TRUE(
@@ -113,10 +113,17 @@ TEST(pico_memory, limited_allocator) {
     EXPECT_EQ(charAllocator1.current_size(), 0);
 }
 
+#if defined(USE_JEMALLOC)
+extern bool je_opt_retain;
+#endif
+
 int main(int argc, char* argv[]) {
     testing::InitGoogleTest(&argc, argv);
     google::AllowCommandLineReparsing();
     google::ParseCommandLineFlags(&argc, &argv, false);
+#if defined(USE_JEMALLOC)
+    je_opt_retain = false;
+#endif
     int ret = RUN_ALL_TESTS();
     return ret;
 }

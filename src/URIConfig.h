@@ -218,9 +218,9 @@ public:
         return yaml;
     }
 
-    operator std::string() const {
-        return uri();
-    }
+    //operator std::string() const {
+    //    return uri();
+    //}
 
 protected:
     std::string _prefix = ""; //extra prefix for protocol

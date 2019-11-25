@@ -27,6 +27,8 @@ public:
 
     bool get_rpc_service_info(RpcServiceInfo& out);
 
+    bool get_available_servers(std::vector<int>& servers);
+
     ~RpcClient();
 
 private:

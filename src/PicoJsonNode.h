@@ -2211,7 +2211,7 @@ class basic_json
     bool save(StringType& str, bool pretty = true) const {
         try {
             str = dump(pretty ? 4 : -1);
-        } catch(std::exception e) {
+        } catch(std::exception&) {
             LOG(WARNING) << "save json to string failed.";
             return false;
         }
@@ -2238,7 +2238,7 @@ class basic_json
     bool load(const StringType& str) {
         try {
             *this = parse(str);
-        } catch(std::invalid_argument e) {
+        } catch(std::invalid_argument& e) {
             LOG(WARNING) << "read json from string failed. Exception:" << e.what();
             return false;
         }
@@ -2248,7 +2248,7 @@ class basic_json
     bool load(const std::stringstream& ss) {
         try {
             load(ss.str());
-        } catch(std::exception e) {
+        } catch(std::exception&) {
             LOG(WARNING) << "read json from stringstream failed.";
             return false;
         }
@@ -2927,7 +2927,7 @@ class basic_json
     ValueType as() const {
         try {
             return get<ValueType>();
-        } catch(std::exception e) {
+        } catch(std::exception&) {
             SLOG(FATAL) << "get value with function as() failed.";
         }
         return ValueType(); // never reached
@@ -2937,7 +2937,7 @@ class basic_json
     ValueType as(const ValueType& defv) const {
         try {
             return get<ValueType>();
-        } catch(std::exception e) {
+        } catch(std::exception&) {
             LOG(WARNING) << "get value of type " << typeid(defv).name() << \
                 " failed, return default value";
             return defv;
@@ -2952,7 +2952,7 @@ class basic_json
         }
         try {
             t = get<ValueType>();
-        } catch(std::exception) {
+        } catch(std::exception&) {
             LOG(WARNING) << "try cast JSON failed";
             return false;
         }
@@ -3441,14 +3441,14 @@ class basic_json
             StringType path;
             try {
                 path = generate_pico_json_path(key, args...);
-            } catch(std::exception e) {
+            } catch(std::exception&) {
                 LOG(WARNING) << "access value failed, given parameter cannot convert to std::string.";
                 return s_error_node();
             }
 
             try {
                 return inner_at(json_pointer(path));
-            } catch(std::exception e) {
+            } catch(std::exception&) {
                 LOG(WARNING) << "access value failed, given path: " << path << " is not valid";
                 return s_error_node();
             }
@@ -3468,14 +3468,14 @@ class basic_json
             StringType path;
             try {
                 path = generate_pico_json_path(key, args...);
-            } catch(std::exception e) {
+            } catch(std::exception&) {
                 LOG(WARNING) << "access value failed, given parameter cannot convert to std::string.";
                 return error_node();
             }
 
             try {
                 return inner_at(json_pointer(path));
-            } catch(std::exception e) {
+            } catch(std::exception&) {
                 LOG(WARNING) << "access value failed, given path: " << path << " is not valid";
                 return error_node();
             }
@@ -4324,7 +4324,7 @@ class basic_json
         if (is_object()) {
             try{
                 return m_value.object->erase(key);
-            } catch(std::exception e) {
+            } catch(std::exception&) {
                 LOG(WARNING) << "erase key: " << key << " error";
                 return false;
             }
@@ -4370,7 +4370,7 @@ class basic_json
             }
             try {
                 m_value.array->erase(m_value.array->begin() + static_cast<difference_type>(idx));
-            } catch(std::exception e) {
+            } catch(std::exception&) {
                 LOG(WARNING) << "erase index: " << std::to_string(idx) << " error";
                 return false;
             }
@@ -4392,14 +4392,14 @@ class basic_json
         StringType path;
         try {
             path = generate_pico_json_path(args...);
-        } catch(std::exception e) {
+        } catch(std::exception&) {
             LOG(WARNING) << "modify value failed, given key cannot convert to string";
             return false;
         }
 
         try {
             inner_at(json_pointer(path)) = value;
-        } catch(std::exception e) {
+        } catch(std::exception&) {
             LOG(WARNING) << "modify value failed, given path: " << path << " is not valid";
             return false;
         }
@@ -4412,7 +4412,7 @@ class basic_json
     {
         try {
             *this = value;
-        } catch(std::exception e) {
+        } catch(std::exception&) {
             throw std::domain_error(path + " value assignment");
         }
     }
@@ -4424,7 +4424,7 @@ class basic_json
         basic_json* tmp;
         try {
             tmp = &inner_at(key);
-        } catch(std::exception e) {
+        } catch(std::exception&) {
             throw std::domain_error(path);
         }
         tmp->inner_modify(ss.str(), value, args...);
@@ -4436,7 +4436,7 @@ class basic_json
     {
         try {
             inner_modify("", key, value, args...);
-        } catch(std::domain_error e) {
+        } catch(std::domain_error& e) {
             LOG(WARNING) << "modify key: " << e.what() << " failed.";
             return false;
         }
@@ -5204,7 +5204,7 @@ class basic_json
             m_value.array->push_back(std::move(val));
             // invalidate object
             val.m_type = value_t::null;
-        } catch(std::exception e) {
+        } catch(std::exception&) {
             LOG(WARNING) << "push_back value: " << val << " failed.";
             return false;
         }
@@ -5247,7 +5247,7 @@ class basic_json
         try {
             // add element to array
             m_value.array->push_back(val);
-        } catch(std::exception e) {
+        } catch(std::exception&) {
             LOG(WARNING) << "push_back value: " << val << " failed.";
             return false;
         }
@@ -5288,7 +5288,7 @@ class basic_json
         }
         try {
             m_value.object->operator[](key) = value;
-        } catch(std::exception e) {
+        } catch(std::exception&) {
             LOG(WARNING) << "add key: " << key << " to an object failed.";
             return false;
         }
@@ -8978,7 +8978,7 @@ basic_json_parser_63:
                 m_line_buffer.clear();
                 for (m_cursor = m_start; m_cursor != m_limit; ++m_cursor)
                 {
-                    m_line_buffer.append(1, static_cast<const char>(*m_cursor));
+                    m_line_buffer.append(1, static_cast<char>(*m_cursor));
                 }
 
                 // append 5 characters (size of longest keyword "false") to

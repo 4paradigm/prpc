@@ -52,6 +52,12 @@ std::vector <std::string> FileSystem::get_file_list(const URIConfig& uri) {
     }
 }
 
+void FileSystem::mkdir_p(const std::string& path, const std::string& hb) {
+    URIConfig uri(path);
+    uri.config().set_val(URI_HADOOP_BIN, hb);
+    mkdir_p(uri);
+}
+
 void FileSystem::mkdir_p(const URIConfig& uri) {
     std::string path = uri.name();
     std::string hb = uri.config().get_with_default<std::string>(URI_HADOOP_BIN, "");
@@ -72,10 +78,10 @@ void FileSystem::mkdir_p(const URIConfig& uri) {
     }
 }
 
-void FileSystem::mkdir_p(const std::string& path, const std::string& hb) {
+bool FileSystem::create_output_dir(const std::string& path, const std::string& hb) {
     URIConfig uri(path);
     uri.config().set_val(URI_HADOOP_BIN, hb);
-    mkdir_p(uri);
+    return create_output_dir(uri);
 }
 
 bool FileSystem::create_output_dir(const URIConfig& uri) {
@@ -88,10 +94,10 @@ bool FileSystem::create_output_dir(const URIConfig& uri) {
     return true;
 }
 
-bool FileSystem::create_output_dir(const std::string& path, const std::string& hb) {
+void FileSystem::rmr(const std::string& path, const std::string& hb) {
     URIConfig uri(path);
     uri.config().set_val(URI_HADOOP_BIN, hb);
-    return create_output_dir(uri);
+    rmr(uri);
 }
 
 void FileSystem::rmr(const URIConfig& uri) {
@@ -112,6 +118,12 @@ void FileSystem::rmr(const URIConfig& uri) {
                 << "unkown fs_type of " << uri.uri();
             return;
     }
+}
+
+void FileSystem::rmrf(const std::string& path, const std::string& hb) {
+    URIConfig uri(path);
+    uri.config().set_val(URI_HADOOP_BIN, hb);
+    rmrf(uri);
 }
 
 void FileSystem::rmrf(const URIConfig& uri) {
@@ -135,6 +147,12 @@ void FileSystem::rmrf(const URIConfig& uri) {
 
 }
 
+bool FileSystem::exists(const std::string& path, const std::string& hb) {
+    URIConfig uri(path);
+    uri.config().set_val(URI_HADOOP_BIN, hb);
+    return exists(uri);
+}
+
 bool FileSystem::exists(const URIConfig& uri) {
     std::string path = uri.name();
     std::string hb = uri.config().get_with_default<std::string>(URI_HADOOP_BIN, "");
@@ -155,25 +173,16 @@ bool FileSystem::exists(const URIConfig& uri) {
     }
 }
 
-bool FileSystem::is_file(const std::string& path, const std::string& hb) {
-    switch(ShellUtility::fs_type(path)) {
-        case FileSystemType::LOCAL:
-            return std::stoi(ShellUtility::execute_tostring("test -f " + path + "; echo $?"))
-                == 0 ? true : false;
-        case FileSystemType::HDFS:
-            return std::stoi(ShellUtility::execute_tostring(current_hadoop_bin(hb)
-                        + " -test -f " + path + "; echo $?")) 
-                == 0 ? true : false;
-        default:
-            ELOG(WARNING, PICO_CORE_ERRCODE(FS_UNKNOWN_TYPE))
-                << "unkown fs_type of " << path;
-            return false;
-    }
-
+bool FileSystem::is_directory(const std::string& path, const std::string& hb) {
+    URIConfig uri(path);
+    uri.config().set_val(URI_HADOOP_BIN, hb);
+    return is_directory(uri);
 }
 
-bool FileSystem::is_directory(const std::string& path, const std::string& hb) {
-    switch(ShellUtility::fs_type(path)) {
+bool FileSystem::is_directory(const URIConfig& uri) {
+    std::string path = uri.name();
+    std::string hb = uri.config().get_with_default<std::string>(URI_HADOOP_BIN, "");
+    switch(uri.storage_type()) {
         case FileSystemType::LOCAL:
             return std::stoi(ShellUtility::execute_tostring("test -d " + path + "; echo $?"))
                 == 0 ? true : false;
@@ -189,11 +198,47 @@ bool FileSystem::is_directory(const std::string& path, const std::string& hb) {
 
 }
 
+bool FileSystem::is_file(const std::string& path, const std::string& hb) {
+    URIConfig uri(path);
+    uri.config().set_val(URI_HADOOP_BIN, hb);
+    return is_file(uri);
+}
+
+bool FileSystem::is_file(const URIConfig& uri) {
+    std::string path = uri.name();
+    std::string hb = uri.config().get_with_default<std::string>(URI_HADOOP_BIN, "");
+    switch(uri.storage_type()) {
+        case FileSystemType::LOCAL:
+            return std::stoi(ShellUtility::execute_tostring("test -f " + path + "; echo $?"))
+                == 0 ? true : false;
+        case FileSystemType::HDFS:
+            return std::stoi(ShellUtility::execute_tostring(current_hadoop_bin(hb)
+                        + " -test -f " + path + "; echo $?")) 
+                == 0 ? true : false;
+        default:
+            ELOG(WARNING, PICO_CORE_ERRCODE(FS_UNKNOWN_TYPE))
+                << "unkown fs_type of " << path;
+            return false;
+    }
+
+}
+
 void FileSystem::mv(const std::string& src_path,
                           const std::string& dst_path,
                           const std::string& hb) {
-    auto src_type = ShellUtility::fs_type(src_path);
-    auto dst_type = ShellUtility::fs_type(dst_path);
+    URIConfig src_uri(src_path);
+    src_uri.config().set_val(URI_HADOOP_BIN, hb);
+    URIConfig dst_uri(dst_path);
+    dst_uri.config().set_val(URI_HADOOP_BIN, hb);
+    mv(src_uri, dst_uri);
+}
+
+void FileSystem::mv(const URIConfig& src_uri, const URIConfig& dst_uri) {
+    auto src_type = src_uri.storage_type();
+    auto dst_type = dst_uri.storage_type();
+    auto src_path = src_uri.name();
+    auto dst_path = dst_uri.name();
+    std::string hb = src_uri.config().get_with_default<std::string>(URI_HADOOP_BIN, "");
     RCHECK(src_type == dst_type) << "file type mismatch between source ["
                                  << src_path << "] and destination [" << dst_path << "] for mv operator";
     switch(src_type) {
@@ -214,8 +259,19 @@ void FileSystem::mv(const std::string& src_path,
 void FileSystem::mvf(const std::string& src_path,
                            const std::string& dst_path,
                            const std::string& hb) {
-    auto src_type = ShellUtility::fs_type(src_path);
-    auto dst_type = ShellUtility::fs_type(dst_path);
+    URIConfig src_uri(src_path);
+    src_uri.config().set_val(URI_HADOOP_BIN, hb);
+    URIConfig dst_uri(dst_path);
+    dst_uri.config().set_val(URI_HADOOP_BIN, hb);
+    mvf(src_uri, dst_uri);
+}
+
+void FileSystem::mvf(const URIConfig& src_uri, const URIConfig& dst_uri) {
+    auto src_type = src_uri.storage_type();
+    auto dst_type = dst_uri.storage_type();
+    auto src_path = src_uri.name();
+    auto dst_path = dst_uri.name();
+    std::string hb = src_uri.config().get_with_default<std::string>(URI_HADOOP_BIN, "");
     RCHECK(src_type == dst_type) << "file type mismatch between source ["
                                  << src_path << "] and destination [" << dst_path << "] for mvf operator";
     switch(src_type) {
@@ -236,8 +292,19 @@ void FileSystem::mvf(const std::string& src_path,
 void FileSystem::copy(const std::string& src_path,
                             const std::string& dst_path,
                             const std::string& hb) {
-    auto src_type = ShellUtility::fs_type(src_path);
-    auto dst_type = ShellUtility::fs_type(dst_path);
+    URIConfig src_uri(src_path);
+    src_uri.config().set_val(URI_HADOOP_BIN, hb);
+    URIConfig dst_uri(dst_path);
+    dst_uri.config().set_val(URI_HADOOP_BIN, hb);
+    copy(src_uri, dst_uri);
+}
+
+void FileSystem::copy(const URIConfig& src_uri, const URIConfig& dst_uri) {
+    auto src_type = src_uri.storage_type();
+    auto dst_type = dst_uri.storage_type();
+    auto src_path = src_uri.name();
+    auto dst_path = dst_uri.name();
+    std::string hb = src_uri.config().get_with_default<std::string>(URI_HADOOP_BIN, "");
     RCHECK(src_type == dst_type) << "file type mismatch between source ["
                                  << src_path << "] and destination [" << dst_path << "] for mvf operator";
     switch(src_type) {
@@ -252,24 +319,6 @@ void FileSystem::copy(const std::string& src_path,
             ELOG(WARNING, PICO_CORE_ERRCODE(FS_UNKNOWN_TYPE)) << "unkown fs_type of " << src_path << " and " << dst_path;
             return;
     }
-}
-
-bool FileSystem::exists(const std::string& path, const std::string& hb) {
-    URIConfig uri(path);
-    uri.config().set_val(URI_HADOOP_BIN, hb);
-    return exists(uri);
-}
-
-void FileSystem::rmr(const std::string& path, const std::string& hb) {
-    URIConfig uri(path);
-    uri.config().set_val(URI_HADOOP_BIN, hb);
-    rmr(uri);
-}
-
-void FileSystem::rmrf(const std::string& path, const std::string& hb) {
-    URIConfig uri(path);
-    uri.config().set_val(URI_HADOOP_BIN, hb);
-    rmrf(uri);
 }
 
 }

@@ -22,7 +22,7 @@ namespace pico {
 namespace core {
 
 const int BNUM = 8;
-const int BSIZE = 32 * 1024;
+const size_t BSIZE = 32 * 1024;
 
 /*
  * imm_data < 0 意味着data里是 pos, lkey，取反后是正常的ack
@@ -105,7 +105,7 @@ private:
 
     bool handle_out_event(std::function<void(RpcMessage&&)>);
 
-    int send(const char* buffer, uint32_t size, bool more = false);
+    int send(const char* buffer, size_t size, bool more = false);
 
     buffer_t* get_send_buffer();
 

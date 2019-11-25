@@ -54,6 +54,11 @@ extern size_t JEMALLOC_WRAPPER(dallocated_size);
 extern size_t JEMALLOC_WRAPPER(mmap_size);
 extern size_t JEMALLOC_WRAPPER(committed_size);
 volatile extern size_t JEMALLOC_WRAPPER(max_alloc_size);
+/*
+ * 每次构造RpcArena的时候，把jemalloc的变量修改
+ * 等价于 JE_MALLOC_CONF=retain:false
+ */
+extern bool JEMALLOC_WRAPPER(opt_retain);
 #else
 #define SYS_malloc(size) ::malloc(size)
 #define SYS_valloc(size) ::valloc(size)
@@ -276,6 +281,9 @@ size_t Memory::get_max_pmem() {
 static Monitor::monitor_id pmem_monitor_id = 0;
 
 void Memory::initialize() {
+#if defined(USE_JEMALLOC) && defined(USE_RDMA)
+    JEMALLOC_WRAPPER(opt_retain) = false;
+#endif
     if (FLAGS_max_vmem_mb != static_cast<size_t>(-1)) {
         size_t max_vmem = FLAGS_max_vmem_mb * 1024 * 1024;
         set_max_vmem(max_vmem);

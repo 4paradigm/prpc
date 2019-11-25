@@ -297,12 +297,12 @@ void RdmaSocket::send_ack() {
     ++_uncomplete_ack_cnt;
 }
 
-int RdmaSocket::send(const char* buffer, uint32_t size, bool more) {
+int RdmaSocket::send(const char* buffer, size_t size, bool more) {
     int ret = 0;
     buffer_t* b = nullptr;
     while (size) {
         b = get_send_buffer();
-        int nbytes = std::min(size, BSIZE - b->cursor);
+        size_t nbytes = std::min(size, (size_t)(BSIZE - b->cursor));
         std::memcpy(&b->data[b->cursor], buffer + ret, nbytes);
         b->cursor += nbytes;
         ret += nbytes;
