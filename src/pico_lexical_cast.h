@@ -129,12 +129,16 @@ do { \
     } \
 } while(0)
 
+double strtod(const char* str, char** str_end);
+float strtof(const char* str, char** str_end);
+
 #ifdef __GNUC__
 #if __GUNC__ >= 7
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnoexcept-type"
 #endif
 #endif
+
 template<typename T>
 inline T strntox(T (&func)(const char*, char**, int), 
             const char* str, char** endptr, int base, size_t num) {
@@ -248,7 +252,7 @@ template<>
 inline float inner_lexical_cast(const char* const& s, const size_t count) {
     inner_lexical_cast_string_precheck(float, s, count);
     char* pos;
-    float ret = strntox(std::strtof, s, &pos, count);
+    float ret = strntox(core::strtof, s, &pos, count);
     inner_lexical_cast_string_aftcheck(float, s, pos, count);
     return ret;
 }
@@ -257,7 +261,7 @@ template<>
 inline double inner_lexical_cast(const char* const& s, const size_t count) {
     inner_lexical_cast_string_precheck(double, s, count);
     char* pos;
-    double ret = strntox(std::strtod, s, &pos, count);
+    double ret = strntox(core::strtod, s, &pos, count);
     inner_lexical_cast_string_aftcheck(double, s, pos, count);
     return ret;
 }

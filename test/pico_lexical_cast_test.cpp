@@ -200,6 +200,10 @@ TEST(PicoCast, string_to_floating) {
         {"0x1.ad7f29abcaf48p-24", 1e-7},
         {"-0x1.12e0be826d695p-30", -1e-9},
         {"-0x1.4216ca930d75ap+186", -1.234e56},
+        {"0x0.8p-1022", std::numeric_limits<double>::min() / 2},
+        {"-0x0.8p-1022", -std::numeric_limits<double>::min() / 2},
+        {"0x0.0000000000001p-1022", std::numeric_limits<double>::denorm_min()},
+        {"-0x0.0000000000001p-1022", -std::numeric_limits<double>::denorm_min()},
         {"inf", std::numeric_limits<double>::infinity()},
         {"-inf", -std::numeric_limits<double>::infinity()}
     };
@@ -223,6 +227,10 @@ TEST(PicoCast, decimal_to_hex) {
         {"0x1.ad7f29abcaf48p-24", 1e-7},
         {"-0x1.12e0be826d695p-30", -1e-9},
         {"-0x1.4216ca930d75ap+186", -1.234e56},
+        {"0x0.8p-1022", std::numeric_limits<double>::min() / 2},
+        {"-0x0.8p-1022", -std::numeric_limits<double>::min() / 2},
+        {"0x0.0000000000001p-1022", std::numeric_limits<double>::denorm_min()},
+        {"-0x0.0000000000001p-1022", -std::numeric_limits<double>::denorm_min()},
         {"nan", std::numeric_limits<double>::quiet_NaN()},
         {"inf", std::numeric_limits<double>::infinity()},
         {"-inf", -std::numeric_limits<double>::infinity()}
