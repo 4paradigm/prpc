@@ -324,6 +324,7 @@ public:
         _head.dest_rank = hd.src_rank;
         _head.dest_dealer = hd.src_dealer;
         _head.src_rank = hd.dest_rank;
+        _head.sid = hd.sid;
         _head.rpc_id = hd.rpc_id;
         _ar.resize(sizeof(_head));
         _ar.set_cursor(_ar.end());
