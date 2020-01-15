@@ -42,6 +42,10 @@ void RpcService::initialize(MasterClient* master_client,
           = _master_client->watch_rpc_service_info(_rpc_service_api, [this]() {
                 _watcher.notify();
             });
+
+    _watch_node_hdl
+          = _master_client->watch_node([this]() { _watcher.notify(); });
+
     _terminate.store(false);
     _watch_thread = std::thread(&RpcService::watching, this);
 }
@@ -55,6 +59,7 @@ void RpcService::finalize() {
     }
     ::close(_terminate_fd);
     _master_client->cancle_watch(_watch_master_hdl);
+    _master_client->cancle_watch(_watch_node_hdl);
     _terminate.store(true);
     _watcher.notify();
     _watch_thread.join();

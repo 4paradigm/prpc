@@ -414,6 +414,15 @@ WatcherHandle MasterClient::watch_rpc_service_info(
     return handle;
 }
 
+WatcherHandle MasterClient::watch_node(std::function<void()> cb) {
+    SCHECK(cb);
+    std::string path = PATH_NODE;
+    tree_node_add(path);
+    WatcherHandle handle = tree_watch(path, cb);
+    return handle;
+}
+
+
 void MasterClient::register_rpc_service(const std::string& rpc_service_api,
       const std::string& rpc_name,
       int& rpc_id) {

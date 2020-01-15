@@ -107,6 +107,7 @@ public:
           RpcServiceInfo& out);
     WatcherHandle watch_rpc_service_info(const std::string& rpc_service_api,
           std::function<void()>);
+    WatcherHandle watch_node(std::function<void()>);
 
     size_t generate_id(const std::string& key);
     void reset_generate_id(const std::string& key);

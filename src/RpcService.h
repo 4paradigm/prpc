@@ -100,6 +100,7 @@ private:
      */
     MasterClient* _master_client;
     WatcherHandle _watch_master_hdl;
+    WatcherHandle _watch_node_hdl;
     AsyncWatcher _watcher;
     std::thread _watch_thread;
     std::atomic<bool> _terminate = {false};

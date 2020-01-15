@@ -416,6 +416,7 @@ void RpcContext::handle_message_event(int fd) {
     bool ret = f->handle_event(fd, func);
     if (!ret) {
         remove_frontend_event(f);
+        f->set_state(FRONTEND_EPIPE);
         if (_to_del_client_sockets.count(f->info().global_rank)) {
             remove_frontend(f);
         }
