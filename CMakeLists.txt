@@ -5,8 +5,8 @@ if(NOT THIRD_PARTY)
 endif()
 message(STATUS "third party: ${THIRD_PARTY}")
 
-file(GLOB SRC src/*.cpp)
-file(GLOB HRDS src/*.h)
+file(GLOB SRC src/*.cpp src/observability/metrics/*.cpp)
+file(GLOB HRDS src/*.h src/observability/metrics/*.h)
 find_package(Jemalloc REQUIRED)
 find_package(PicoCoreDep REQUIRED)
 
