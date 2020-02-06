@@ -20,6 +20,7 @@
 #include <prometheus/exposer.h>
 #include <prometheus/registry.h>
 
+namespace paradigm4 {
 namespace pico {
 
 class Metrics {
@@ -57,7 +58,8 @@ public:
                     int32_t exposer_port,
                     const std::string& exposer_url,
                     const std::string& service_name,
-                    const std::string& instance_name);
+                    const std::string& instance_name,
+                    bool enable = true);
 
     bool enabled() const {
         return _enabled;
@@ -145,8 +147,9 @@ static inline void metrics_initialize(const std::string& exposer_ip,
                                       int32_t exposer_port,
                                       const std::string& exposer_url,
                                       const std::string& service_name,
-                                      const std::string& instance_name) {
-    Metrics::Singleton().initialize(exposer_ip, exposer_port, exposer_url, service_name, instance_name);
+                                      const std::string& instance_name,
+                                      bool enable = true) {
+    Metrics::Singleton().initialize(exposer_ip, exposer_port, exposer_url, service_name, instance_name, enable);
 }
 
 static inline void metrics_finalize() {
@@ -154,5 +157,6 @@ static inline void metrics_finalize() {
 }
 
 }  // namespace pico
+}  // namespace paradigm4
 
 #endif //PREDICTOR_OBSERVABILITY_METRICS_METRICS_H

@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <functional>
 
+namespace paradigm4 {
 namespace pico {
 
 namespace detail {
@@ -31,5 +32,6 @@ inline std::size_t hash_value(const Types &... args) {
 
 }  // namespace detail
 }  // namespace pico
+}  // namespace paradigm4
 
 #endif // PREDICTOR_OBSERVABILITY_METRICS_HASH_H

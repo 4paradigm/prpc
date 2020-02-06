@@ -4,10 +4,12 @@
 
 #include "Metrics.h"
 #include "hash_combine.h"
+#include "pico_log.h"
 
 #include <prometheus/counter.h>
 #include <prometheus/detail/utils.h>
 
+namespace paradigm4 {
 namespace pico {
 
 const std::string Metrics::kLabelNameServiceName = "service_name";
@@ -23,7 +25,8 @@ void Metrics::initialize(const std::string& exposer_ip,
                          int32_t exposer_port,
                          const std::string& exposer_url,
                          const std::string& service_name,
-                         const std::string& instance_name) {
+                         const std::string& instance_name,
+                         bool enable) {
     std::lock_guard<std::mutex> lock(_lock);
 
     if (_initialized) {
@@ -35,14 +38,20 @@ void Metrics::initialize(const std::string& exposer_ip,
     _exposer_url = exposer_url;
     _service_name = service_name;
     _instance_name = instance_name;
+    _enabled = enable;
 
     _registry = std::make_shared<prometheus::Registry>();
-    _exposer = std::make_unique<prometheus::Exposer>(_exposer_ip + ":" + std::to_string(_exposer_port), _exposer_url, 1);
-    _exposer->RegisterCollectable(_registry);
     _common_labels.emplace(Metrics::kLabelNameServiceName, _service_name);
     _common_labels.emplace(Metrics::kLabelNameInstanceName, _instance_name);
 
-    _enabled = true;
+    if (_enabled) {
+        _exposer = std::make_unique<prometheus::Exposer>(_exposer_ip + ":" + std::to_string(_exposer_port), _exposer_url, 1);
+        _exposer->RegisterCollectable(_registry);
+        SLOG(INFO) << "Metrics enabled, binding port: " << _exposer_port << ", exposer url: '" << _exposer_url << "'";
+    } else {
+        SLOG(INFO) << "Metrics disabled.";
+    }
+
     _initialized = true;
 }
 
@@ -165,3 +174,4 @@ prometheus::Histogram& Metrics::get_histogram(const std::string& family_name,
 }
 
 } // namespace pico
+} // namespace paradigm4

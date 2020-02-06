@@ -4,6 +4,7 @@
 
 #include "DurationObserver.h"
 
+namespace paradigm4 {
 namespace pico {
 
 DurationObserver::DurationObserver(prometheus::Histogram& histogram) {
@@ -17,3 +18,4 @@ DurationObserver::~DurationObserver() {
 }
 
 } // namespace pico
+} // namespace paradigm4

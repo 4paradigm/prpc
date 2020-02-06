@@ -11,6 +11,7 @@
 
 #include "Metrics.h"
 
+namespace paradigm4 {
 namespace pico {
 
 class DurationObserver {
@@ -25,5 +26,6 @@ private:
 };
 
 } // namespace pico
+} // namespace paradigm4
 
 #endif //PREDICTOR_OBSERVABILITY_METRICS_DURATIONOBSERVER_H
