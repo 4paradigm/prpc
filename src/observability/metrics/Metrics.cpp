@@ -130,6 +130,10 @@ size_t Metrics::hash_metrics(const std::string& family_name, const std::map<std:
 prometheus::Counter& Metrics::get_counter(const std::string& family_name,
                                           const std::string& help,
                                           const std::map<std::string, std::string>& labels) {
+    if (!_enabled) {
+        static thread_local prometheus::Counter counter;
+        return counter;
+    }
     size_t find_key = hash_metrics(family_name, labels);
     auto it = _counter_tls.find(find_key);
     if (it == _counter_tls.end()) {
@@ -145,6 +149,10 @@ prometheus::Counter& Metrics::get_counter(const std::string& family_name,
 prometheus::Gauge& Metrics::get_gauge(const std::string& family_name,
                                       const std::string& help,
                                       const std::map<std::string, std::string>& labels) {
+    if (!_enabled) {
+        static thread_local prometheus::Gauge gauge;
+        return gauge;
+    }
     size_t find_key = hash_metrics(family_name, labels);
     auto it = _gauge_tls.find(find_key);
     if (it == _gauge_tls.end()) {
@@ -161,6 +169,10 @@ prometheus::Histogram& Metrics::get_histogram(const std::string& family_name,
                                               const std::string& help,
                                               const std::map<std::string, std::string>& labels,
                                               const std::vector<double>& boundaries) {
+    if (!_enabled) {
+        static thread_local prometheus::Histogram histogram({1});
+        return histogram;
+    }
     size_t find_key = hash_metrics(family_name, labels);
     auto it = _histogram_tls.find(find_key);
     if (it == _histogram_tls.end()) {
