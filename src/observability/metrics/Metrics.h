@@ -53,6 +53,26 @@ public:
         return bucket_boundaries;
     }
 
+    inline static std::vector<double> create_general_duration_bucket() {
+        std::vector<double> bucket_boundaries{0.0f};
+        std::vector<double> v1(100, 1.0f);
+        std::vector<double> v2(90, 10.0f);
+        std::vector<double> v3(40, 100.0f);
+        // 0 - 100, step 1
+        for (auto d : v1) {
+            bucket_boundaries.emplace_back(bucket_boundaries.back() + d);
+        }
+        // 100 - 1000, step 10
+        for (auto d : v2) {
+            bucket_boundaries.emplace_back(bucket_boundaries.back() + d);
+        }
+        // 1000 - 5000, step 100
+        for (auto d : v3) {
+            bucket_boundaries.emplace_back(bucket_boundaries.back() + d);
+        }
+        return bucket_boundaries;
+    }
+
     // 绑定 exposer 端口；初始化一个唯一的 register。
     void initialize(const std::string& exposer_ip,
                     int32_t exposer_port,
