@@ -11,8 +11,8 @@ namespace core {
 
 ZkMasterClient::ZkMasterClient(const std::string& root_path, 
       const std::string& hosts, 
-      int disconnect_timeout_sec,
-      int recv_timeout_ms): MasterClient(root_path) {
+      int recv_timeout_ms,
+      int disconnect_timeout_sec) : MasterClient(root_path) {
     _hosts = hosts;
     _disconnect_timeout_sec = disconnect_timeout_sec;
     _recv_timeout = recv_timeout_ms;
