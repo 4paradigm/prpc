@@ -1195,6 +1195,12 @@ pico_serialized_size(const std::vector<T>& value) {
 
 template <class T>
 std::enable_if_t<std::is_trivially_copyable<T>::value, size_t>
+pico_serialized_size(const std::deque<T>& value) {
+        return sizeof(size_t) + value.size() * sizeof(T);
+}
+
+template <class T>
+std::enable_if_t<std::is_trivially_copyable<T>::value, size_t>
 pico_serialized_size(const std::valarray<T>& value) {
     return sizeof(size_t) + value.size() * sizeof(T);
 }
