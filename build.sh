@@ -20,13 +20,13 @@ function setup() {
     fi
     # install tools
     prefix=${THIRD_PARTY_PREFIX} ${THIRD_PARTY_SRC}/prepare.sh build cmake glog gflags yaml boost zookeeper zlib snappy lz4 jemalloc sparsehash googletest prometheus-cpp
-    if [ "${USE_RDMA}" == "1" ];then
+    if [ "${USE_RDMA}" == "1" ]; then
         prefix=${THIRD_PARTY_PREFIX} ${THIRD_PARTY_SRC}/prepare.sh build rdma-core
     fi
 }
 
 function build() {
-    if [ "${USE_RDMA}" == "1" ];then
+    if [ "${USE_RDMA}" == "1" ]; then
         EXTRA_DEFINE="${EXTRA_DEFINE} -DUSE_RDMA=ON"
     else
         EXTRA_DEFINE="${EXTRA_DEFINE} -DUSE_RDMA=OFF"
@@ -37,7 +37,7 @@ function build() {
     mkdir -p ${PROJECT_ROOT}/build
     pushd ${PROJECT_ROOT}/build
     ${THIRD_PARTY_PREFIX}/bin/cmake -DCMAKE_MODULE_PATH=${PROJECT_ROOT}/cmake -DTHIRD_PARTY=${THIRD_PARTY_PREFIX} -DCMAKE_INSTALL_PREFIX=${prefix} ${EXTRA_DEFINE} ..
-    if [ 0"${J}" == "0" ];then
+    if [ 0"${J}" == "0" ]; then
         J=`nproc | awk '{print int(($0 + 1)/ 2)}'` # make cocurrent thread number
     fi
     make -j${J} $*
