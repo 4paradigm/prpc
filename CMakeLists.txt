@@ -5,6 +5,8 @@ if(NOT THIRD_PARTY)
 endif()
 message(STATUS "third party: ${THIRD_PARTY}")
 
+option(SKIP_BUILD_TEST "whether skip build testcase" OFF)
+
 file(GLOB SRC src/*.cpp src/observability/metrics/*.cpp)
 file(GLOB HRDS src/*.h src/observability/metrics/*.h)
 find_package(Jemalloc REQUIRED)
@@ -83,7 +85,9 @@ add_dependencies(pico_core_static pico_core_obj)
 add_executable(masterd src/masterd.cc)
 target_link_libraries(masterd pico_core_static)
 
-add_subdirectory(test)
+if (not SKIP_BUILD_TEST)
+    add_subdirectory(test)
+endif()
 
 
 

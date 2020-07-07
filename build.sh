@@ -7,7 +7,8 @@ echo ${PROJECT_ROOT}
 #PREFIX=?
 #USE_RDMA=?
 #J=?
-#PATH=? 
+#PATH=?
+#SKIP_BUILD_TEST=?
 
 function setup() {
     if [ 0"${THIRD_PARTY_SRC}" == "0" ]; then
@@ -29,6 +30,9 @@ function build() {
         EXTRA_DEFINE="${EXTRA_DEFINE} -DUSE_RDMA=ON"
     else
         EXTRA_DEFINE="${EXTRA_DEFINE} -DUSE_RDMA=OFF"
+    fi
+    if [ "${SKIP_BUILD_TEST}" != "" ]; then
+        EXTRA_DEFINE="${EXTRA_DEFINE} -DSKIP_BUILD_TEST=ON"
     fi
     mkdir -p ${PROJECT_ROOT}/build
     pushd ${PROJECT_ROOT}/build
