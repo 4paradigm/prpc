@@ -16,8 +16,11 @@ namespace core {
 // only for unit test
 struct MultiProcess {
 public:
-    MultiProcess(size_t num_process) {
-        _root = core::format_string("./pico_ut_mp_root_pid_%d", getpid());
+    MultiProcess(size_t num_process, const std::string& root = "./.unittest_tmp/multi_process") {
+        static char buffer[10240];
+        SCHECK(getcwd(buffer, sizeof(buffer)) != nullptr);
+        _cwd = buffer;
+        _root = root;
         for (size_t i = 1; i < num_process; ++i) {
             pid_t pid = fork();
             SCHECK(pid >= 0);
@@ -26,16 +29,17 @@ public:
                 _index = i;
                 break;
             } else {
-                SLOG(INFO) << "multiprocess " << num_process << ' ' << pid;
                 _pids.push_back(pid);
             }
         }
         if (_index == 0) {
             _wait_thread = std::thread(waiting, _pids);
         }
-        std::string workdir = core::format_string("%s/fork_pid_%d", _root, getpid());
-        core::FileSystem::mkdir_p(core::URIConfig(workdir));
-        SCHECK(chdir(workdir.c_str()) == 0);
+        if (!_root.empty()) {
+            std::string workdir = core::format_string("%s/%d-%d", _root, _index, ::getpid());
+            core::FileSystem::mkdir_p(core::URIConfig(workdir));
+            SCHECK(chdir(workdir.c_str()) == 0);
+        }
     }
 
     MultiProcess(MultiProcess&& proc) = default;
@@ -45,13 +49,15 @@ public:
     MultiProcess& operator=(const MultiProcess&) = delete;
 
     ~MultiProcess() {
-        SCHECK(chdir("../../") == 0);
         if (_index == 0) {
             _wait_thread.join();
         } else {
             exit(0);
         }
-        core::FileSystem::rmrf(_root);
+        if (!_root.empty()) {
+            SCHECK(chdir(_cwd.c_str()) == 0);
+            core::FileSystem::rmrf(_root);
+        }
     }
 
     size_t process_index()const {
@@ -71,6 +77,7 @@ public:
     size_t _index = 0;
     std::vector<pid_t> _pids;
     std::string _root;
+    std::string _cwd;
 };
 
 }
