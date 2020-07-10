@@ -37,6 +37,10 @@ add_executable(uri_config_test uri_config_test.cpp)
 add_executable(shell_utility_test shell_utility_test.cpp)
 add_executable(factory_test factory_test.cpp)
 add_executable(memory_storage_test memory_storage_test.cpp)
+
+add_executable(accumulator_test accumulator_test.cpp)
+add_executable(auto_timer_test auto_timer_test.cpp)
+
 if (USE_RDMA)
     add_executable(rpc_rdma_test rpc_rdma_test.cpp)
 endif()
