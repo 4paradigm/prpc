@@ -190,7 +190,7 @@ void AccumulatorServer::process_reset_request(RpcRequest& request) {
 }
 
 void AccumulatorServer::process_write_request(RpcRequest& request) {
-    size_t count;
+    size_t count = 0;
     std::string name;
     std::string type_name;
     request >> count;
