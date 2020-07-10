@@ -99,20 +99,10 @@ shared_ptr<FILE> ShellUtility::open(const std::string& cmd,
         popen_result_t ret = inner_popen(pipe_cmd, mode);
         return shared_ptr<FILE>(ret.file, [=](FILE* p) mutable {
             if (p != nullptr) {
-                bool eof = feof(p);
                 int error = inner_pclose(ret);
-                if (eof) {
-                    PECHECK(error == 0, PICO_CORE_ERRCODE(FS_PIPE_CLOSE))
-                        << "closing pipe \"" << cmd << "\" mode : " << mode << " failed with "
-                        << error << " . " << strerror(error);
-                }
-                if (error == 0) {
-                    SLOG(INFO) << "pipe \"" << cmd << "\" mode : " << mode << " closed with "
-                        << error << " . " << strerror(error);               
-                } else {
-                    SLOG(WARNING) << "pipe \"" << cmd << "\" mode : " << mode << " interrupted with "
-                        << error << " . " << strerror(error);
-                }
+                PECHECK(error == 0, PICO_CORE_ERRCODE(FS_PIPE_CLOSE))
+                      << "closing pipe \"" << cmd << "\" mode : " << mode << " failed with "
+                      << error << " . " << strerror(error);
             }
         });
     }
