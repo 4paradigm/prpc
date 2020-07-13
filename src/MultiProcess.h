@@ -23,10 +23,11 @@ public:
         _cwd = buffer;
         _root = root;
         for (size_t i = 1; i < num_process; ++i) {
+            SLOG(INFO) << "begin fork " << i << ' ' << num_process;
             pid_t pid = fork();
             SCHECK(pid >= 0);
             if (pid == 0) {
-                SLOG(INFO) << "fork " << ::getpid();
+                SLOG(INFO) << "end fork " << i << ' ' << num_process << ' ' << ::getpid();
                 _pids.clear();
                 _index = i;
                 break;
