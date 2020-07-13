@@ -96,7 +96,7 @@ EOF
     tests=`find ${PROJECT_ROOT}/build/ -type f -executable -path *_test`
     for i in $tests; do
         echo "[`date +'%Y-%m-%d %H:%M:%S'`] running $i"
-        $i > ${PROJECT_ROOT}/.ut/stdout_`basename ${i}` 2> ${PROJECT_ROOT}/.ut/stderr_`basename ${i}`
+        timeout 60m $i > ${PROJECT_ROOT}/.ut/stdout_`basename ${i}` 2> ${PROJECT_ROOT}/.ut/stderr_`basename ${i}`
         echo "[`date +'%Y-%m-%d-%H:%M:%S'`] Success!"
     done
     #tests=`find ${PROJECT_ROOT}/build/ -path *_test`

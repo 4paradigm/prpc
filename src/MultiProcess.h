@@ -17,6 +17,7 @@ namespace core {
 struct MultiProcess {
 public:
     MultiProcess(size_t num_process, const std::string& root = "./.unittest_tmp/multi_process") {
+        google::InstallFailureSignalHandler(); // 防止进程挂了都看不出来
         static char buffer[10240];
         SCHECK(getcwd(buffer, sizeof(buffer)) != nullptr);
         _cwd = buffer;
@@ -25,6 +26,7 @@ public:
             pid_t pid = fork();
             SCHECK(pid >= 0);
             if (pid == 0) {
+                SLOG(INFO) << "fork " << ::getpid();
                 _pids.clear();
                 _index = i;
                 break;
