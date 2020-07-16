@@ -31,6 +31,10 @@ public:
 
     ~RpcClient();
 
+    RpcService* rpc_service() {
+        return _service;
+    }
+
 private:
     friend Dealer;
     void release_dealer(Dealer*);

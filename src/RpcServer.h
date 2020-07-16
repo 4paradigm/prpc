@@ -46,6 +46,10 @@ public:
         _service = service;
     }
 
+    RpcService* rpc_service() {
+        return _service;
+    }
+
     ~RpcServer();
 
 private:
