@@ -2,6 +2,8 @@
 set -e
 PROJECT_ROOT=`pwd`
 echo ${PROJECT_ROOT}
+PICO_CORE_ARCH=$(uname -m)
+
 #THIRD_PARTY_PREFIX=
 #THIRD_PARTY_SRC=
 #PREFIX=?
@@ -17,6 +19,10 @@ function setup() {
     fi
     if [ 0"${THIRD_PARTY_PREFIX}" == "0" ]; then
         THIRD_PARTY_PREFIX=${PROJECT_ROOT}/third-party
+    fi
+    if [ "${PICO_CORE_ARCH}" != "x86_64" -a "${USE_RDMA}" = "1" ]; then
+        echo "RDMA only support on x86_64" >&2
+        exit 1
     fi
     # install tools
     prefix=${THIRD_PARTY_PREFIX} ${THIRD_PARTY_SRC}/prepare.sh build cmake glog gflags yaml boost zookeeper zlib snappy lz4 jemalloc sparsehash googletest prometheus-cpp avro-cpp
