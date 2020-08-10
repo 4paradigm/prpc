@@ -7,6 +7,7 @@ message(STATUS "third party: ${THIRD_PARTY}")
 
 option(SKIP_BUILD_TEST "whether skip build testcase" OFF)
 message(STATUS "SKIP_BUILD_TEST: ${SKIP_BUILD_TEST}")
+set(CMAKE_PREFIX_PATH "${THIRD_PARTY}")
 
 file(GLOB SRC src/*.cpp src/observability/metrics/*.cpp)
 file(GLOB HRDS src/*.h src/observability/metrics/*.h)

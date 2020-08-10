@@ -44,7 +44,9 @@ function(find_lib target)
     list(APPEND FIND_LIB_PATHS ${TOOL_LIB_DIR})
 
     foreach (LIBNAME ${FIND_LIB_LIBS})
+ 
         find_library(PLIB_${LIBNAME}${suffix} NAMES ${LIBNAME} PATHS ${FIND_LIB_PATHS})
+
         if (NOT PLIB_${LIBNAME}${suffix})
             if (FIND_LIB_REQUIRED)
                 message(FATAL_ERROR "${LIBNAME}${suffix} not found")
@@ -55,7 +57,7 @@ function(find_lib target)
             return()
         endif ()
         list(APPEND ${target} ${PLIB_${LIBNAME}${suffix}})
-#        message(STATUS "found lib ${LIBNAME}=${PLIB_${LIBNAME}${suffix}}")
+        message(STATUS "found lib ${LIBNAME}=${PLIB_${LIBNAME}${suffix}}")
     endforeach ()
     set(${target} ${${target}} PARENT_SCOPE)
 endfunction()
