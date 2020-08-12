@@ -48,12 +48,12 @@ bool RdmaSocket::accept(std::string& info) {
 
 ssize_t RdmaSocket::recv_nonblock(char* ptr, size_t size) {
     auto& buffer = _recv_buffer[_recv_id];
-    int ret = buffer.tail() - _recv_cursor;
+    int64_t ret = buffer.tail() - _recv_cursor;
     if (ret == 0) {
         errno = EAGAIN;
         return -1;
     }
-    if (ret > (int)size) {
+    if (ret > (int64_t)size) {
         ret = size;
     }
     std::memcpy(ptr, _recv_cursor, ret);
@@ -151,9 +151,8 @@ bool RdmaSocket::handle_in_event(std::function<void(RpcMessage&&)> pass) {
                 RdmaContext::singleton().print();
                 return false;
             }
-            // SLOG(INFO) << "in event : " << wc.byte_len << " " << wc.imm_data
-            // << " " << ack_num(wc.imm_data) << " " <<
-            // read_complete_num(wc.imm_data);
+             //SLOG(INFO) << "in event : " << wc.byte_len << " " << wc.imm_data
+             //<< " " << ack_num(wc.imm_data) << " " << read_complete_num(wc.imm_data);
             if (wc.byte_len > 0) {
                 _recv_buffer[wc.wr_id].cursor = wc.byte_len;
                 _recv_cursor = _recv_buffer[wc.wr_id].head();
@@ -297,8 +296,8 @@ void RdmaSocket::send_ack() {
     ++_uncomplete_ack_cnt;
 }
 
-int RdmaSocket::send(const char* buffer, size_t size, bool more) {
-    int ret = 0;
+ssize_t RdmaSocket::send(const char* buffer, size_t size, bool more) {
+    ssize_t ret = 0;
     buffer_t* b = nullptr;
     while (size) {
         b = get_send_buffer();
@@ -370,6 +369,7 @@ void RdmaSocket::post_send() {
         int64_t _;
         PSCHECK(::read(_post_send_blocker, &_, sizeof(_)) == sizeof(_));
     }
+    //SLOG(INFO) << "post send : " << wr.wr_id << " " << sge.length;
     PCHECK(ibv_post_send(_qp, &wr, &bad_wr) == 0 && bad_wr == nullptr);
     _send_id = (_send_id + 1) % BNUM;
 }
