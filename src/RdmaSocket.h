@@ -33,7 +33,7 @@ class RdmaSocket : public RpcSocket {
 public:
 
     struct buffer_t {
-        uint32_t cursor;
+        uint64_t cursor;
         char __pad__[64];
         std::array<int8_t, BSIZE> data;
         struct ibv_mr* mr;
@@ -105,7 +105,7 @@ private:
 
     bool handle_out_event(std::function<void(RpcMessage&&)>);
 
-    int send(const char* buffer, size_t size, bool more = false);
+    ssize_t send(const char* buffer, size_t size, bool more = false);
 
     buffer_t* get_send_buffer();
 

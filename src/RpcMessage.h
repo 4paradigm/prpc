@@ -29,7 +29,7 @@ enum RpcErrorCodeType:int16_t {
  * must be trival type
  */
 struct rpc_head_t {
-    uint32_t body_size = 0;
+    uint64_t body_size = 0;
     comm_rank_t src_rank = -1;
     comm_rank_t dest_rank = -1;
     int32_t src_dealer = -1;
