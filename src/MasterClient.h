@@ -158,6 +158,8 @@ public:
           std::vector<std::string>& children);
     WatcherHandle tree_watch(std::string path, std::function<void()>);
 
+    virtual int session_timeout_ms();
+
 
 protected:
     void notify_watchers(const std::string& path);
@@ -212,6 +214,7 @@ public:
     std::string endpoint() override;
     bool connected() override;
     bool reconnect() override;
+    int session_timeout_ms() override;
 
 protected:
     virtual MasterStatus master_gen(const std::string& path,

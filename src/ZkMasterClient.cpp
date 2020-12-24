@@ -244,6 +244,11 @@ MasterStatus ZkMasterClient::check_zk_set(int ret) {
 }
 
 
+int ZkMasterClient::session_timeout_ms() {
+    return zoo_recv_timeout(_zh);
+}
+
+
 /* zookeeper state constants, copyed from zookeeper/src/c/src/zk_adapter.h*/
 #define EXPIRED_SESSION_STATE_DEF -112
 #define AUTH_FAILED_STATE_DEF -113

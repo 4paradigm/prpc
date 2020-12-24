@@ -585,6 +585,10 @@ WatcherHandle MasterClient::tree_watch(std::string path, std::function<void()> c
     return ret;
 }
 
+int MasterClient::session_timeout_ms() {
+    return -1;
+}
+
 const std::string MasterClient::PATH_NODE = "_node_";
 const std::string MasterClient::PATH_TASK_STATE = "_task_state_";
 const std::string MasterClient::PATH_GENERATE_ID = "_id_gen_";
