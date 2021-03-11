@@ -40,6 +40,7 @@ add_executable(memory_storage_test memory_storage_test.cpp)
 
 add_executable(accumulator_test accumulator_test.cpp)
 add_executable(auto_timer_test auto_timer_test.cpp)
+add_executable(lrucache_test lrucache_test.cpp)
 
 if (USE_RDMA)
     add_executable(rpc_rdma_test rpc_rdma_test.cpp)
