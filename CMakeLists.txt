@@ -89,9 +89,8 @@ target_link_libraries(masterd pico_core_static)
 
 if (NOT SKIP_BUILD_TEST)
     enable_testing()
-    add_subdirectory(test)
 endif()
-
+add_subdirectory(test)
 
 
 INSTALL(TARGETS masterd pico_core_static pico_core

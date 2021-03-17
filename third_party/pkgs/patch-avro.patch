@@ -1,0 +1,133 @@
+--- avro-cpp-1.8.1/api/DataFile.hh	2016-05-15 08:51:44.000000000 +0800
++++ avro-cpp-m.1.8.1/api/DataFile.hh	2017-03-28 18:39:22.000000000 +0800
+@@ -104,6 +104,12 @@
+     DataFileWriterBase(const char* filename, const ValidSchema& schema,
+         size_t syncInterval, Codec codec = NULL_CODEC);
+ 
++    /**
++     *  Constructs a data file writer with the given sync interval and outputstream.
++     */
++    DataFileWriterBase(const char* filename, OutputStream* out, const ValidSchema& schema,
++        size_t syncInterval, Codec codec = NULL_CODEC);
++
+     ~DataFileWriterBase();
+     /**
+      * Closes the current file. Once closed this datafile object cannot be
+@@ -137,6 +143,13 @@
+         base_(new DataFileWriterBase(filename, schema, syncInterval, codec)) { }
+ 
+     /**
++     * Constructs a new data file with outputstream.
++     */
++    DataFileWriter(const char* filename, OutputStream *out, const ValidSchema& schema,
++        size_t syncInterval = 16 * 1024, Codec codec = NULL_CODEC) :
++        base_(new DataFileWriterBase(filename, out, schema, syncInterval, codec)) { }
++
++    /**
+      * Writes the given piece of data into the file.
+      */
+     void write(const T& datum) {
+@@ -214,6 +227,14 @@
+     DataFileReaderBase(const char* filename);
+ 
+     /**
++     * Constructs the reader for the given file and the reader is
++     * expected to use the schema that is used with data.
++     * This function should be called exactly once after constructing
++     * the DataFileReaderBase object.
++     */
++    DataFileReaderBase(const char* filename, InputStream *in);
++
++    /**
+      * Initializes the reader so that the reader and writer schemas
+      * are the same.
+      */
+@@ -259,6 +280,11 @@
+         base_(new DataFileReaderBase(filename)) {
+         base_->init(readerSchema);
+     }
++    
++    DataFileReader(const char* filename, InputStream* in, const ValidSchema& readerSchema) :
++        base_(new DataFileReaderBase(filename, in)) {
++        base_->init(readerSchema);
++    }
+ 
+     /**
+      * Constructs the reader for the given file and the reader is
+@@ -269,6 +295,10 @@
+         base_->init();
+     }
+ 
++    DataFileReader(const char* filename, InputStream* in) :
++        base_(new DataFileReaderBase(filename, in)) {
++        base_->init();
++    }
+ 
+     /**
+      * Constructs a reader using the reader base. This form of constructor
+@@ -298,6 +328,13 @@
+     }
+ 
+     /**
++     * Returns true if and only if there is more to read.
++     */
++    bool hasMore() {
++        return base_->hasMore();
++    }
++
++    /**
+      * Reads the next entry from the data file.
+      * \return true if an object has been successfully read into \p datum and
+      * false if there are no more entries in the file.
+--- avro-cpp-1.8.1/impl/DataFile.cc	2016-05-15 08:51:44.000000000 +0800
++++ avro-cpp-m.1.8.1/impl/DataFile.cc	2017-03-28 14:49:17.000000000 +0800
+@@ -92,6 +92,35 @@
+     encoderPtr_->init(*buffer_);
+ }
+ 
++DataFileWriterBase::DataFileWriterBase(const char* filename, OutputStream* out,
++    const ValidSchema& schema, size_t syncInterval, Codec codec) :
++    filename_(filename), schema_(schema), encoderPtr_(binaryEncoder()),
++    syncInterval_(syncInterval),
++    codec_(codec),
++    stream_(out),
++    buffer_(memoryOutputStream()),
++    sync_(makeSync()), objectCount_(0)
++{
++    if (syncInterval < minSyncInterval || syncInterval > maxSyncInterval) {
++        throw Exception(boost::format("Invalid sync interval: %1%. "
++            "Should be between %2% and %3%") % syncInterval %
++            minSyncInterval % maxSyncInterval);
++    }
++    setMetadata(AVRO_CODEC_KEY, AVRO_NULL_CODEC);
++
++    if (codec_ == NULL_CODEC) {
++      setMetadata(AVRO_CODEC_KEY, AVRO_NULL_CODEC);
++    } else if (codec_ == DEFLATE_CODEC) {
++      setMetadata(AVRO_CODEC_KEY, AVRO_DEFLATE_CODEC);
++    } else {
++      throw Exception("Unknown codec codec");
++    }
++    setMetadata(AVRO_SCHEMA_KEY, toString(schema));
++
++    writeHeader();
++    encoderPtr_->init(*buffer_);
++}
++
+ DataFileWriterBase::~DataFileWriterBase()
+ {
+     if (stream_.get()) {
+@@ -199,6 +228,13 @@
+     decoder_(binaryDecoder()), objectCount_(0), eof_(false)
+ {
+     readHeader();
++}
++
++DataFileReaderBase::DataFileReaderBase(const char* filename, InputStream* in) :
++    filename_(filename), stream_(in),
++    decoder_(binaryDecoder()), objectCount_(0), eof_(false)
++{
++    readHeader();
+ }
+ 
+ void DataFileReaderBase::init()
