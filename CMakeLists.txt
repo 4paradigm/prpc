@@ -1,13 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
+project(pico-core)
 
-if(NOT THIRD_PARTY)
-    set(THIRD_PARTY "third-party")
+if(DEFINED THIRD_PARTY)
+    set(CMAKE_PREFIX_PATH "${THIRD_PARTY}")
+    message(STATUS "third party: ${THIRD_PARTY}")
 endif()
-message(STATUS "third party: ${THIRD_PARTY}")
 
 option(SKIP_BUILD_TEST "whether skip build testcase" OFF)
 message(STATUS "SKIP_BUILD_TEST: ${SKIP_BUILD_TEST}")
-set(CMAKE_PREFIX_PATH "${THIRD_PARTY}")
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 file(GLOB SRC src/*.cpp src/observability/metrics/*.cpp)
 file(GLOB HRDS src/*.h src/observability/metrics/*.h)
@@ -62,12 +63,11 @@ endif()
 set(CMAKE_SHARED_LINKER_FLAGS "-pthread -Wl,--whole-archive -lrt -Wl,--no-whole-archive")
 set(CMAKE_EXE_LINKER_FLAGS "-pthread -Wl,--whole-archive -lrt -Wl,--no-whole-archive")
 
-include_directories(SYSTEM src ${THIRD_PARTY}/include)
-link_directories(${THIRD_PARTY}/lib ${THIRD_PARTY}/lib64)
+include_directories(SYSTEM src)
 set(CORE_LIB ${PicoCoreDep_LIBRARIES} )
 set(CORE_STATIC_LIB ${PicoCoreDep_STATIC_LIBRARIES} )
 
-set(MALLOC_DEFINITIONS -DUSE_JEMALLOC -DOVERRIDE_SYSTEM_MALLOC=0 -DOVERRIDE_SYSTEM_NEW=0)
+set(MALLOC_DEFINITIONS -DUSE_JEMALLOC -DJEMALLOC_NO_RENAME -DOVERRIDE_SYSTEM_MALLOC=0 -DOVERRIDE_SYSTEM_NEW=0)
 
 add_library(pico_core_obj OBJECT ${SRC})
 target_compile_definitions(pico_core_obj PRIVATE ${MALLOC_DEFINITIONS})
@@ -88,6 +88,7 @@ add_executable(masterd src/masterd.cc)
 target_link_libraries(masterd pico_core_static)
 
 if (NOT SKIP_BUILD_TEST)
+    enable_testing()
     add_subdirectory(test)
 endif()
 
@@ -101,3 +102,4 @@ INSTALL(TARGETS masterd pico_core_static pico_core
 
 INSTALL(DIRECTORY src/ DESTINATION include/pico-core
         FILES_MATCHING PATTERN "*.h")
+

@@ -187,7 +187,6 @@ void RpcContext::bind(const std::string& ip, int backlog) {
 
 void RpcContext::begin_add_server() {
     _spin_lock.lock();
-    //SLOG(INFO) << "begin add server ";
 }
 
 void RpcContext::end_add_server(int rpc_id, int sid) {
@@ -197,7 +196,6 @@ void RpcContext::end_add_server(int rpc_id, int sid) {
               = _server_backend.emplace(rpc_id, std::make_shared<FairQueue>());
     }
     it->second->add_server(sid);
-    //SLOG(INFO) << "add server : " << rpc_id << " " << sid;
     _spin_lock.unlock();
 }
 
@@ -205,7 +203,6 @@ void RpcContext::remove_server(int rpc_id, int sid) {
     lock_guard<RWSpinLock> l(_spin_lock);
     auto it = _server_backend.find(rpc_id);
     SCHECK(it != _server_backend.end()) << _server_backend.size();
-    // XXX 想一想死锁问题，fq里也有个锁
     auto fq = it->second;
     fq->remove_server(sid);
     if (fq->empty()) {
@@ -231,7 +228,6 @@ void RpcContext::remove_server_dealer(int rpc_id,
     lock_guard<RWSpinLock> l(_spin_lock);
     auto it = _server_backend.find(rpc_id);
     SCHECK(it != _server_backend.end()) << _server_backend.size();
-    // XXX 想一想死锁问题，fq里也有个锁
     auto fq = it->second;
     fq->remove_server_dealer(sid, dealer);
     if (fq->empty()) {
@@ -268,7 +264,6 @@ void RpcContext::poll_wait(std::vector<epoll_event>& events,
 
 std::shared_ptr<FrontEnd>* RpcContext::get_client_frontend_by_rank(
       comm_rank_t rank) {
-    //shared_lock_guard<RWSpinLock> l(_spin_lock);
     auto it = _client_sockets.find(rank);
     if (it == _client_sockets.end()) {
         SLOG(WARNING) << "no client frontend of rank " << rank;
@@ -301,13 +296,11 @@ comm_rank_t RpcContext::send_request(RpcMessage&& msg) {
     if (!f) {
         RpcResponse resp(*msg.head());
         resp.set_error_code(RpcErrorCodeType::ENOSUCHSERVER);
-        //shared_lock();
         push_response(std::move(resp));
         return -1;
     }
     comm_rank_t ret = (*f)->info().global_rank;
-    // SLOG(INFO) << "ret : " << ret;
-
+    
     if ((*f)->info() == _self) {
         push_request(std::move(msg));
         return ret;
@@ -337,12 +330,6 @@ void RpcContext::send_response(RpcMessage&& resp, bool nonblcok) {
     }
 }
 
-/*
- * 瞎写的，目前是随机选择一个
- * 如果没有，那么遍历所有的，找到
- * 一个可用的，未来维护一个专门的数据结构，
- * 保存可用的
- */
 std::shared_ptr<FrontEnd>* RpcContext::get_client_frontend_by_rpc_id(
       int rpc_id) {
     //shared_lock_guard<RWSpinLock> l(_spin_lock);
@@ -437,7 +424,6 @@ void RpcContext::update_comm_info(const std::vector<CommInfo>& list, MasterClien
     std::set<CommInfo> set(list.begin(), list.end());
     std::vector<std::shared_ptr<FrontEnd>> to_del;
     std::vector<CommInfo> to_add;
-    // lock()优先级低于upgrade()，以此保证析构安全
     lock_guard<RWSpinLock> l(_spin_lock);
     for (auto& i : _server_sockets) {
         auto& f = i.second;
@@ -488,9 +474,6 @@ void RpcContext::update_comm_info(const std::vector<CommInfo>& list, MasterClien
     }
 }
 
-/*
- * 暴力到自己不想看
- */
 void RpcContext::update_service_info(const std::vector<RpcServiceInfo>& list) {
     {
         lock_guard<std::mutex> lk(_rpc_mu);
@@ -608,7 +591,7 @@ bool RpcContext::get_avaliable_servers(const std::string& rpc_name,
 void RpcContext::push_request(RpcRequest&& req) {
     int rpc_id = req.head().rpc_id;
     auto it = _server_backend.find(rpc_id);
-    // XXX 如果没有找到server，那么先扔掉，后面想办法回复一个默认的resp
+    /// TODO: 如果没有找到server，那么先扔掉，后面想办法回复一个默认的resp
     if (it == _server_backend.end()) {
         SLOG(WARNING)
               << "recv request, but no such service. Drop it. "

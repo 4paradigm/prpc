@@ -1,0 +1,41 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -190,6 +190,8 @@ include_directories(
+         ${OPENSSL_INCLUDE_DIR}
+         )
+ 
++find_library(Z_LIB NAMES z)
++
+ set(DYNAMIC_LIB
+     ${GFLAGS_LIBRARY}
+     ${PROTOBUF_LIBRARIES}
+@@ -200,7 +202,7 @@ set(DYNAMIC_LIB
+     ${THRIFTNB_LIB}
+     ${OPENSSL_CRYPTO_LIBRARY}
+     dl
+-    z)
++    ${Z_LIB})
+ 
+ if(WITH_MESALINK)
+     list(APPEND DYNAMIC_LIB ${MESALINK_LIB})
+diff --git a/src/butil/containers/case_ignored_flat_map.cpp b/src/butil/containers/case_ignored_flat_map.cpp
+index 7f2fadc5..11959a51 100644
+--- a/src/butil/containers/case_ignored_flat_map.cpp
++++ b/src/butil/containers/case_ignored_flat_map.cpp
+@@ -19,7 +19,7 @@
+ 
+ namespace butil {
+ 
+-static const char g_tolower_map_base[] = {
++static const signed char g_tolower_map_base[] = {
+     -128, -127, -126, -125, -124, -123, -122, -121, -120,
+     -119, -118, -117, -116, -115, -114, -113, -112, -111, -110,
+     -109, -108, -107, -106, -105, -104, -103, -102, -101, -100,
+@@ -48,6 +48,6 @@ static const char g_tolower_map_base[] = {
+     120, 121, 122, 123, 124, 125, 126, 127
+ };
+ 
+-extern const char* const g_tolower_map = g_tolower_map_base + 128;
++extern const signed char* const g_tolower_map = g_tolower_map_base + 128;
+ 
+ } // namespace butil

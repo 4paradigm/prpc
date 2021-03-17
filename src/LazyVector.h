@@ -14,7 +14,7 @@ namespace core {
 const size_t EXTRA_SPACE_RESERVED = 64;
 
 /**
- * 在遍历中如果进行push，那指针将会失效
+ * push后迭代器失效
  * @tparam T
  */
 template<typename T>

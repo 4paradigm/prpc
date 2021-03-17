@@ -52,6 +52,7 @@ typedef WatcherTable::WatcherHandle WatcherHandle;
 
 class AsyncWatcher;
 
+// 目前的实现优化空间较大，比如acquire_lock，handle_event_wrapper，但是暂时没有优化需求。
 class MasterClient {
 public:
     MasterClient(const std::string& root_path);

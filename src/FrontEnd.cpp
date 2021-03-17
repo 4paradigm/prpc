@@ -48,11 +48,8 @@ void FrontEnd::send_msg_nonblock(RpcMessage&& msg, std::shared_ptr<FrontEnd>& th
         _it1.reset();
         _it2.reset();
         if (state() & FRONTEND_DISCONNECT) {
-            // 保证读锁连续
-            //_ctx->_spin_lock.lock_shared();
             _ctx->async([this, cnt, this_holder](){
                 keep_writing(cnt);
-                //_ctx->_spin_lock.unlock_shared();
             });
             return;
         }
@@ -70,11 +67,8 @@ void FrontEnd::send_msg_nonblock(RpcMessage&& msg, std::shared_ptr<FrontEnd>& th
                 if (_it1.has_next() || _it2.has_next()) {
                     // 对于RDMA的情况，一定走不到这里
                     SCHECK(!_is_use_rdma);
-                    // 保证读锁连续
-                    //_ctx->_spin_lock.lock_shared();
                     _ctx->async([this, cnt, this_holder](){
                         keep_writing(cnt);
-                        //_ctx->_spin_lock.unlock_shared();
                     });
                     return;
                 }
@@ -162,7 +156,7 @@ void FrontEnd::keep_writing(int cnt) {
                 return;
             }
             if (_it1.has_next() || _it2.has_next()) {
-                SLOG(FATAL) << "fxxxxxxxxxxxxxxk!!!!!";
+                SLOG(FATAL) << "FATAL!!!!!";
                 return;
             }
         }

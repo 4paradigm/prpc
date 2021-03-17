@@ -40,7 +40,8 @@ public:
 };
 
 /*
- * 非常轻量级的rwspinlock，
+ * 非常轻量级的rwspinlock
+ * 允许多个reader同时upgrade，语义可能和通常理解的upgrade略有区别
  * 优先级：lock_shared > upgrade > lock_shared_low > lock
  * 如果只使用lock_shared_low和upgrade可避免Writer starvation
  * upgrade过程中不会有人lock成功，但是可能会有其他读锁upgrade成功
@@ -118,7 +119,7 @@ public:
         return try_lock_shared_low(value);
     }
 
-    // 有且仅有一个在Reader的时候，upgrade成功，和upgrade逻辑不同
+    // 有且仅有一个在Reader的时候，try_upgrade成功，和upgrade逻辑不同
     bool try_upgrade() {
         int32_t expect = READER;
         return _.compare_exchange_weak(expect, WRITER, std::memory_order_acquire);

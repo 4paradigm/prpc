@@ -1,0 +1,144 @@
+Index: src/extent.c
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/extent.c	(date 1525806770000)
++++ src/extent.c	(date 1542275010000)
+@@ -12,6 +12,8 @@
+
+ /******************************************************************************/
+ /* Data. */
++volatile size_t max_alloc_size __attribute__((visibility("default"))) = (size_t) -1;
++volatile size_t allocated_size __attribute__((visibility("default"))) = 0;
+
+ rtree_t		extents_rtree;
+ /* Keyed by the address of the extent_t being protected. */
+@@ -1141,6 +1143,11 @@
+
+ 	assert(size != 0);
+ 	assert(alignment != 0);
++    if(unlikely(allocated_size + size > max_alloc_size)){
++		//printf("oom, allocated_size=%lu, size=%lu, max_alloc_size=%lu\n",allocated_size,size,max_alloc_size);
++        return NULL;
++    }
++    allocated_size += size;
+
+ 	/* "primary" dss. */
+ 	if (have_dss && dss_prec == dss_prec_primary && (ret =
+@@ -1403,7 +1410,7 @@
+ 		if (config_prof) {
+ 			extent_gdump_add(tsdn, extent);
+ 		}
+-	} else if (opt_retain && new_addr == NULL) {
++	} else if (opt_retain && new_addr == NULL && (*r_extent_hooks)->split != NULL) {
+ 		extent = extent_grow_retained(tsdn, arena, r_extent_hooks, size,
+ 		    pad, alignment, slab, szind, zero, commit);
+ 		/* extent_grow_retained() always releases extent_grow_mtx. */
+@@ -1478,7 +1485,6 @@
+ 		extent = extent_alloc_wrapper_hard(tsdn, arena, r_extent_hooks,
+ 		    new_addr, size, pad, alignment, slab, szind, zero, commit);
+ 	}
+-
+ 	assert(extent == NULL || extent_dumpable_get(extent));
+ 	return extent;
+ }
+Index: src/background_thread.c
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/background_thread.c	(date 1498956241000)
++++ src/background_thread.c	(date 1524478950000)
+@@ -500,7 +500,7 @@
+ 	unsigned thread_ind = (unsigned)(uintptr_t)ind_arg;
+ 	assert(thread_ind < ncpus);
+ #ifdef JEMALLOC_HAVE_PTHREAD_SETNAME_NP
+-	pthread_setname_np(pthread_self(), "jemalloc_bg_thd");
++	//pthread_setname_np(pthread_self(), "jemalloc_bg_thd");
+ #endif
+ 	if (opt_percpu_arena != percpu_arena_disabled) {
+ 		set_current_thread_affinity((int)thread_ind);
+Index: src/pages.c
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/pages.c	(date 1498956241000)
++++ src/pages.c	(date 1524477647000)
+@@ -14,6 +14,8 @@
+
+ /******************************************************************************/
+ /* Data. */
++size_t dallocated_size=0;
++volatile extern size_t allocated_size;
+
+ /* Actual operating system page size, detected during bootstrap, <= PAGE. */
+ static size_t	os_page;
+@@ -34,13 +36,13 @@
+ static void os_pages_unmap(void *addr, size_t size);
+
+ /******************************************************************************/
+-
++size_t mmap_size = 0;
+ static void *
+ os_pages_map(void *addr, size_t size, size_t alignment, bool *commit) {
+ 	assert(ALIGNMENT_ADDR2BASE(addr, os_page) == addr);
+ 	assert(ALIGNMENT_CEILING(size, os_page) == size);
+ 	assert(size != 0);
+-
++    mmap_size += size;
+ 	if (os_overcommits) {
+ 		*commit = true;
+ 	}
+@@ -113,6 +115,7 @@
+ os_pages_unmap(void *addr, size_t size) {
+ 	assert(ALIGNMENT_ADDR2BASE(addr, os_page) == addr);
+ 	assert(ALIGNMENT_CEILING(size, os_page) == size);
++    mmap_size -= size;
+
+ #ifdef _WIN32
+ 	if (VirtualFree(addr, 0, MEM_RELEASE) == 0)
+@@ -195,6 +198,8 @@
+
+ void
+ pages_unmap(void *addr, size_t size) {
++    allocated_size -= size;
++    dallocated_size += size;
+ 	assert(PAGE_ADDR2BASE(addr) == addr);
+ 	assert(PAGE_CEILING(size) == size);
+
+Index: src/jemalloc.c
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/jemalloc.c	(date 1498956241000)
++++ src/jemalloc.c	(date 1524477647000)
+@@ -715,7 +715,7 @@
+ 	SYSTEM_INFO si;
+ 	GetSystemInfo(&si);
+ 	result = si.dwNumberOfProcessors;
+-#elif defined(JEMALLOC_GLIBC_MALLOC_HOOK) && defined(CPU_COUNT)
++#elif defined(CPU_COUNT)
+ 	/*
+ 	 * glibc >= 2.6 has the CPU_COUNT macro.
+ 	 *
+
+Index: src/extent_mmap.c
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/extent_mmap.c	(date 1498956241000)
++++ src/extent_mmap.c	(date 1524477647000)
+@@ -8,7 +8,7 @@
+ /******************************************************************************/
+ /* Data. */
+
+-bool	opt_retain =
++bool	opt_retain __attribute__((visibility("default"))) =
+ #ifdef JEMALLOC_RETAIN
+     true
+ #else
+
