@@ -92,10 +92,11 @@ function install_pkg_common_preprocess() {
         exit 1
     fi
     execshell "pushd $pkgdir"
-
+    execshell "pushd ./$subdir"
 }
 
 function install_pkg_common_postprocess() {
+    execshell "popd"
     execshell "popd"
     execshell "popd"
     execshell "rm -rf $1"

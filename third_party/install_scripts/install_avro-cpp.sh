@@ -19,6 +19,7 @@ source ${install_script_dir}/common.sh
 #}
 
 pkg_patch_list="${patches_dir}/patch-avro.patch" \
+    subdir=lang/c++ \
     cmake_preprocess="patch -f -p1 < ${patches_dir}/patch-avro.patch" \
     cmake_exdefine="-DCMAKE_CXX_FLAGS=-fPIC -DCMAKE_C_FLAGS=-fPIC -DCMAKE_POSITION_INDEPENDENT_CODE=ON" \
     execshell "install_cmake_pkg avro-cpp"
