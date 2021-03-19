@@ -1,7 +1,6 @@
 #ifndef PARADIGM4_PICO_CORE_PRPC_SERVER_H
 #define PARADIGM4_PICO_CORE_PRPC_SERVER_H
 
-#include <gflags/gflags.h>
 #include <unordered_set>
 
 #include "Dealer.h"

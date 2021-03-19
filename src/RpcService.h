@@ -7,7 +7,6 @@
 #include <unistd.h>
 
 
-#include <gflags/gflags.h>
 
 #include "fetch_ip.h"
 

@@ -3,8 +3,9 @@ set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -pthread -Wl,--whol
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ppc64le")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lgcc_s")
 endif()
-add_definitions(-g)
-link_libraries(pico_core_static gtest gtest_main)
+
+find_package(PicoTestDep)
+link_libraries(pico_core_static ${PicoTestDep_STATIC_LIBRARIES})
 
 include(GoogleTest)
 

@@ -1,0 +1,10 @@
+include(common)
+
+find_lib(PicoTestDep_LIBRARIES SHARED LIBS gtest gtest_main)
+find_lib(PicoTestDep_STATIC_LIBRARIES STATIC LIBS gtest gtest_main)
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(PicoTestDep DEFAULT_MSG PicoTestDep_LIBRARIES)
+find_package_handle_standard_args(PicoTestDep_STATIC DEFAULT_MSG PicoTestDep_STATIC_LIBRARIES)
+mark_as_advanced(PicoTestDep_LIBRARIES)
+mark_as_advanced(PicoTestDep_STATIC_LIBRARIES)

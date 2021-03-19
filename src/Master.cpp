@@ -1,5 +1,4 @@
 #include "Master.h"
-#include <gflags/gflags.h>
 #include <poll.h>
 
 namespace paradigm4 {

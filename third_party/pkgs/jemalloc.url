@@ -1,1 +1,1 @@
-https://github.com/jemalloc/jemalloc/archive/5.1.0.tar.gz
+https://${GITHOST}/jemalloc/jemalloc/archive/5.1.0.tar.gz

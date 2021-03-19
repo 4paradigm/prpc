@@ -1,8 +1,6 @@
 #ifndef PARADIGM4_PICO_PRPC_CLIENT_H
 #define PARADIGM4_PICO_PRPC_CLIENT_H
 
-#include <gflags/gflags.h>
-
 #include "Dealer.h"
 #include "Master.h"
 #include "MasterClient.h"
