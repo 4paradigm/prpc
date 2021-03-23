@@ -158,3 +158,18 @@ function install_configure_pkg() {
     fi
     return 0
 }
+
+function inner_install_make_pkg() {
+    if [ "X$prefix" != "X" ]; then
+        install_cmd = "PREFIX=$prefix $install_cmd"
+    fi
+    execshell "$make_preprocess"
+    execshell "make -j$J $make_flags"
+    [ "X$install_cmd" = "X" ] && execshell "make install" || execshell "$install_cmd"
+}
+
+function install_make_pkg() {
+    install_pkg inner_install_make_pkg $*
+    return 0
+}
+
