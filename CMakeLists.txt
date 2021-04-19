@@ -12,8 +12,8 @@ option(SKIP_BUILD_TEST "whether skip build testcase" OFF)
 message(STATUS "SKIP_BUILD_TEST: ${SKIP_BUILD_TEST}")
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
-file(GLOB SRC src/*.cpp src/observability/metrics/*.cpp)
-file(GLOB HRDS src/*.h src/observability/metrics/*.h)
+file(GLOB SRC src/*.cpp src/observability/metrics/*.cpp src/Accumulator/*.cpp src/addition/*.cpp src/codec/*.cpp src/common/*.cpp src/misc/*.cpp src/rpc/*.cpp src/thread/*.cpp)
+file(GLOB HRDS src/*.h src/observability/metrics/*.h src/common/*.h)
 find_package(Jemalloc REQUIRED)
 find_package(PicoCoreDep REQUIRED)
 
@@ -65,7 +65,7 @@ else()
     set(RDMA_LIBRARIES )
 endif()
 
-include_directories(SYSTEM src)
+include_directories(SYSTEM src src/common src/rpc src/thread src/misc src/codec src/addition src/Accumulator)
 set(CORE_LIB ${PicoCoreDep_LIBRARIES} )
 set(CORE_STATIC_LIB ${PicoCoreDep_STATIC_LIBRARIES} )
 
