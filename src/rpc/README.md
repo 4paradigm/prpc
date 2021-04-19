@@ -10,9 +10,9 @@ Pico通讯框架是一个专注于高性能计算的client-server通讯框架，
 
 ### Pico 通讯框架的使用
 
-以一个最简单的client-server通讯为例：
+以一个最简单的client-server通讯为例，完成代码参考（test/rpc_test.cpp)：
 
-Server.cc：
+Server.cpp：
 
 首先创建一个master，一个master即为一个namespace，维护着所有server和client的全局信息，server端需要向对应的master进行注册，client端连接对应的master后可以访问所有向其注册过的server
 
@@ -48,13 +48,13 @@ Server.cc：
 最后使用dealer来进行消息的收发
 
 ```
-        RpcRequest req;
-        std::string s;
-        s_dealer->recv_request(req);
-        RpcResponse resp(req);
-        req >> s;
-        resp << s;
-        s_dealer->send_response(std::move(resp))
+    RpcRequest req;
+    std::string s;
+    s_dealer->recv_request(req);
+    RpcResponse resp(req);
+    req >> s;
+    resp << s;
+    s_dealer->send_response(std::move(resp))
 ```
 
 完成通讯后，需要依次析构
@@ -67,4 +67,45 @@ Server.cc：
     master_client.finalize();
     master.exit();
     master.finalize();
+```
+
+Client.cpp:
+
+首先连接server端所在的master,并用它来初始化通讯框架
+
+```
+    TcpMasterClient master_client(master.endpoint());
+    master_client.initialize();
+    SLOG(INFO) << "Client initialized.";
+
+    RpcService rpc;
+    RpcConfig rpc_config;
+    rpc_config.bind_ip = "127.0.0.1";
+    rpc.initialize(&master_client, rpc_config);
+```
+
+随后使用该通讯框架来初始化client，这里的"asdf"为server创建时指定的id，参数1为该server id上启动服务的数量，在多对多的场合，通过正确指定该数值可以进行负载均衡
+
+```
+    std::unique_ptr<RpcClient> client = rpc.create_client("asdf", 1);
+```
+
+创建并初始化dealer
+
+```
+    auto c_dealer = client->create_dealer();
+```
+
+通过该dealer来收发数据
+
+```
+    RpcRequest req;
+    RpcResponse resp;
+    std::string s = "asdfasdfasdfasf", e;
+    req << s;
+    c_dealer->send_request(std::move(req));
+    bool ret = c_dealer->recv_response(resp);
+    SCHECK(ret);
+    resp >> e;
+    SCHECK(s == e);
 ```
