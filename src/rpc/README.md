@@ -14,7 +14,7 @@ Pico通讯框架是一个专注于高性能计算的client-server通讯框架，
 
 ### Pico 通讯框架的使用
 
-以一个最简单的client-server通讯为例，[完整代码参考](../test/rpc_test.cpp)
+以一个最简单的client-server通讯为例，[完整代码](../test/rpc_test.cpp)
 
 #### Server.cpp：
 
