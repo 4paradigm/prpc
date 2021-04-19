@@ -6,13 +6,13 @@
 
 ### Pico 通讯框架简介
 
-Pico通讯框架是一个专注于高性能计算的client-server通讯框架，与传统的socket相比，它具有线程安全，兼容rDMA，低响应时间，兼容多种数据类型，可以支持多对多发送等优势
+Pico通讯框架是一个专注于高性能计算的client-server通讯框架，与传统的socket相比，它具有线程安全，兼容rDMA，低响应时间，兼容多种数据类型，支持多对多，自动重传，无需关心连接状态等优势
 
 ### Pico 通讯框架的使用
 
 以一个最简单的client-server通讯为例，完成代码参考（test/rpc_test.cpp)：
 
-Server.cpp：
+#### Server.cpp：
 
 首先创建一个master，一个master即为一个namespace，维护着所有server和client的全局信息，server端需要向对应的master进行注册，client端连接对应的master后可以访问所有向其注册过的server
 
@@ -69,7 +69,7 @@ Server.cpp：
     master.finalize();
 ```
 
-Client.cpp:
+#### Client.cpp:
 
 首先连接server端所在的master,并用它来初始化通讯框架
 
@@ -108,4 +108,14 @@ Client.cpp:
     SCHECK(ret);
     resp >> e;
     SCHECK(s == e);
+```
+
+发送完成后进行析构
+
+```
+    c_dealer.reset();
+    client.reset();
+    rpc.finalize();
+    master_client.clear_master();
+    master_client.finalize();
 ```
