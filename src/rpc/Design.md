@@ -40,4 +40,5 @@
 7. 客户端通过不同的传输协议（rDMA,socket）等，将数据发送到该connection fd上
 8. connection fd收到消息后，会触发事件，并将收到的数据填入RpcChannel中
 9. server端通过recv_request()来从RpcChannel中获取数据
+10. 完成数据接收
 
