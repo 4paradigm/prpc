@@ -18,7 +18,7 @@
 
 ### Client端
 
-![](img/client.png)
+![](img/Client.png)
 
 1. 创建新的RpcService并向master注册
 2. Master收到注册请求，并返回全局的RpcService信息，包括节点数量，节点名称，以及每个节点上注册的服务数量和地址等信息
