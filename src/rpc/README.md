@@ -21,7 +21,7 @@ Pico通讯框架是一个专注于高性能计算的client-server通讯框架，
 首先创建一个master，一个master即为一个namespace，维护着所有server和client的全局信息，server端需要向对应的master进行注册，client端连接对应的master后可以访问所有向其注册过的server
 
 ```
-    Master master("127.0.0.1");
+    Master master("127.0.0.1:9394");
     master.initialize();
 ```
 
@@ -75,10 +75,10 @@ Pico通讯框架是一个专注于高性能计算的client-server通讯框架，
 
 #### Client.cpp:
 
-首先连接server端所在的master,并用它来初始化通讯框架
+首先连接server端所在的master,并用它来初始化通讯框架,这里的"ip:port"必须与Server端创建的master相同
 
 ```
-    TcpMasterClient master_client(master.endpoint());
+    TcpMasterClient master_client("127.0.0.1:9394");
     master_client.initialize();
     SLOG(INFO) << "Client initialized.";
 
