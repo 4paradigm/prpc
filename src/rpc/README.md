@@ -8,6 +8,10 @@
 
 Pico通讯框架是一个专注于高性能计算的client-server通讯框架，与传统的socket相比，它具有线程安全，兼容rDMA，低响应时间，兼容多种数据类型，支持多对多，自动重传，无需关心连接状态等优势
 
+### Pico 设计文档
+
+[设计](Design.md)
+
 ### Pico 通讯框架的使用
 
 以一个最简单的client-server通讯为例，完成代码参考（test/rpc_test.cpp)：
