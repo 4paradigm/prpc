@@ -10,10 +10,6 @@ namespace paradigm4 {
 namespace pico {
 namespace core {
 
-inline void pico_big_yield() {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-}
-
 class Semaphore {
 public:
     Semaphore() : _count(0) {}
