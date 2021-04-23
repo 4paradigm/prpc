@@ -191,11 +191,11 @@ bool is_local_ipv4_by_ioctl(const std::string& ip_address) {
     }
 
     int sockfd = 0;
-    char buf[512];
     struct ifconf ifconf;
     struct ifreq* ifreq;
-    ifconf.ifc_len = 512;
-    ifconf.ifc_buf = buf;
+    ifconf.ifc_len = 65536 * sizeof(struct ifreq);
+    std::vector<char> buf(ifconf.ifc_len, '\0');
+    ifconf.ifc_buf = buf.data();
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
     if (sockfd < 0) {
@@ -213,7 +213,7 @@ bool is_local_ipv4_by_ioctl(const std::string& ip_address) {
         return false;
     }
 
-    ifreq = (struct ifreq*)buf;
+    ifreq = (struct ifreq*)buf.data();
     bool is_found = false;
 
     const size_t IP_BUF_LEN = 512u;
