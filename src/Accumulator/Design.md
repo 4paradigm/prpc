@@ -28,7 +28,7 @@
 
 ## Accumulator Read 流程
 
-[图2]
+![](img/Acread.png)
 
 1. Accumulator 的读操作会将请求发送给Accumulator Client
 2. Accumulator Client 会将请求push到Rpc Client
