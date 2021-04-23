@@ -16,7 +16,7 @@
 
 ## Accumulator Write 流程 
 
-[图1]
+![](img/Acwrite.png)
 
 1. Accumulator 的写操作会将数据发送给本地的缓存
 2. 与本地缓存已有的数据进行初步的整合后，定时进行Flush操作
