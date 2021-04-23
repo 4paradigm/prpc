@@ -12,7 +12,12 @@ Pico累加器是一个汇总并处理分布式数据的功能模块。用户可�
 
 Pico累加器支持的数据处理及其所对应的类型名称如下表所述：
 
-[表格]
+| 累加器类型 | 功能     |
+| -------- | -------- |
+| SumAggregator | 求和 |
+| AvgAggregator | 求平均 |
+| ArithmeticMaxAggregator | 求最大值 |
+| ArithmeticMinAggregator | 求最小值 |
 
 ### Pico 累加器的使用
 
