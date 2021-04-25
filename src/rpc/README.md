@@ -114,6 +114,19 @@ Pico通讯框架是一个专注于高性能计算的client-server通讯框架，
     SCHECK(s == e);
 ```
 
+Pico通讯框架支持服务的热插拔功能，若当前dealer所连接的服务下线或者出现网络异常无法连接，则将dealer重置后可以连接其它service id相同的服务，无需重新创建链接。
+
+```
+    if (e == RpcErrorCodeType::ENOSUCHSERVER){
+        c_dealer.reset();
+        c_dealer->send_request(std::move(req));
+        bool ret = c_dealer->recv_response(resp);
+        SCHECK(ret);
+        resp >> e;
+        SCHECK(s == e);
+    }
+```
+
 发送完成后进行析构
 
 ```
