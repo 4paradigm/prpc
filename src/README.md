@@ -4,11 +4,11 @@
 
 ### Accumulator 
 
-    核心功能，Pico累加器，[使用说明](Accumulator/README.md)，[设计文档](Accumulator/Design.md)
+    核心功能，Pico累加器,[使用说明](./Accumulator/README.md)，[设计文档](Accumulator/Design.md)
 
 ### rpc
 
-    核心功能，Pico通讯框架，[使用说明](rpc/README.md)，[设计文档](rpc/Design.md)
+    核心功能，Pico通讯框架，[使用说明](./rpc/README.md)，[设计文档](rpc/Design.md)
 
 ### addition
 
