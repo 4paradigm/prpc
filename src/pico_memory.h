@@ -11,6 +11,7 @@
 #include <memory>
 #include <thread>
 #include <vector>
+#include "gflags/gflags.h"
 #include "pico_log.h"
 #include "common.h"
 #ifndef likely

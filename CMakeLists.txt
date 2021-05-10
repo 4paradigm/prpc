@@ -1,21 +1,16 @@
 cmake_minimum_required(VERSION 3.10)
 project(pico-core)
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
-if(DEFINED THIRD_PARTY)
+if(THIRD_PARTY)
     set(CMAKE_PREFIX_PATH "${THIRD_PARTY}")
     message(STATUS "THIRD_PARTY=${THIRD_PARTY}")
-else()
-    set(THIRD_PARTY "/usr")
+    include_directories(SYSTEM ${THIRD_PARTY}/include)
+    link_directories(${THIRD_PARTY}/lib ${THIRD_PARTY}/lib64)
 endif()
 
 option(SKIP_BUILD_TEST "whether skip build testcase" OFF)
 message(STATUS "SKIP_BUILD_TEST: ${SKIP_BUILD_TEST}")
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
-
-file(GLOB SRC src/*.cpp src/observability/metrics/*.cpp)
-file(GLOB HRDS src/*.h src/observability/metrics/*.h)
-find_package(Jemalloc REQUIRED)
-find_package(PicoCoreDep REQUIRED)
 
 if (EXISTS $ENV{CXX})
     set(CMAKE_CXX_COMPILER $ENV{CXX})
@@ -33,6 +28,7 @@ endif()
 # check gcc version
 if(CMAKE_COMPILER_IS_GNUCXX)
     execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+    message(STATUS "gcc ${GCC_VERSION}")
     if(GCC_VERSION VERSION_GREATER 5.2.0 OR GCC_VERSION VERSION_EQUAL 5.2.0)
         message(STATUS "C++14 activated.")
     else()
@@ -44,11 +40,11 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 
 # !!!严禁去掉-Werror，没有任何例外!!!
 add_definitions(--std=c++14 -Wall -Wextra -Wno-deprecated-declarations -Werror -frecord-gcc-switches -fPIC)
+include_directories(SYSTEM src)
 
 if (DEBUG)
     add_definitions(-O0 -g)
 else()
-    #add_definitions(-O0 -g)
     add_definitions(-O3 -DNDEBUG)
 endif()
 
@@ -65,11 +61,15 @@ else()
     set(RDMA_LIBRARIES )
 endif()
 
-include_directories(SYSTEM src)
-set(CORE_LIB ${PicoCoreDep_LIBRARIES} )
-set(CORE_STATIC_LIB ${PicoCoreDep_STATIC_LIBRARIES} )
+find_package(Jemalloc REQUIRED)
+find_package(PicoCoreDep REQUIRED)
+
+file(GLOB SRC src/*.cpp src/observability/metrics/*.cpp)
+file(GLOB HRDS src/*.h src/observability/metrics/*.h)
 
 set(MALLOC_DEFINITIONS -DUSE_JEMALLOC -DJEMALLOC_NO_RENAME -DOVERRIDE_SYSTEM_MALLOC=0 -DOVERRIDE_SYSTEM_NEW=0)
+set(CORE_LIB ${PicoCoreDep_LIBRARIES} )
+set(CORE_STATIC_LIB ${PicoCoreDep_STATIC_LIBRARIES} )
 
 add_library(pico_core_obj OBJECT ${SRC})
 target_compile_definitions(pico_core_obj PRIVATE ${MALLOC_DEFINITIONS})
