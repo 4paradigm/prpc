@@ -38,3 +38,4 @@ sftp-config.json
 /applications/mle/doc/_build
 /applications/mle/doc/generated
 .ycm_extra_conf.py
+CMakeCache.txt

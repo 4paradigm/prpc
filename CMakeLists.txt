@@ -86,7 +86,7 @@ target_link_libraries(pico_core_static PUBLIC ${Jemalloc_pic_STATIC_LIBRARIES} $
 add_dependencies(pico_core_static pico_core_obj)
 
 
-add_executable(masterd src/masterd.cc)
+add_executable(masterd src/rpc/masterd.cc)
 target_link_libraries(masterd pico_core_static)
 
 if (NOT SKIP_BUILD_TEST)

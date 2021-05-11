@@ -6,17 +6,23 @@ Pico Core是一个函数库，主要为高性能计算提供网络通讯，累�
 
 ### Pico Core编译
 
-下载并启动编译镜像
-（待补充）
+## (推荐)使用Docker进行编译
 
 ```
+docker build . -t {your_image_name}
+```
+
+## Ubuntu
+
+
+```
+apt-get update && apt-get install -y g++-7  openssl curl wget git \
+autoconf cmake protobuf-compiler protobuf-c-compiler zookeeper zookeeperd googletest build-essential libtool libsysfs-dev pkg-config
+apt-get install -y libsnappy-dev libprotobuf-dev libprotoc-dev libleveldb-dev \
+    zlib1g-dev liblz4-dev libssl-dev libzookeeper-mt-dev libffi-dev libbz2-dev liblzma-dev
 cmake .
 make
 ```
-
-### Pico Core使用
-
-只在docker中使用会不会收到局限？？
 
 
 
