@@ -7,7 +7,7 @@ function install_boost() {
         set_prefix="--prefix=$prefix"
     fi
     execshell "./bootstrap.sh ${set_prefix} --without-libraries=python"
-    boost_opt="-s NO_BZIP2=1 -s NO_ZLIB=1"
+    boost_opt="-s NO_BZIP2=1 -s NO_ZLIB=0 -s zLIB_BINARY=z -s ZLIB_INCLUDE=$prefix/include -s ZLIB_LIBPATH=$prefix/lib"
 
     local set_J="-j`cat /proc/cpuinfo| grep "processor"| wc -l`"
     if [ "X$J" != "X" ]; then

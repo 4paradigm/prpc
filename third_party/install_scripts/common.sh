@@ -127,14 +127,12 @@ function inner_install_cmake_pkg(){
     [[ -z "$build_type"  ]] && build_type=Release
     [[ ! -z "$cmake_list_dir"  ]] && execshell "pushd $cmake_list_dir"
     execshell "mkdir -p _build" && execshell "pushd _build"
-    if [ "X$prefix" != "X" ]; then
-        $cmake_exdefine="-DCMAKE_INSTALL_PREFIX=$prefix $cmake_exdefine"
-    fi
-    execshell "cmake .. -DCMAKE_BUILD_TYPE=$build_type $cmake_exdefine"
+    execshell "$CMAKE .. -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_PREFIX_PATH=$prefix
+    -DCMAKE_INSTALL_PREFIX=$prefix -DCMAKE_INSTALL_LIBDIR=lib $cmake_exdefine"
     execshell "make -j$J"
     [ "X$install_cmd" = "X" ] && execshell "make install" || execshell "$install_cmd"
     [ "X$cmake_postprocess" != "X" ] && execshell "$cmake_postprocess"
-    execshell "popd" && execshell "rm -rf _build"
+    execshell "popd"
     [[ ! -z "$cmake_list_dir"  ]] && execshell "popd"
     return 0
 }
@@ -148,10 +146,7 @@ function install_configure_pkg() {
     install_pkg_common_preprocess "$1"
     if [ $? -eq 0 ]; then
         execshell "$configure_preprocess"
-        if [ "X$prefix" != "X" ]; then
-            $configure_flags="--prefix=$prefix $configure_flags"
-        fi
-        execshell "$configure_predef ./configure $configure_flags"
+        execshell "$configure_predef ./configure --prefix=$prefix $configure_flags"
         execshell "${make_predef} make -j$J $make_flags"
         [ "X$install_cmd" = "X" ] && execshell "make install" || execshell "$install_cmd"
         install_pkg_common_postprocess "$1"

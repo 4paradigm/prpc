@@ -3,6 +3,17 @@ CURFILE=`readlink -m $0`
 CURDIR=`dirname ${CURFILE}`
 source ${CURDIR}/utils.sh
 
+if [ "X$prefix" == "X" ]; then
+    export prefix=/usr/local
+else
+    export PATH=${prefix}/bin:$PATH
+    export LD_LIBRARY_PATH=${prefix}/lib:${prefix}/lib64:$LD_LIBRARY_PATH
+    export PKG_CONFIG_PATH=${prefix}/lib/pkgconfig:${prefix}/lib64/pkgconfig:$PKG_CONFIG_PATH
+fi
+export CC=gcc
+export CXX=g++
+export CMAKE=cmake
+
 export install_script_dir=${CURDIR}/install_scripts
 export pkgs_dir=${CURDIR}/pkgs
 export patches_dir=${CURDIR}/pkgs
