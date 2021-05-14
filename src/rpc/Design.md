@@ -60,12 +60,11 @@ frontend针对每个server都存在对应的缓冲区，当线程(Thread1)发送
 
 通过这样的方式，可以在保证线程安全的同时，使用最少的线程，最少的内存数据拷贝，最少的cache miss来完成消息的发送
 
-### FrontEnd 发送异常的处理
+### FrontEnd 异常处理
+
+client端发送request时的异常处理如下图所示
 
 ![](img/frontend4.png)
 
 当因为网络或其它原因，导致FrontEnd发送失败时，其会将当前的状态设置成epipe并搜寻是否有其它注册了该服务的FrontEnd可供发送，如果有，则交由该FrontEnd进行发送，否则返回失败信息
 
-当FrontEnd处于epipe状态下时，每10秒会尝试重新发送，如果发送成功，则消除epipe状态，如图所示
-
-![](img/frontend5.png)
