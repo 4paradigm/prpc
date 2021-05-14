@@ -1,11 +1,13 @@
 include(common)
 
 find_lib(Jemalloc_STATIC_LIBRARIES STATIC LIBS jemalloc)
-find_lib(Jemalloc_STATIC_LIBRARIES SHARED LIBS rt)
+set(Jemalloc_STATIC_LIBRARIES ${Jemalloc_STATIC_LIBRARIES} rt)
 find_lib(Jemalloc_pic_STATIC_LIBRARIES STATIC LIBS jemalloc_pic)
-find_lib(Jemalloc_pic_STATIC_LIBRARIES SHARED LIBS rt)
-find_lib(Jemalloc_LIBRARIES SHARED LIBS jemalloc rt)
-find_lib(Jemalloc_pic_LIBRARIES SHARED LIBS jemalloc rt)
+set(Jemalloc_pic_STATIC_LIBRARIES ${Jemalloc_pic_STATIC_LIBRARIES} rt)
+find_lib(Jemalloc_LIBRARIES SHARED LIBS jemalloc)
+set(Jemalloc_LIBRARIES ${Jemalloc_LIBRARIES} rt)
+find_lib(Jemalloc_pic_LIBRARIES SHARED LIBS jemalloc)
+set(Jemalloc_pic_LIBRARIES ${Jemalloc_pic_LIBRARIES} rt)
 
 find_include(Jemalloc_INCLUDE_DIR HEADERS jemalloc/jemalloc.h)
 

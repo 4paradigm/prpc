@@ -1,14 +1,14 @@
-cmake_minimum_required (VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.10)
 
-project(pico-core)
+project(pico-core VERSION 0.1.0)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
-if(THIRD_PARTY)
+if (THIRD_PARTY)
     set(CMAKE_PREFIX_PATH "${THIRD_PARTY}")
     message(STATUS "THIRD_PARTY=${THIRD_PARTY}")
     include_directories(SYSTEM ${THIRD_PARTY}/include)
     link_directories(${THIRD_PARTY}/lib ${THIRD_PARTY}/lib64)
-endif()
+endif() 
 
 option(SKIP_BUILD_TEST "whether skip build testcase" OFF)
 message(STATUS "SKIP_BUILD_TEST: ${SKIP_BUILD_TEST}")
