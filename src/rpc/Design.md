@@ -63,6 +63,7 @@ frontend针对每个server都存在对应的缓冲区，当线程(Thread1)发送
 ### FrontEnd 发送异常的处理
 
 ![](img/frontend4.png)
+
 当因为网络或其它原因，导致FrontEnd发送失败时，其会将当前的状态设置成epipe并搜寻是否有其它注册了该服务的FrontEnd可供发送，如果有，则交由该FrontEnd进行发送，否则返回失败信息
 
 当FrontEnd处于epipe状态下时，每10秒会尝试重新发送，如果发送成功，则消除epipe状态，如图所示
