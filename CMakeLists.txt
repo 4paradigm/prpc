@@ -41,8 +41,6 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 
 # !!!严禁去掉-Werror，没有任何例外!!!
 add_definitions(--std=c++14 -Wall -Wextra -Wno-deprecated-declarations -Werror -frecord-gcc-switches -fPIC)
-include_directories(SYSTEM src)
-
 if (DEBUG)
     add_definitions(-O0 -g)
 else()
@@ -65,8 +63,11 @@ endif()
 find_package(Jemalloc REQUIRED)
 find_package(PicoCoreDep REQUIRED)
 
-file(GLOB SRC src/*.cpp src/observability/metrics/*.cpp)
-file(GLOB HRDS src/*.h src/observability/metrics/*.h)
+include_directories(SYSTEM src/accumulator src/addition src/codec src/common src/misc src/rpc src/thread)
+file(GLOB SRC src/accumulator/*.cpp src/addition/*.cpp src/codec/*.cpp src/common/*.cpp src/misc/*.cpp src/misc/observability/metrics/*.cpp  src/rpc/*.cpp src/thread/*.cpp)
+
+set(CORE_LIB ${PicoCoreDep_LIBRARIES} )
+set(CORE_STATIC_LIB ${PicoCoreDep_STATIC_LIBRARIES} )
 
 set(MALLOC_DEFINITIONS -DUSE_JEMALLOC -DJEMALLOC_NO_RENAME -DOVERRIDE_SYSTEM_MALLOC=0 -DOVERRIDE_SYSTEM_NEW=0)
 set(CORE_LIB ${PicoCoreDep_LIBRARIES} )
@@ -87,7 +88,7 @@ target_link_libraries(pico_core_static PUBLIC ${Jemalloc_pic_STATIC_LIBRARIES} $
 add_dependencies(pico_core_static pico_core_obj)
 
 
-add_executable(masterd src/masterd.cc)
+add_executable(masterd src/rpc/masterd.cc)
 target_link_libraries(masterd pico_core_static)
 
 if (NOT SKIP_BUILD_TEST)
@@ -102,6 +103,6 @@ INSTALL(TARGETS masterd pico_core_static pico_core
        ARCHIVE DESTINATION lib
 )
 
-INSTALL(DIRECTORY src/ DESTINATION include/pico-core
-        FILES_MATCHING PATTERN "*.h")
+INSTALL(DIRECTORY src/accumulator/ src/addition/ src/codec/ src/common/ src/misc/ src/rpc/ src/thread/
+        DESTINATION include/pico-core FILES_MATCHING PATTERN "*.h")
 
