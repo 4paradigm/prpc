@@ -3,7 +3,6 @@
 #include <thread>
 #include "glog/logging.h"
 #include "gtest/gtest.h"
-#include "gflags/gflags.h"
 
 namespace paradigm4 {
 namespace pico {

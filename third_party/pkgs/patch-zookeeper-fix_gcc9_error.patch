@@ -1,0 +1,22 @@
+--- a/src/cli.c	2017-03-23 18:14:59.000000000 +0800
++++ b/src/cli.c	2019-09-27 15:25:09.498014232 +0800
+@@ -556,7 +556,7 @@
+                   sizeof(cmd));
+           return 2;
+         }
+-        strncpy(cmd, argv[2]+4, sizeof(cmd));
++        strncpy(cmd, argv[2]+4, sizeof(cmd)-1);
+         batchMode=1;
+         fprintf(stderr,"Batch mode: %s\n",cmd);
+       }else{
+--- a/rc/zookeeper.c	2017-03-23 18:14:59.000000000 +0800
++++ b/src/zookeeper.c	2019-09-27 15:25:09.498014232 +0800
+@@ -3441,7 +3441,7 @@
+ static const char* format_endpoint_info(const struct sockaddr_storage* ep)
+ {
+     static char buf[128];
+-    char addrstr[128];
++    char addrstr[64];
+     void *inaddr;
+ #ifdef WIN32
+     char * addrstring;

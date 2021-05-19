@@ -1,0 +1,11 @@
+--- a/configure	2017-03-23 18:14:59.000000000 +0800
++++ b/configure 2018-11-23 16:45:52.890267232 +0800
+@@ -17909,7 +17909,7 @@
+ fi
+ 
+ # Checks for library functions.
+-for ac_func in getcwd gethostbyname gethostname getlogin getpwuid_r gettimeofday getuid memmove memset poll socket strchr strdup strerror strtol
++for ac_func in getcwd gethostbyname gethostname gettimeofday memmove memset poll socket strchr strdup strerror strtol
+ do :
+   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
+ ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"

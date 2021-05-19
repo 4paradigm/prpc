@@ -19,8 +19,8 @@ TEST(commonTest, pico_common_time_relevent_function_check) {
     std::string ans_local = "Thu Jan  1 08:00:00 1970 CST";
     std::string out_gm = pico_format_time_point_gm(t0, fmt);
     std::string ans_gm = "Thu Jan  1 00:00:00 1970 GMT";
-    EXPECT_TRUE(out_local == ans_local);
-    EXPECT_TRUE(out_gm == ans_gm);
+    EXPECT_EQ(out_local, ans_local);
+    EXPECT_EQ(out_gm, ans_gm);
 
     auto init_time1 = pico_initialize_time();
     sleep(1);
