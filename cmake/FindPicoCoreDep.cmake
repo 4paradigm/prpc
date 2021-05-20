@@ -1,7 +1,7 @@
 include(common)
 
-find_lib(PicoCoreDep_STATIC_LIBRARIES STATIC LIBS prometheus-cpp-pull prometheus-cpp-core glog gflags boost_regex yaml-cpp boost_iostreams boost_system boost_filesystem boost_thread zookeeper_mt z snappy lz4 avrocpp_s)
-find_lib(PicoCoreDep_LIBRARIES        SHARED LIBS prometheus-cpp-pull prometheus-cpp-core glog gflags boost_regex yaml-cpp boost_iostreams boost_system boost_filesystem boost_thread zookeeper_mt z snappy lz4 avrocpp)
+find_lib(PicoCoreDep_STATIC_LIBRARIES STATIC LIBS prometheus-cpp-pull prometheus-cpp-core glog gflags boost_regex yaml-cpp avrocpp_s boost_iostreams boost_system boost_filesystem boost_thread zookeeper_mt z snappy lz4)
+find_lib(PicoCoreDep_LIBRARIES        SHARED LIBS prometheus-cpp-pull prometheus-cpp-core glog gflags boost_regex yaml-cpp avrocpp boost_iostreams boost_system boost_filesystem boost_thread zookeeper_mt z snappy lz4)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(PicoCoreDep DEFAULT_MSG PicoCoreDep_LIBRARIES)
