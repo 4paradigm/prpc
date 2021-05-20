@@ -208,7 +208,8 @@ private:
     }
 private:
     RWSpinLock _lock;
-    std::unordered_map<KEY, HashMapValue, HASH, KEYEQUAL, ALLOCATOR> _hashmap;
+    std::unordered_map<KEY, HashMapValue, HASH, KEYEQUAL,
+          typename std::allocator_traits<ALLOCATOR>::template rebind_alloc<std::pair<const KEY, HashMapValue>> > _hashmap;
 
     ListNode* _head = nullptr;
     ListNode* _tail = nullptr;
