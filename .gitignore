@@ -1,42 +1,90 @@
-/build.config
-/build/
-/build-debug/
-/build-relwithdebinfo/
-/test-output/
-/lib/
-/output/
-/output_test/
-/tools/*
-*.tar.gz
-!/tools/pkgs/
-!/tools/prepare.sh
-!/tools/install_scripts/
-.DS_Store
-/docs/
-*.swp
-*.idea
-*.swo
-!/pico.yaml
-/.idea/
-tags
-/cmake-build-*/
-*.pyc
-*pico_main.json
-/tmp_headers_dir/
-.unittest_tmp/
-/core.*
+## General
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.cuo
+
+# Compiled Dynamic libraries
 *.so
-graph_train.json
-graph_valid.json
-/test-common/ps-predictor/*/target
-*.class
-*.log
-/pom.xml
-/predictor/java/pom.xml
-/controller/controller-restful/pom.xml
-sftp-config.json
-/applications/mle/doc/_build
-/applications/mle/doc/generated
-.ycm_extra_conf.py
+*.dylib
+*.pyd
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Compiled protocol buffers
+*.pb.h
+*.pb.cc
+*_pb2.py
+*_pb.py
+*_pb2.pyi
+*_pb.pyi
+
+# Compiled python
+*.pyc
+
+# Compiled MATLAB
+*.mex*
+
+# IPython notebook checkpoints
+.ipynb_checkpoints
+
+# Editor temporaries
+*.swn
+*.swo
+*.swp
+*~
+
+# Sublime Text settings
+*.sublime-workspace
+*.sublime-project
+
+# Eclipse Project settings
+*.*project
+.settings
+
+# QtCreator files
+*.user
+
+# PyCharm files
+.idea
+
+# Visual Studio Code files
+.vscode
+
+# OSX dir files
+.DS_Store
+
+
+
 CMakeCache.txt
 CMakeFiles
+build.config
+build
+build_*
+build-debug
+build-release
+core.*
+lib
+output
+setup_version.py
+temp
+tools
+
+*.log
+*.tar.gz
+
+.build_debug/*
+.build_release/*
+.setuptools-cmake-build/*
+.unittest_tmp/
+.ycm_extra_conf.py
+
+virtualenv
+venv
+.envrc
+.psenvrc
