@@ -22,7 +22,7 @@ extent_dalloc_t* Arena::original_dalloc_ = nullptr;
 
 Arena::Arena() {
     if (extend_and_setup_arena()) {
-        LOG(INFO) << "Set up arena: " << arena_index_;
+        std::cerr << "Set up arena: " << arena_index_ << std::endl;
     }
 }
 
