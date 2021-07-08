@@ -11,7 +11,4 @@ ADD . /pico-core
 ENV GITHOST=hub.fastgit.org
 RUN bash /pico-core/third_party/prepare.sh build gflags glog googletest sparsehash zlib snappy lz4 boost yaml jemalloc prometheus-cpp avro-cpp brpc
 WORKDIR /pico-core
-RUN cmake .
-RUN make
-
-
+RUN mkdir build && cmake .. && make -j && make test && make install && cd ..
