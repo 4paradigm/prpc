@@ -8,21 +8,23 @@ function publish() {
         echo "REGISTRY not set"
         return 1
     fi
-    tag=`git describe --exact-match HEAD || git rev-parse HEAD`
+    tag=`git describe --exact-match HEAD || echo latest`
     if [ 0"${VERSION}" == "0" ]; then
         VERSION=${tag}
     fi
-    echo "tag=${tag}"
     echo "REGISTRY=${REGISTRY}"
     echo "VERSION=${VERSION}"
-    if [ 0"${VERSION}" != 0"${tag}" ] && [ 0"${VERSION}" != 0"dev-${tag}" ]; then
+    echo "tag=${tag}"
+    if [ 0"${VERSION}" != 0"${tag}" ]; then
         echo -e "VERSION not match with tag"
     fi
-    IMAGE=${REGISTRY}/prpc:${VERSION}
-    echo "IMAGE=${IMAGE}"
-    docker build -t ${IMAGE} .
-    docker tag ${IMAGE} ${REGISTRY}/${IMAGE}
-    docker push ${REGISTRY}/${IMAGE}
+    if [ 0"${tag}" == "0latest" ]; then
+        VERSION=0.0.0
+    fi
+    image=prpc:${tag}
+    docker build -t ${image} .
+    docker tag ${image} ${REGISTRY}/${image}
+    docker push ${REGISTRY}/${image}
 }
 
 function publish_check() {
