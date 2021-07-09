@@ -1,22 +1,10 @@
-# prpc
-
 [![build status](https://github.com/4paradigm/prpc/actions/workflows/build.yml/badge.svg)](https://github.com/4paradigm/prpc/actions/workflows/build.yml)
 [![docker pulls](https://img.shields.io/docker/pulls/4pdosc/prpc.svg)](https://hub.docker.com/r/4pdosc/prpc)
 [![discuss](https://img.shields.io/badge/Discuss-Ask%20Questions-blue)](https://github.com/4paradigm/prpc/discussions)
 
-## 目录
+## 关于
 
-- [prpc](#prpc)
-  - [目录](#目录)
-  - [简介](#简介)
-  - [编译](#编译)
-    - [推荐使用 Docker 进行编译](#推荐使用-docker-进行编译)
-    - [Ubuntu](#ubuntu)
-  - [文档](#文档)
-
-## 简介
-
-prpc 是一个为高性能计算提供网络通信的 RPC 框架。
+prpc 是一个为高性能计算提供网络通信的 RPC 框架，并附带 Accumulator 等组件。
 
 ## 编译
 
