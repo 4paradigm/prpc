@@ -11,24 +11,23 @@ function build() {
     popd
 }
 
-function current_publish_version() {
-    local folder="$(pwd)"
-    [ -n "$1" ] && folder="$1"
-    git -C "$folder" rev-parse --abbrev-ref HEAD | grep -v HEAD || \
-    git -C "$folder" describe --exact-match HEAD || \
-    git -C "$folder" rev-parse HEAD
-}
-
 function publish() {
     if [ 0"${REGISTRY}" == "0" ]; then
         echo "REGISTRY not set"
         return 1
     fi
+    git_tag = `git describe --exact-match HEAD || git rev-parse HEAD`
     if [ 0"${VERSION}" == "0" ]; then
-        echo "VERSION not set"
-        return 1
+        VERSION=${git_tag}
+    fi
+    echo "tag=${tag}"
+    echo "REGISTRY=${REGISTRY}"
+    echo "VERSION=${VERSION}"
+    if [ 0"${VERSION}" != 0"${tag}" ] && [ 0"${VERSION}" != 0"dev-${tag}" ]; then
+        echo -e "VERSION not match with tag"
     fi
     IMAGE=${REGISTRY}/prpc:${VERSION}
+    echo "IMAGE=${IMAGE}"
     docker build -t ${IMAGE} .
     docker tag ${IMAGE} ${REGISTRY}/${IMAGE}
     docker push ${REGISTRY}/${IMAGE}
@@ -40,7 +39,7 @@ function publish_check() {
     if [ 0"$git_diff" == "0" ]; then
         echo "git nodiff"
     else
-        echo -e "Please commit your change before publish"
+        echo -e "please commit your change before publish"
         return 1
     fi
 }
@@ -63,7 +62,7 @@ case "$1" in
         build
     ;;
     *)
-        echo "unkown cmd"
+        echo -e "unkown cmd"
         return 1
     ;;
 esac
