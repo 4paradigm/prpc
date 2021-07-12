@@ -50,7 +50,7 @@ endif()
 find_package(Jemalloc REQUIRED)
 find_package(PicoCoreDep REQUIRED)
 
-include_directories(SYSTEM src/accumulator src/addition src/codec src/common src/misc src/rpc src/thread)
+include_directories(BEFORE SYSTEM src/accumulator src/addition src/codec src/common src/misc src/rpc src/thread)
 file(GLOB SRC src/accumulator/*.cpp src/addition/*.cpp src/codec/*.cpp src/common/*.cpp src/misc/*.cpp src/misc/observability/metrics/*.cpp  src/rpc/*.cpp src/thread/*.cpp)
 
 set(CORE_LIB ${PicoCoreDep_LIBRARIES} )
