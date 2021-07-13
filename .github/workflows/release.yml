@@ -23,4 +23,4 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: docker build and push
         run: |
-          REGISTRY="4pdosc" VERSION="${BRANCH_NAME}" ./build.sh publish
+          VERSION="${BRANCH_NAME}" ./build.sh publish

@@ -4,33 +4,29 @@ PROJECT_ROOT=`pwd`
 echo ${PROJECT_ROOT}
 
 function publish() {
-    if [ 0"${REGISTRY}" == "0" ]; then
-        echo "REGISTRY not set"
-        return 1
+    if [ "${VERSION}" == "" ]; then
+        VERSION=0.0.0
+        tag=latest
+    else
+        tag=`git describe --exact-match HEAD`
     fi
-    tag=`git describe --exact-match HEAD || echo latest`
-    if [ 0"${VERSION}" == "0" ]; then
-        VERSION=${tag}
-    fi
-    echo "REGISTRY=${REGISTRY}"
     echo "VERSION=${VERSION}"
     echo "tag=${tag}"
-    if [ 0"${VERSION}" != 0"${tag}" ]; then
+    if [ "${VERSION}" != "${tag}" ]; then
         echo -e "VERSION not match with tag"
     fi
-    if [ 0"${tag}" == "0latest" ]; then
-        VERSION=0.0.0
+
+    image=4pdosc/prpc:${tag}
+    docker build -t ${image} -f docker/Dockerfile .
+    if [ "${VERSION}" != "0.0.0" ]; then
+        docker push ${image}
     fi
-    image=prpc:${tag}
-    docker build -t ${image} .
-    docker tag ${image} ${REGISTRY}/${image}
-    docker push ${REGISTRY}/${image}
 }
 
 function publish_check() {
     git diff
     local git_diff=`git diff` 
-    if [ 0"$git_diff" == "0" ]; then
+    if [ "$git_diff" == "" ]; then
         echo "git nodiff"
     else
         echo -e "please commit your change before publish"

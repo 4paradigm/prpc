@@ -27,4 +27,4 @@ jobs:
         uses: docker/setup-buildx-action@v1
       - name: docker build and push
         run: |
-          REGISTRY="localhost:5000" ./build.sh publish
+          ./build.sh publish

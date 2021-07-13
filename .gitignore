@@ -88,3 +88,5 @@ virtualenv
 venv
 .envrc
 .psenvrc
+
+third_party/env.sh

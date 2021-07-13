@@ -34,10 +34,6 @@ function decompress() {
         check_return "pkg=`ls` failed"
         if [ "X$pkg" == "X" ]; then
             local src="`cat ${pkgs_dir}/${1}.url | awk -F'\t' '{print $1}'`"
-            if [ "X${GITHOST}" == "X" ]; then
-                GITHOST=github.com
-            fi
-            export GITHOST
             execshell "wget \"${src}\""
         fi
     else

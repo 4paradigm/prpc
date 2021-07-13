@@ -27,6 +27,9 @@ HELP_INFO
 }
 
 function build_pkgs() {
+    if [ -f ${CURDIR}/env.sh ]; then
+        source ${CURDIR}/env.sh
+    fi
     execshell "mkdir -p ./tools"
     execshell "pushd ./tools"
     for pkg in $@; do
