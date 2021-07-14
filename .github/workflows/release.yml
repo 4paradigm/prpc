@@ -3,7 +3,7 @@ name: release
 on:
   push:
     tags:
-      - "[0-9]+.[0-9]+.[0-9]+"
+      - v[0-9]+.[0-9]+.[0-9]+
 
 jobs:
   release:
@@ -23,6 +23,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: docker build and push
         run: |
-          IMAGE=4pdosc/prpc:${BRANCH_NAME}
+          IMAGE=4pdosc/prpc:${BRANCH_NAME:1}
           docker build -t ${IMAGE} -f docker/Dockerfile .
           docker push ${IMAGE}
+
