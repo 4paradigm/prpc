@@ -27,6 +27,12 @@ public:
         rpc_config.protocol = "tcp";
         rpc_config.bind_ip = "127.0.0.1";
         rpc_config.io_thread_num = 1;
+
+        rpc_config.tcp.keepalive_intvl = -1;
+        rpc_config.tcp.keepalive_probes = -1;
+        rpc_config.tcp.keepalive_time = -1;
+        rpc_config.tcp.connect_timeout = 5;
+        TcpSocket::set_tcp_config(rpc_config.tcp);
         _rpc = std::make_unique<RpcService>();
         _rpc->initialize(_mc.get(), rpc_config);
         _server = _rpc->create_server("asdf");
