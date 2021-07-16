@@ -71,7 +71,6 @@ build-release
 core.*
 lib
 output
-setup_version.py
 temp
 tools
 
