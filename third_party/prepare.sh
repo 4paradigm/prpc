@@ -18,6 +18,10 @@ export install_script_dir=${CURDIR}/install_scripts
 export pkgs_dir=${CURDIR}/pkgs
 export patches_dir=${CURDIR}/pkgs
 
+if [[ -z "$J" ]]; then
+    export J=`nproc | awk '{print int(($0 + 1)/ 2)}'` # make cocurrent thread number
+fi
+
 function usage() {
 cat  <<HELP_INFO
 prepare.sh作用：
