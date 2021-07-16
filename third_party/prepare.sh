@@ -3,7 +3,7 @@ CURFILE=`readlink -m $0`
 CURDIR=`dirname ${CURFILE}`
 source ${CURDIR}/utils.sh
 
-if [ "X$prefix" == "X" ]; then
+if [ "$prefix" == "" ]; then
     export prefix=/usr/local
 else
     export PATH=${prefix}/bin:$PATH
@@ -18,7 +18,7 @@ export install_script_dir=${CURDIR}/install_scripts
 export pkgs_dir=${CURDIR}/pkgs
 export patches_dir=${CURDIR}/pkgs
 
-if [[ -z "$J" ]]; then
+if [ "$J" == "" ]; then
     export J=`nproc | awk '{print int(($0 + 1)/ 2)}'` # make cocurrent thread number
 fi
 
