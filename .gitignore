@@ -71,7 +71,7 @@ build-release
 core.*
 lib
 output
-temp
+tmp
 tools
 
 *.log
