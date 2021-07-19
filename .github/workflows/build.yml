@@ -22,5 +22,5 @@ jobs:
         uses: docker/setup-buildx-action@v1
       - name: docker build
         run: |
-          IMAGE=4pdosc/prpc:latest
+          IMAGE=4pdosc/prpc:0.0.0
           docker build -t ${IMAGE} -f docker/Dockerfile .
