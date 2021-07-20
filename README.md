@@ -24,13 +24,6 @@ apt-get install -y libsnappy-dev libprotobuf-dev libprotoc-dev libleveldb-dev \
 mkdir build && cd build && cmake .. && make -j && make install && cd ..
 ```
 
-## Docker
-
-运行以下命令获得 prpc 开发环境，镜像可通过 [Docker Hub](https://hub.docker.com/r/4pdosc/prpc/tags) 上获取。
-```
-docker run -it 4pdosc/prpc:latest
-```
-
 ## 文档
 
 [总体概览](src/README.md)
