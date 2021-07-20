@@ -26,7 +26,7 @@ jobs:
           IMAGE=4pdosc/prpc:${BRANCH_NAME:1}
           LATEST=4pdosc/prpc:latest
           docker build -t ${IMAGE} -f docker/Dockerfile .
+          docker tag ${IMAGE} ${LATEST}
           docker push ${IMAGE}
-          dokcer tag ${IMAGE} ${LATEST}
           docker push ${LATEST}
 
