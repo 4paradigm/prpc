@@ -11,7 +11,7 @@ prpc 是一个为高性能计算提供网络通信的 RPC 框架，并附带 Acc
 
 ```
 docker build -t 4pdosc/prpc-base:0.1.0 -f docker/Dockerfile.base .
-docker build -t 4pdosc/prpc -f docker/Dockerfile .
+docker build -t 4pdosc/prpc:0.0.0 -f docker/Dockerfile .
 ```
 
 ### Ubuntu
