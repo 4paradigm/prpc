@@ -1,13 +1,13 @@
 [![build status](https://github.com/4paradigm/prpc/actions/workflows/build.yml/badge.svg)](https://github.com/4paradigm/prpc/actions/workflows/build.yml)
 [![docker pulls](https://img.shields.io/docker/pulls/4pdosc/prpc.svg)](https://hub.docker.com/r/4pdosc/prpc)
 
-## 关于
+## About
 
-prpc 是一个为高性能计算提供网络通信的 RPC 框架，并附带 Accumulator 等组件。
+prpc is an RPC framework that provides network communication for high-performance computing, with components such as accumulator.
 
-## 编译
+## Build
 
-### 推荐使用 Docker 进行编译
+### Docker Build
 
 ```
 docker build -t 4pdosc/prpc-base:0.1.0 -f docker/Dockerfile.base .
@@ -24,14 +24,14 @@ apt-get install -y libsnappy-dev libprotobuf-dev libprotoc-dev libleveldb-dev \
 mkdir build && cd build && cmake .. && make -j && make install && cd ..
 ```
 
-## 文档
+## Documents
 
-[总体概览](src/README.md)
+[Overview](src/README.md)
 
-[RPC 简介](src/rpc/README.md)
+[RPC Tutorial](src/rpc/README.md)
 
-[RPC 设计](src/rpc/Design.md)
+[RPC Design](src/rpc/Design.md)
 
-[Accumulator 简介](src/accumulator/README.md)
+[Accumulator Tutorial](src/accumulator/README.md)
 
-[Accumulator 设计](src/accumulator/Design.md)
+[Accumulator Design](src/accumulator/Design.md)

@@ -1,41 +1,40 @@
 # RPC
 
-English version | [中文版](README_cn.md)
+[English version](README.md) | 中文版
 
-## Table of Contents
+## 目录
 
 - [RPC](#rpc)
-  - [Table of Contents](#table-of-contents)
-  - [Features](#features)
-  - [Quick Start](#quick-start)
-    - [Server](#server)
-    - [Client](#client)
+  - [目录](#目录)
+  - [功能特征](#功能特征)
+  - [快速入门](#快速入门)
+    - [Server.cpp](#servercpp)
+    - [Client.cpp](#clientcpp)
 
-## Features
+## 功能特征
 
-* Message complete
-* Thread-safe
-* Connection reuse
-* Automatic retry
-* Non-blocking
+* 消息完整
+* 线程安全
+* 连接复用
+* 自动重试
+* 非阻塞
 * RDMA
-* Zero copy
-* Service discovery
+* 零拷贝
+* 服务发现
 
-## Quick Start
+## 快速入门
 
-The following is a simple client-server communication example.
+以一个简单的 client-server 通讯示例，
 
-### Server
+### Server.cpp
 
-First create a master. A master is a namespace, which maintains the global information of all servers and clients. The server needs to be registered on the master, and the client can access all the registered servers after connecting to the master.
+首先创建一个 master。 master 是一个命名空间，它维护着所有服务器和客户端的全局信息。 服务器需要在 master 上注册，客户端连接到 master 后可以访问所有注册的服务器。
 ```c++
     Master master("127.0.0.1:9394");
     master.initialize();
-    master.finalize();
 ```
 
-Then use the master endpoint to initialize the prpc framework.
+随后，使用该 master 的网络地址来初始化 prpc 框架。
 ```c++
     TcpMasterClient master_client(master.endpoint());
     master_client.initialize();
@@ -46,12 +45,12 @@ Then use the master endpoint to initialize the prpc framework.
     rpc.initialize(&master_client, rpc_config);
 ```
 
-Then create a server. Note that "asdf" here is the service name of the server.
+之后创建一个 server，注意这里的 “asdf” 是服务名称，client 连接时需要指定对服务名称。
 ```c++
     std::unique_ptr<RpcServer> server = rpc.create_server("asdf");
 ```
 
-Create a `Dealer` for the server. `Dealer` is used to send and receive messages and it is not thread-safe while `create_dealer` is thread-safe.
+给这个 server 创建一个 `Dealer`，并使用 `Dealer` 来发送和接收消息，它不是线程安全的，但是 `create_dealer` 是线程安全的。
 ```c++
     std::shared_ptr<Dealer> s_dealer = server->create_dealer();
 
@@ -64,19 +63,20 @@ Create a `Dealer` for the server. `Dealer` is used to send and receive messages 
     s_dealer->send_response(std::move(resp))
 ```
 
-Finally, all objects are destructed in order.
+最后，依次析构所有对象。
 ```c++
     s_dealer.reset();
     server.reset();
     rpc.finalize();
+    master_client.clear_master();
     master_client.finalize();
     master.exit();
     master.finalize();
 ```
 
-### Client
+### Client.cpp
 
-First connect to the master.
+首先连接服务器所在的 master。
 ```c++
     TcpMasterClient master_client("127.0.0.1:9394");
     master_client.initialize();
@@ -88,27 +88,34 @@ First connect to the master.
     rpc.initialize(&master_client, rpc_config);
 ```
 
-Then create a client, where "asdf" is the service name specified when the server was created, and parameter 1 is the count of servers to wait.
+然后创建一个客户端，其中 “asdf” 是创建 server 时指定的服务名称，参数 1 是要等待的 server 数量。 
 ```c++
     std::unique_ptr<RpcClient> client = rpc.create_client("asdf", 1);
+```
+
+创建并初始化 `Dealer`。
+```c++
     auto c_dealer = client->create_dealer();
 ```
 
-Send a request and wait the response.
+发送请求并等待响应。
 ```c++
     RpcRequest req;
     RpcResponse resp;
     std::string s = "asdfasdfasdfasf", e;
     req << s;
     c_dealer->send_request(std::move(req));
-    c_dealer->recv_response(resp);
+    bool ret = c_dealer->recv_response(resp);
+    SCHECK(ret);
     resp >> e;
+    SCHECK(s == e);
 ```
 
-Finally, all objects are destructed in order.
+最后，依次析构所有对象。
 ```c++
     c_dealer.reset();
     client.reset();
     rpc.finalize();
+    master_client.clear_master();
     master_client.finalize();
 ```
