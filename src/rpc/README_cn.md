@@ -8,8 +8,8 @@
   - [目录](#目录)
   - [功能特征](#功能特征)
   - [快速入门](#快速入门)
-    - [Server.cpp](#servercpp)
-    - [Client.cpp](#clientcpp)
+    - [Server](#server)
+    - [Client](#client)
 
 ## 功能特征
 
@@ -26,7 +26,7 @@
 
 以一个简单的 client-server 通讯示例，
 
-### Server.cpp
+### Server
 
 首先创建一个 master。 master 是一个命名空间，它维护着所有服务器和客户端的全局信息。 服务器需要在 master 上注册，客户端连接到 master 后可以访问所有注册的服务器。
 ```c++
@@ -74,7 +74,7 @@
     master.finalize();
 ```
 
-### Client.cpp
+### Client
 
 首先连接服务器所在的 master。
 ```c++

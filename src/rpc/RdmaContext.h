@@ -29,23 +29,23 @@ struct RdmaConfig {
     }
 
     std::string ib_devname;
-    int gid_index;
-    int ib_port;
-    int traffic_class;
-    int sl;
-    int mtu;
-    int pkey_index;
-    int min_rnr_timer;
-    int retry_cnt;
-    int timeout;
+    int gid_index = 0;
+    int ib_port= 0;
+    int traffic_class = 0;
+    int sl = 0;
+    int mtu = 0;
+    int pkey_index = 0;
+    int min_rnr_timer = 0;
+    int retry_cnt = 0;
+    int timeout = 0;
 };
 
 struct mr_t {
     // 没有内存所有权，只有mr所有权
-    char* start;
-    size_t len;
-    struct ibv_mr* mr;
-    size_t cnt;
+    char* start = nullptr;
+    size_t len = 0;
+    struct ibv_mr* mr = nullptr;
+    size_t cnt = 0;
 };
 
 class RdmaContext {
