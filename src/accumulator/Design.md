@@ -1,11 +1,11 @@
-# Accumulator 设计
+# Accumulator Design
 
 English version | [中文版](Design_cn.md)
 
-## 目录
+## Table of Contents
 
-- [Accumulator 设计](#accumulator-设计)
-  - [目录](#目录)
+- [Accumulator Design](#accumulator-design)
+  - [Table of Contents](#table-of-contents)
   - [Accumulator Write](#accumulator-write)
   - [Accumulator Read](#accumulator-read)
 
