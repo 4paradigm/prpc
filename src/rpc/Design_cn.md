@@ -1,7 +1,5 @@
 # RPC 设计
 
-[English version](Design.md) | 中文版
-
 ## 目录
 
 - [RPC 设计](#rpc-设计)
