@@ -1,29 +1,29 @@
-## prpc 源码目录
+## prpc overview
 
 ### accumulator 
 
-[Accumulator 介绍](accumulator/README.md)
+[Accumulator Tutorial](accumulator/README.md)
 
-[Accumulator 设计](accumulator/Design.md)
+[Accumulator Design](accumulator/Design.md)
 
 ### rpc
 
-[RPC 简介](rpc/README.md)
+[RPC Tutorial](rpc/README.md)
 
-[RPC 设计](rpc/Design.md)
+[RPC Design](rpc/Design.md)
 
 ### addition
 
-源自于其他开源项目，提供 json hash 等功能。
+Json class and hash functions based on open source third-party libraries.
 
 ### codec
 
-主要提供 URI 与 Base64 编码支持。
+URI codec and base64 codec.
 
 ### common
 
-提供序列化，类型转换，反射，日志，监控等功能。
+Serialization, type conversion, reflection, logging, monitoring, etc.
 
 ### thread
 
-线程安全数据结构，内容包括无锁队列，管道，信号量，读写锁等。
+Thread-safe data structure, including lock-free queues, pipes, semaphores, read-write locks, etc.

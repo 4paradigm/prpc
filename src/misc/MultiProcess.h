@@ -19,7 +19,7 @@ public:
     MultiProcess(size_t num_process, const std::string& root = "./.unittest_tmp/multi_process") {
         google::InstallFailureSignalHandler(); // 防止进程挂了都看不出来
         static char buffer[10240];
-        SCHECK(getcwd(buffer, sizeof(buffer)) != nullptr);
+        SCHECK(getcwd(buffer, sizeof(buffer)) != nullptr) << errno;
         _cwd = buffer;
         _root = root;
         for (size_t i = 1; i < num_process; ++i) {
@@ -43,6 +43,8 @@ public:
             core::FileSystem::mkdir_p(core::URIConfig(workdir));
             SCHECK(chdir(workdir.c_str()) == 0);
         }
+        SCHECK(getcwd(buffer, sizeof(buffer)) != nullptr) << errno;
+        SLOG(INFO) << buffer;
     }
 
     MultiProcess(MultiProcess&& proc) = default;

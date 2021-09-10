@@ -1,32 +1,32 @@
 # Accumulator
 
-English version | [中文版](README_cn.md)
+[English version](README.md) | 中文版
 
-## Table of Contents
+## 目录
 
 - [Accumulator](#accumulator)
-  - [Table of Contents](#table-of-contents)
-  - [About](#about)
+  - [目录](#目录)
+  - [简介](#简介)
   - [Aggregator](#aggregator)
-  - [Quick Start](#quick-start)
+  - [快速入门](#快速入门)
 
-## About
+## 简介
 
-`Accumulator` is a distributed component. Each node can push data, and `Accumulator` server aggregates all the pushed data for query. `Accumulator` supports custom aggregator while some aggregators are predifined.
+`Accumulator` 是一个分布式组件。各节点可以推送数据，`Accumulator` 服务器聚合所有推送的数据以供查询。`Accumulator` 支持自定义聚合操作，目前已有一些预定义的聚合操作。
 
 ## Aggregator
 
-The predefined aggregators are as follows:
+预定义的聚合操作如下：
 * SumAggregator
 * AvgAggregator
 * ArithmeticMaxAggregator
 * ArithmeticMinAggregator
 
-## Quick Start
+## 快速入门
 
-The following is a simple distributed [example](../../test/accumulator_test.cpp).
+以下是一个简单的分布式[示例](../../test/accumulator_test.cpp)
 
-Before using `Accumulator`, each node must [initialize prpc](../rpc/README_cm.md) firstly.
+在使用 `Accumulator` 之前，每个节点都必须先[初始化 prpc](../rpc/README_cm.md)。
 ```c++
     _master = std::make_unique<Master>("127.0.0.1");
     _master->initialize();
@@ -41,7 +41,7 @@ Before using `Accumulator`, each node must [initialize prpc](../rpc/README_cm.md
     _rpc->initialize(_mc.get(), rpc_config);
 ```
 
-Then, select a node as the server node, and the server node needs to be responsible for receiving data from all nodes. Here, the first node that is successfully initialized is selected as the server node.
+随后，选择一个节点作为服务器节点，服务器节点需要负责接收所有节点的数据。这里选择第一个初始化成功的节点为服务器节点。
 ```c++
     if (_rpc->global_rank() == 0) {
         AccumulatorServer::singleton().initialize(_rpc.get());
@@ -49,30 +49,29 @@ Then, select a node as the server node, and the server node needs to be responsi
     AccumulatorClient::singleton().initialize(_rpc.get());
 ```
 
-Then define the same `Accumulator` on all nodes. Here, "sum_int_count_single_ok" is the ID of the `Accumulator`. Same ID in different nodes will point to the same `Accumulator` entity. And `SumAggregator<int64_t>` is the aggregator, which must be strictly consistent when `Accumulator` defined on different nodes. Parameter 10 is the refresh frequency, which means that every 10 times `write` the client aggregates and pushes data to the server.
-
+然后，在所有节点上定义同一个 `Accumulator`。这里 "sum_int_count_single_ok" 是 `Accumulator` 的 ID，不同节点中相同的 ID 对应相同的 `Accumulator` 实体 ，`SumAggregator<int64_t>` 是聚合操作，一个 `Accumulator` 在所有节点中定义时都必须使用相同的聚合操作，参数 10 是刷新频率，表示每 10 次 `write` 客户端向服务器合并推送一次数据。
 ```c++
     Accumulator<SumAggregator<int64_t>> counter("sum_int_counter_single_ok", 10)
 ```
 
-After that, each node pushes different data according to its rank.
+之后每个节点根据自己的编号推送不同的数据。
 ```c++
     const int count_max = 1000;
     for (int i = 0; i < count_max; i++) {
         ASSERT_TRUE(counter.write((i+1) * (_rpc.global_rank()+1)));
-    }
-    AccumulatorClient::singleton().wait_empty();
+    }    
 ```
 
-After the data of all nodes have been pushed, you can get the summary and check it.
+当所有节点的数据都推送完毕后，可以获取累加结果，并检查是否正确。
 ```c++
+    AccumulatorClient::singleton().wait_empty();
     ASSERT_TRUE(counter.try_read_to_string(cnt_res));
     std::string right_res = boost::lexical_cast<std::string>((1+count_max)*count_max/2
             * _rpc.global_rank() * (_rpc.global_rank() + 1) / 2);
     EXPECT_STREQ(right_res.c_str(), cnt_res.c_str());
 ```
 
-Finally, the resources need to be released in sequence.
+最后需要依次释放资源。
 ```c++
     if (_rpc.global_rank() == 0) {
         AccumulatorClient::singleton().erase_all();

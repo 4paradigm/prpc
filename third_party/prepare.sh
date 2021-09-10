@@ -3,7 +3,7 @@ CURFILE=`readlink -m $0`
 CURDIR=`dirname ${CURFILE}`
 source ${CURDIR}/utils.sh
 
-if [ "X$prefix" == "X" ]; then
+if [ "$prefix" == "" ]; then
     export prefix=/usr/local
 else
     export PATH=${prefix}/bin:$PATH
@@ -18,6 +18,10 @@ export install_script_dir=${CURDIR}/install_scripts
 export pkgs_dir=${CURDIR}/pkgs
 export patches_dir=${CURDIR}/pkgs
 
+if [ "$J" == "" ]; then
+    export J=`nproc | awk '{print int(($0 + 1)/ 2)}'` # make cocurrent thread number
+fi
+
 function usage() {
 cat  <<HELP_INFO
 prepare.sh作用：
@@ -27,6 +31,9 @@ HELP_INFO
 }
 
 function build_pkgs() {
+    if [ -f ${CURDIR}/env.sh ]; then
+        source ${CURDIR}/env.sh
+    fi
     execshell "mkdir -p ./tools"
     execshell "pushd ./tools"
     for pkg in $@; do

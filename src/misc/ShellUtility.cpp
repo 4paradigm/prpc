@@ -82,7 +82,7 @@ shared_ptr<FILE> ShellUtility::open(const std::string& cmd,
         file = fopen(cmd.c_str(), mode.c_str());
         if (file == nullptr) {
             ELOG(WARNING, PICO_CORE_ERRCODE(FS_FILE_OPEN))
-                  << "fail to open " << cmd << " mode : " << mode;
+                  << "fail to open " << cmd << " mode : " << mode << " errno: " << errno;
         }
         return shared_ptr<FILE>(file, [=](FILE* p) {
             if (p != nullptr) {
