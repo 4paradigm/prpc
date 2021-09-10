@@ -326,6 +326,17 @@ inline core::unique_ptr<_Tp> make_unique(_Args&&... __args) {
     return core::unique_ptr<_Tp>(pico_new<_Tp>(std::forward<_Args>(__args)...));
 }
 
+
+template<class T>
+void vector_move_append(core::vector<T>& result, core::vector<T>& vect) {
+    static_assert(std::is_move_assignable<T>::value, "must be MoveAssignable");
+    static_assert(std::is_move_constructible<T>::value, "must be MoveConstructible");
+    result.reserve(result.size() + vect.size());
+    typedef typename core::vector<T>::iterator iter_t;
+    result.insert(result.end(), std::move_iterator<iter_t>(vect.begin()),
+            std::move_iterator<iter_t>(vect.end()));
+}
+
 // template <class T>
 // PicoAllocator<T> & global_pico_allocator(){
 //    static PicoAllocator<T> alloca;

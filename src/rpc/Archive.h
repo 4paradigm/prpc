@@ -1316,19 +1316,19 @@ inline bool pico_deserialize(Archive<AR>& ar, Archive<AR>& out) {
     return ar.read_raw_uncheck(out.buffer(), out.length());
 }
 
-template<class AR, class T>
+template<class AR, class T, class AL>
 std::enable_if_t<(std::is_same<AR, BinaryArchiveType>::value || std::is_same<AR, BinaryFileArchiveType>::value)
         && std::is_trivially_copyable<T>::value, 
-bool> pico_serialize(Archive<AR>& ar, const std::vector<T>& vect) {
+bool> pico_serialize(Archive<AR>& ar, const std::vector<T, AL>& vect) {
     if (!pico_serialize(ar, vect.size()))
         return false;
     return ar.write_raw_uncheck(vect.data(), sizeof(T) * vect.size());
 }
 
-template<class AR, class T>
+template<class AR, class T, class AL>
 std::enable_if_t<(std::is_same<AR, TextArchiveType>::value || std::is_same<AR, TextFileArchiveType>::value)
         || !std::is_trivially_copyable<T>::value, 
-bool> pico_serialize(Archive<AR>& ar, const std::vector<T>& vect) {
+bool> pico_serialize(Archive<AR>& ar, const std::vector<T, AL>& vect) {
     if (!pico_serialize(ar, vect.size()))
         return false;
     for (const auto& val : vect) {
@@ -1337,6 +1337,8 @@ bool> pico_serialize(Archive<AR>& ar, const std::vector<T>& vect) {
     }
     return true;
 }
+
+
 
 template<class AR, class T, size_t N>
 std::enable_if_t<(std::is_same<AR, BinaryArchiveType>::value || std::is_same<AR, BinaryFileArchiveType>::value)
@@ -1430,10 +1432,10 @@ bool pico_deserialize(Archive<AR>& ar, std::deque<T>& vect) {
     return true;
 }
 
-template<class AR, class T>
+template<class AR, class T, class AL>
 std::enable_if_t<(std::is_same<AR, BinaryArchiveType>::value || std::is_same<AR, BinaryFileArchiveType>::value) 
     && std::is_trivially_copyable<T>::value, 
-bool> pico_deserialize(Archive<AR>& ar, std::vector<T>& vect) {
+bool> pico_deserialize(Archive<AR>& ar, std::vector<T, AL>& vect) {
     size_t size;
     if (!pico_deserialize(ar, size))
         return false;
@@ -1441,10 +1443,10 @@ bool> pico_deserialize(Archive<AR>& ar, std::vector<T>& vect) {
     return ar.read_raw_uncheck(vect.data(), sizeof(T) * vect.size());
 }
 
-template<class AR, class T>
+template<class AR, class T, class AL>
 std::enable_if_t<(std::is_same<AR, TextArchiveType>::value || std::is_same<AR, TextFileArchiveType>::value) 
     || !std::is_trivially_copyable<T>::value, 
-bool> pico_deserialize(Archive<AR>& ar, std::vector<T>& vect) {
+bool> pico_deserialize(Archive<AR>& ar, std::vector<T, AL>& vect) {
     size_t size;
     if (!pico_deserialize(ar, size))
         return false;
@@ -1455,6 +1457,7 @@ bool> pico_deserialize(Archive<AR>& ar, std::vector<T>& vect) {
     }
     return true;
 }
+
 
 template<class AR, class T, size_t N>
 std::enable_if_t<(std::is_same<AR, BinaryArchiveType>::value || std::is_same<AR, BinaryFileArchiveType>::value) 
