@@ -322,13 +322,20 @@ bool TcpSocket::send_msg(RpcMessage&,
     if (nonblock) {
         flag |= MSG_DONTWAIT;
     }
-    if (!_send(_fd, it1, more ? flag | MSG_MORE : flag)) {
-        return false;
+    if (it2.has_next()) {
+        // Should NOT use MSG_MORE for both _fd and _fd2
+        if (!_send(_fd, it1, flag)) {
+            return false;
+        }
+        if (!_send(_fd2, it2, flag)) {
+            return false;
+        }
+    } else {
+        if (!_send(_fd, it1, more ? flag | MSG_MORE : flag)) {
+            return false;
+        }
     }
-    // 后面不一定有zero copy的消息
-    if (!_send(_fd2, it2, flag)) {
-        return false;
-    }
+
     return true;
 }
 
