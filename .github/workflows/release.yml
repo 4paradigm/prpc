@@ -27,4 +27,6 @@ jobs:
           docker build -t 4pdosc/prpc-base:latest -f docker/Dockerfile.base .
           docker build -t ${IMAGE} -f docker/Dockerfile .
           docker push ${IMAGE}
+          docker tag ${IMAGE} 4pdosc/prpc:latest
+          docker push 4pdosc/prpc:latest
 
