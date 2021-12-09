@@ -23,4 +23,5 @@ jobs:
       - name: docker build
         run: |
           IMAGE=4pdosc/prpc:0.0.0
+          docker build -t 4pdosc/prpc-base:latest -f docker/Dockerfile.base .
           docker build -t ${IMAGE} -f docker/Dockerfile .

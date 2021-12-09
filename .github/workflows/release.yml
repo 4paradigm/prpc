@@ -24,6 +24,7 @@ jobs:
       - name: docker build and push
         run: |
           IMAGE=4pdosc/prpc:${BRANCH_NAME:1}
+          docker build -t 4pdosc/prpc-base:latest -f docker/Dockerfile.base .
           docker build -t ${IMAGE} -f docker/Dockerfile .
           docker push ${IMAGE}
 
