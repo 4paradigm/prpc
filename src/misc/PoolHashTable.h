@@ -170,6 +170,9 @@ public:
     }
 
     void remap(size_t size) {
+        // pico_free(_data);
+        // _data = reinterpret_cast<char*>(pico_malloc(size));
+        // return;
         if (size) {
             size_t page = getpagesize();
             size = (size + page - 1) / page * page;
@@ -202,7 +205,46 @@ private:
     size_t _size = 0;
 };
 
+class FastModTable {
+    template<size_t mod>
+    static size_t fast_mod(size_t hash) {
+        return hash % mod;
+    }
+
+    template<size_t mod, bool next = mod < std::numeric_limits<size_t>::max() / 2>
+    struct AddFastMod;
+
+    template<size_t mod>
+    struct AddFastMod<mod, true> {
+        static void add_fast_mod(std::map<size_t, size_t(*)(size_t)>& fast_mods) {
+            fast_mods[mod] = fast_mod<mod>;
+            AddFastMod<size_t(mod * 1.05 + 1)>::add_fast_mod(fast_mods);
+        }
+    };
+
+    template<size_t mod>
+    struct AddFastMod<mod, false> {
+        static void add_fast_mod(std::map<size_t, size_t(*)(size_t)>& fast_mods) {
+            fast_mods[mod] = fast_mod<mod>;
+        }
+    };
+
+    FastModTable() {
+        AddFastMod<1>::add_fast_mod(fast_mods);
+    }
+
+public:
+    static const FastModTable& singleton() {
+        static FastModTable fast_mod_table;
+        return fast_mod_table;
+    }
+
+    std::map<size_t, size_t(*)(size_t)> fast_mods;
+};
+
 class ArrayHashSpace {
+    using double_size_t = __uint128_t;
+    static constexpr int BITS = 8 * sizeof(size_t);
 public:
     typedef size_t size_type;
 
@@ -233,11 +275,24 @@ public:
     }
 
     void set_space(size_type node_size, size_type num_nodes) {
-        _isn2 = ((node_size & (node_size - 1)) == 0);
         _mm.remap(node_size * (num_nodes + 1));
         _node_size = node_size;
         _num_nodes = num_nodes;
         _max_offset = num_nodes * node_size;
+        
+        size_t n = 0;
+        while ((size_t(1) << (n + 1)) <= _num_nodes) {
+            ++n;
+        }
+        _mask = (size_t(1) << n) - 1;
+        if (1.0 * _mask / _num_nodes < 0.91) {
+            auto it = FastModTable::singleton().fast_mods.upper_bound(_num_nodes);
+            SCHECK(it != FastModTable::singleton().fast_mods.begin());
+            --it;
+            _fast_mod = it->second;
+        } else {
+            _fast_mod = nullptr;
+        }
     }
 
     size_type expand_space()const {
@@ -253,12 +308,12 @@ public:
     }
 
     size_type find_offset(size_t hash)const {
-        size_type mask = _num_nodes - 1;
-        if (_num_nodes & mask) {
-            return ((hash % _num_nodes) + 1) * _node_size;
-        } else {
-            return ((hash & mask) + 1) * _node_size;
-        }
+        return ((hash & _mask) + 1) * _node_size;
+        // if (_fast_mod) {
+        //     return (_fast_mod(hash) + 1) * _node_size;
+        // } else {
+        //     return ((hash & _mask) + 1) * _node_size;
+        // }
     }
 
     // [1 * _node_size, 2 * _node_size, 3 * _node_size, ..., _max_offset, 0)
@@ -271,11 +326,39 @@ public:
     }
 
 protected:
+    mutable bool _warned = false;
+
     MemoryMap _mm;
-    bool _isn2 = false;
+    size_type _mask = 0;
+    size_type(*_fast_mod)(size_t) = nullptr;
     size_type _max_offset = 0;
     size_type _node_size = 0;
     size_type _num_nodes = 0;
+
+private:
+    template<size_t mod>
+    static size_t fast_mod(size_t hash) {
+        return hash % mod;
+    }
+
+    template<size_t mod, bool next = mod < std::numeric_limits<size_t>::max() / 2>
+    struct AddFastMod;
+
+    template<size_t mod>
+    struct AddFastMod<mod, true> {
+        static void add_fast_mod(std::map<size_t, size_type(*)(size_t)>& fast_mods) {
+            SLOG(INFO) << mod;
+            fast_mods[mod] = fast_mod<mod>;
+            AddFastMod<size_t(mod * 17.0 / 16.0 + 1)>::add_fast_mod(fast_mods);
+        }
+    };
+
+    template<size_t mod>
+    struct AddFastMod<mod, false> {
+        static void add_fast_mod(std::map<size_t, size_type(*)(size_t)>& fast_mods) {
+            fast_mods[mod] = fast_mod<mod>;
+        }
+    };
 };
 
 template<class ItemType, class Serializer, class HashSpace>
@@ -838,7 +921,7 @@ private:
             }
             probe = _hash_space.probe_offset(probe);
         }
-        return get_node(0)->next;
+        return get_node(0)->prev;
     }
 
     ItemType _item_type;
@@ -852,6 +935,7 @@ private:
     size_t _node_size = 0;
 
     std::vector<size_type> _temp;
+    char _pad[64];
 };
 
 template<class Key, class T, class Hash = std::hash<Key>, class Pred = std::equal_to<Key>>

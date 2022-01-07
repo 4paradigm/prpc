@@ -9,12 +9,13 @@
 #include "common.h"
 #include <sparsehash/dense_hash_map>
 #include "PoolHashTable.h"
+#include "ThreadGroup.h"
 
 namespace paradigm4 {
 namespace pico {
 namespace core {
 
-constexpr int N = 1 << 24;
+constexpr int N = 1 << 26, NT = 16;
 
 struct feature_index_t {
     int64_t slot;
@@ -28,7 +29,7 @@ struct feature_index_t {
         return slot == b.slot && sign == b.sign;
     }
 
-    size_t hash() const noexcept {
+    size_t hash()const noexcept {
         return static_cast<size_t>(slot * 107 + sign);
     }
 
@@ -49,7 +50,8 @@ struct LRValue {
     double z = 0.0;
     double n = 1.0;
     double decayed_show = 0.0;
-
+    double pad1;
+    double pad2;
     LRValue() {}
     LRValue(feature_index_t key): weight(key.sign) {}
 
@@ -71,10 +73,12 @@ public:
         auto dur = std::chrono::high_resolution_clock::now() - start;
         auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(dur).count();
         SLOG(INFO) << name << ": " << ns / count << "ns";
+        record = ns / count;
         start = std::chrono::high_resolution_clock::now();
     }
 
     std::chrono::high_resolution_clock::time_point start;
+    int record = 0;
 };
 
 int64_t randint(int64_t min, int64_t max) {
@@ -85,72 +89,116 @@ int64_t randint(int64_t min, int64_t max) {
 
 
 TEST(pool_hash_map, random_find) {
-    for (double load_factor = 0.5; load_factor < 1.01; load_factor += 0.1) {
+    std::vector<std::vector<int>> summary;
+    std::vector<int> NS{N, N - 1};
+    for (int n: NS) for (double load_factor = 0.1; load_factor < 1.01; load_factor += 0.1) {
+        summary.emplace_back();
+        SLOG(INFO) << load_factor;
         std::vector<feature_index_t> insert_keys;
         std::vector<feature_index_t> find_keys;
-        for (int i = 0; i < load_factor * N; ++i) {
-            feature_index_t key = {i, randint(0, N)};
+        for (int i = 0; i < load_factor * n; ++i) {
+            feature_index_t key = {i, randint(0, std::numeric_limits<int64_t>::max())};
             insert_keys.push_back(key);
             find_keys.push_back(key);
         }
         std::random_shuffle(insert_keys.begin(), insert_keys.end());
         std::random_shuffle(find_keys.begin(), find_keys.end());
+        std::random_shuffle(find_keys.begin(), find_keys.end());
 
-        double sum1 = 0.0, sum2 = 0.0, sum3 = 0.0;
+        double sum1 = 0.0, sum2 = 0.0;
         if (load_factor < 1.01) {
             pool_hash_map<feature_index_t, LRValue, feature_index_hasher_t> table;
+            SLOG(INFO) << sizeof(table);
             table.max_load_factor(1.0);
-            table.reserve(N + 1);
+            table.reserve(n);
+            
             SLOG(INFO) << "bucket count: " << table.bucket_count();
             timer time;
             for (feature_index_t key: insert_keys) {
                 table[key] = key;
             }
+            SLOG(INFO) << "bucket count: " << table.bucket_count() << ' ' << table.size();
             time.logging("pool_hash_table::insert", table.size());
+            summary.back().push_back(time.record);
+
             for (feature_index_t key: find_keys) {
                 sum1 += table.find(key)->second.weight;
             }
             time.logging("pool_hash_table::find", table.size());
-            SLOG(INFO) << "bucket count: " << table.bucket_count() << ' ' << table.size();
+            summary.back().push_back(time.record);
+            
+            std::vector<double> sums(NT);
+            std::vector<std::thread> threads;
+            for (size_t tid = 0; tid < NT; ++tid) {
+                threads.emplace_back([&](int tid){
+                    double sum = 0.0;
+                    size_t n = find_keys.size() / NT;
+                    for (size_t i = tid * n; i < tid * n + n; i += 1) {
+                        sum += table.find(find_keys[i])->second.weight;
+                    }
+                    sums[tid] = sum;
+                }, tid);
+            }
+            for (size_t tid = 0; tid < NT; ++tid) {
+                threads[tid].join();
+                sum1 += sums[tid];
+            }
+            time.logging("pool_hash_table::find mt", table.size() / NT);
+            summary.back().push_back(time.record);
         }
+
         if (load_factor < 1.01) {
-            pool_hash_map<feature_index_t, LRValue, feature_index_hasher_t> table;
-            table.max_load_factor(1.0);
-            table.reserve(N);
+            google::dense_hash_map<feature_index_t, LRValue, feature_index_hasher_t> table;
+            SLOG(INFO) << sizeof(table);
+            table.set_empty_key(feature_index_t::empty_key());
+            table.max_load_factor(0.95);
+            table.rehash((n + 1) / 2);
             SLOG(INFO) << "bucket count: " << table.bucket_count();
             timer time;
             for (feature_index_t key: insert_keys) {
                 table[key] = key;
             }
-            time.logging("pool_hash_table2::insert", table.size());
+            SLOG(INFO) << "bucket count: " << table.bucket_count() << ' ' << table.size();
+            time.logging("google::dense_hash_table::insert", table.size());
+            summary.back().push_back(time.record);
+
             for (feature_index_t key: find_keys) {
                 sum2 += table.find(key)->second.weight;
             }
-            time.logging("pool_hash_table2::find", table.size());
-            SLOG(INFO) << "bucket count: " << table.bucket_count() << ' ' << table.size();
-        }
-        if (load_factor < 1.01) {
-            google::dense_hash_map<feature_index_t, LRValue, feature_index_hasher_t> table;
-            table.set_empty_key(feature_index_t::empty_key());
-            table.max_load_factor(0.95);
-            table.rehash(N / 2);
-            SLOG(INFO) << "bucket count: " << table.bucket_count();
-
-            timer time;
-            for (feature_index_t key: insert_keys) {
-                table[key] = key;
-            }
-            time.logging("google::dense_hash_table::insert", table.size());
-            for (feature_index_t key: find_keys) {
-                sum3 += table.find(key)->second.weight;
-            }
             time.logging("google::dense_hash_table::find", table.size());
-            SLOG(INFO) << "bucket count: " << table.bucket_count() << ' ' << table.size();
+            summary.back().push_back(time.record);
+            
+            std::vector<double> sums(NT);
+            std::vector<std::thread> threads;
+            for (size_t tid = 0; tid < NT; ++tid) {
+                threads.emplace_back([&](int tid){
+                    double sum = 0.0;
+                    size_t n = find_keys.size() / NT;
+                    for (size_t i = tid * n; i < tid * n + n; i += 1) {
+                        sum += table.find(find_keys[i])->second.weight;
+                    }
+                    sums[tid] = sum;
+                }, tid);
+            }
+            for (size_t tid = 0; tid < NT; ++tid) {
+                threads[tid].join();
+                sum2 += sums[tid];
+            }
+            time.logging("google::dense_hash_table::find mt", table.size() / NT);
+            summary.back().push_back(time.record);
         }
-        SLOG(INFO) << sum1 << ' ' << sum2 << ' ' << sum3;
+
+        SLOG(INFO) << sum1 << ' ' << sum2;
         EXPECT_EQ(sum1, sum2);
-        EXPECT_EQ(sum1, sum3);
     }
+    std::string report = "";
+    for (auto& line: summary) {
+        report += '\n';
+        for (auto& record: line) {
+            report += std::to_string(record) + '\t';
+        }
+    }
+    SLOG(INFO) << report;
 }
 
 } // namespace core
