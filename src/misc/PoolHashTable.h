@@ -304,7 +304,7 @@ public:
     }
 
     offset_type expand_space()const {
-        float ratio = 1.0 * _num_nodes / _mask;
+        double ratio = 1.0 * _num_nodes / _mask;
         if (_mask && ratio > 1.5 && ratio < 1.9) {
             return (_mask + 1) * 2;
         }
@@ -440,7 +440,7 @@ public:
         return *this;
     }
 
-    ~PoolHashTable() {
+    ~PoolHashTable() noexcept {
         clear();
     }
 
@@ -456,6 +456,8 @@ public:
             : _table(table), _offset(offset) {}
 
     public:
+        const_iterator() {}
+
         const_iterator& operator++() {
             _offset = this->_table->get_iterator_next(_offset);
             return *this;
@@ -503,7 +505,7 @@ public:
         }
 
         iterator operator++(int) {
-            const_iterator temp = *this;
+            iterator temp = *this;
             ++*this;
             return temp; 
         }
@@ -529,19 +531,19 @@ public:
         return size() == 0;
     }
 
-    float load_factor()const {
+    double load_factor()const {
         return 1.0 * size() / bucket_count();
     }
 
-    float max_load_factor()const {
+    double max_load_factor()const {
         return _max_load_factor;
     }
 
-    void max_load_factor(float factor) {
+    void max_load_factor(double factor) {
         if (factor < 0.1) {
             factor = 0.1;
         }
-        _max_load_factor = std::min(1.0f, factor);
+        _max_load_factor = std::min(1.0, factor);
         _max_num_items = std::min(_hash_space.num_nodes(), 
               offset_type(_max_load_factor * _hash_space.num_nodes()));
     }
@@ -827,7 +829,7 @@ private:
         while (num_buckets * _max_load_factor < n) {
             ++num_buckets;
         }
-        return num_buckets;
+        return std::max(size_t(1), num_buckets);
     }
 
     offset_type inner_find(key_reference key)const {
