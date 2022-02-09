@@ -412,16 +412,19 @@ TEST(pool_hash_map, full_test_string_string) {
 
 TEST(pool_hash_map, no_object_leak) {
     pool_hash_map<test_string, test_string, test_string_hash> mp1;
-    google::dense_hash_map<test_string, test_string, test_string_hash> mp2;
-    mp2.set_empty_key("-1");
-    mp2.set_deleted_key("-2");
-    
-    full_test(mp1, mp2, 20000, 10000, 10000, 10000);
-    full_test(mp1, mp2, 10000, 50000, 10000, 10000);
+    {
+        google::dense_hash_map<test_string, test_string, test_string_hash> mp2;
+        mp2.set_empty_key("-1");
+        mp2.set_deleted_key("-2");
+        
+        full_test(mp1, mp2, 20000, 10000, 10000, 10000);
+        full_test(mp1, mp2, 10000, 50000, 10000, 10000);
 
-    full_test(mp1, mp2, 20000, 10000, 10000, 10000);
-    full_test(mp1, mp2, 0, 10000, 0, 0);
-    full_test(mp1, mp2, 10000, 50000, 10000, 10000);
+        full_test(mp1, mp2, 20000, 10000, 10000, 10000);
+        full_test(mp1, mp2, 0, 10000, 0, 0);
+        full_test(mp1, mp2, 10000, 50000, 10000, 10000);
+    }
+    mp1.clear();
     EXPECT_EQ(g_count, 0);
 }
 

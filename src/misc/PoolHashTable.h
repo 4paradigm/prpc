@@ -886,15 +886,13 @@ private:
     iterator inner_find(key_reference key)const {
         size_t hash = _item_type.hash_function(key);
         offset_type head = _hash_space.find_offset(hash);
-        PoolNode* node = get_node(head);
-        if (likely(node->next & MASK)) {
-            offset_type offset = head;
+        offset_type offset = head;
+        if (likely(!get_node(head)->is_empty())) {
             do {
                 if (_item_type.key_eq(get_key(offset), key)) {
                     return iterator(this, head, offset);
                 }
-                node = get_node(offset);
-            } while (offset = node->get_next());
+            } while (offset = get_node(offset)->get_next());
         }
         return iterator(this, 0, 0);
     }

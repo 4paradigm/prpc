@@ -122,8 +122,7 @@ TEST(pool_hash_map, reserve_insert_find) {
             summary.back().push_back(time.record);
 
             for (feature_index_t key: find_keys) {
-                sum1 += table[key].weight;
-                // sum1 += table.find(key)->second.weight;
+                sum1 += table.find(key)->second.weight;
             }
             time.logging("pool_hash_table::find", find_keys.size());
             summary.back().push_back(time.record);
@@ -135,8 +134,7 @@ TEST(pool_hash_map, reserve_insert_find) {
                     double sum = 0.0;
                     size_t n = find_keys.size() / NT;
                     for (size_t i = tid * n; i < tid * n + n; i += 1) {
-                        sum += table[find_keys[i]].weight;
-                        // sum += table.find(find_keys[i])->second.weight;
+                        sum += table.find(find_keys[i])->second.weight;
                     }
                     sums[tid] = sum;
                 }, tid);
