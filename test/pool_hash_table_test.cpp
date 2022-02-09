@@ -14,6 +14,39 @@ namespace paradigm4 {
 namespace pico {
 namespace core {
 
+int g_count = 0;
+
+struct test_string {
+    test_string() {
+        ++g_count;
+    }
+    test_string(const char* other): inner(other) {
+        ++g_count;
+    }
+    test_string(std::string other): inner(other) {
+        ++g_count;
+    }
+    test_string(const test_string& other): inner(other.inner) {
+        ++g_count;
+    }
+    ~test_string() {
+        --g_count;
+    }
+    bool operator==(const test_string& other)const {
+        return inner == other.inner;
+    }
+    bool operator!=(const test_string& other)const {
+        return inner != other.inner;
+    }
+    std::string inner;
+};
+
+struct test_string_hash {
+    size_t operator()(const test_string& a)const {
+        return std::hash<std::string>()(a.inner);
+    }
+};
+
 TEST(pool_hash_map, erase_ok) {
     pool_hash_map<std::string, int> ht;
     ht.rehash(4);
@@ -181,6 +214,26 @@ TEST(pool_hash_map, copy_swap_move_ok) {
     EXPECT_EQ(htc["e"], 50);
 }
 
+TEST(pool_hash_map, erase_if_ok) {
+    pool_hash_map<std::string, int> ht;
+    for (size_t i = 0; i < 1000; ++i) {
+        ht[std::to_string(i)] = i;
+    }
+    for (auto it = ht.begin(); it != ht.end();) {
+        if (it->second % 2) {
+            it = ht.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    EXPECT_EQ(ht.size(), 500);
+    for (size_t i = 0; i < 1000; i += 2) {
+        EXPECT_EQ(ht[std::to_string(i)], i);
+    }
+    EXPECT_EQ(ht.size(), 500);
+}
+
+
 void random(int& x) {
     x = rand() % 10000;
 }
@@ -191,8 +244,14 @@ void random(std::string& str) {
     str = std::to_string(x);
 };
 
-template<class K, class T> void full_test(pool_hash_map<K, T>& mp1,
-    google::dense_hash_map<K, T>& mp2, int insert, int erase, int find, int set) {
+void random(test_string& str) {
+    int x;
+    random(x);
+    str = std::to_string(x);
+};
+
+template<class K, class T, class HASH> void full_test(pool_hash_map<K, T, HASH>& mp1,
+    google::dense_hash_map<K, T, HASH>& mp2, int insert, int erase, int find, int set) {
     
     std::vector<int> ops;
     for (int i = 0; i < insert; ++i) {
@@ -209,28 +268,30 @@ template<class K, class T> void full_test(pool_hash_map<K, T>& mp1,
     }
     std::random_shuffle(ops.begin(), ops.end());
 
+
     for (int op: ops) {
         K key;
         T value;
         random(key);
         random(value);
         // SLOG(INFO) << op << ' ' << key << ' ' << value;
+        bool move = rand() % 2;
         if (op == 0) {
             K key2 = key;
             T value2 = value;
-            int detail = rand() % 3;
+            int detail = rand() % 4;
             if (detail == 0) {
                 auto res1 = mp1.insert({key, value});
                 auto res2 = mp2.insert({key, value});
                 ASSERT_EQ(res1.second, res2.second);
                 ASSERT_EQ(*res1.first, *res2.first);
             } else if (detail == 1) {
-                auto res1 = mp1.emplace(std::move(key), std::move(value));
+                auto res1 = move ? mp1.emplace(std::move(key), std::move(value)) : mp1.emplace(key, value);
                 auto res2 = mp2.insert({key2, value2});
                 ASSERT_EQ(res1.second, res2.second);
                 ASSERT_EQ(*res1.first, *res2.first);
-            } else {
-                auto res1 = mp1.try_emplace(std::move(key));
+            } else if (detail == 2) {
+                auto res1 = move ? mp1.try_emplace(std::move(key)) : mp1.try_emplace(key);
                 if (!mp2.count(key)) {
                     ASSERT_EQ(res1.first->second, T());
                     res1.first->second = std::move(value);
@@ -238,6 +299,14 @@ template<class K, class T> void full_test(pool_hash_map<K, T>& mp1,
                 auto res2 = mp2.insert({key2, value2});
                 ASSERT_EQ(res1.second, res2.second);
                 ASSERT_EQ(*res1.first, *res2.first);
+            } else {
+                // result not same with 0 1 2
+                if (move) {
+                    mp1[std::move(key)] = std::move(value);
+                } else {
+                    mp1[key] = value;
+                }
+                mp2[key2] = value2;
             }
         } else if (op == 1) {
             int detail = rand() % 2;
@@ -339,6 +408,21 @@ TEST(pool_hash_map, full_test_string_string) {
     full_test(mp1, mp2, 20000, 10000, 10000, 10000);
     full_test(mp1, mp2, 0, 10000, 0, 0);
     full_test(mp1, mp2, 10000, 50000, 10000, 10000);
+}
+
+TEST(pool_hash_map, no_object_leak) {
+    pool_hash_map<test_string, test_string, test_string_hash> mp1;
+    google::dense_hash_map<test_string, test_string, test_string_hash> mp2;
+    mp2.set_empty_key("-1");
+    mp2.set_deleted_key("-2");
+    
+    full_test(mp1, mp2, 20000, 10000, 10000, 10000);
+    full_test(mp1, mp2, 10000, 50000, 10000, 10000);
+
+    full_test(mp1, mp2, 20000, 10000, 10000, 10000);
+    full_test(mp1, mp2, 0, 10000, 0, 0);
+    full_test(mp1, mp2, 10000, 50000, 10000, 10000);
+    EXPECT_EQ(g_count, 0);
 }
 
 

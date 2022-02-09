@@ -33,11 +33,11 @@ public:
     using const_reference = const value_type&;
     
     size_t type_size()const {
-        return sizeof(value_type);
+        return sizeof(inner_value_type);
     }
 
     size_t type_align()const {
-        return alignof(value_type);
+        return alignof(inner_value_type);
     }
 
     bool is_trivially_movable()const {
@@ -47,17 +47,17 @@ public:
 
     template<class... Args>
     void construct(char* item, Args&&... args)const {
-        value_type* value = reinterpret_cast<value_type*>(item);
-        new (value) value_type(std::forward<Args>(args)...);
+        inner_value_type* value = reinterpret_cast<inner_value_type*>(item);
+        new (value) inner_value_type(std::forward<Args>(args)...);
     }
 
     void destruct(char* item)const {
-        value_type* value = reinterpret_cast<value_type*>(item);
-        value->value_type::~value_type();
+        inner_value_type* value = reinterpret_cast<inner_value_type*>(item);
+        value->inner_value_type::~inner_value_type();
     }
 
     void move_construct(char* item, char* other)const {
-        construct(item, std::move(*reinterpret_cast<value_type*>(other)));
+        construct(item, std::move(*reinterpret_cast<inner_value_type*>(other)));
         destruct(other);
     }
 
@@ -79,7 +79,7 @@ public:
 
     template<class Serializer>
     void move_serialize(char* item, Serializer& serializer)const {
-        serializer << *reinterpret_cast<inner_value_type*>(item);
+        serializer << std::move(*reinterpret_cast<inner_value_type*>(item));
     }
 
     template<class Serializer>
@@ -101,6 +101,7 @@ private:
     Hash _hash_function;
 };
 
+template<class T>
 class HashTableFileSerializer {
 public:
     HashTableFileSerializer() {}
@@ -115,7 +116,6 @@ public:
         reset();
     }
 
-    template<class T>
     HashTableFileSerializer& operator<<(T&& value) {
         if (!_reading) {
             SCHECK(_file == nullptr);
@@ -127,7 +127,6 @@ public:
         return *this;
     }
 
-    template<class T>
     HashTableFileSerializer& operator>>(T& value) {
         SCHECK(_file);
         if (_reading) {
@@ -151,6 +150,41 @@ private:
     bool _reading = false;
     FILE* _file = nullptr;
     BinaryFileArchive _ar;
+};
+
+template<class T>
+class HashTableMemorySerializer {
+public:
+    HashTableMemorySerializer() {}
+
+    HashTableMemorySerializer(const HashTableMemorySerializer&) {}
+
+    ~HashTableMemorySerializer() {
+        reset();
+    }
+
+    HashTableMemorySerializer& operator=(const HashTableMemorySerializer& other) {
+        reset();
+    }
+
+    HashTableMemorySerializer& operator<<(T&& value) {
+        _que.push_back(std::move(value));
+        return *this;
+    }
+
+    HashTableMemorySerializer& operator>>(T& value) {
+        value = std::move(_que.front());
+        _que.pop_front();
+        return *this;
+    }
+
+    void reset() {
+        _que.clear();
+        _que.shrink_to_fit();
+    }
+
+private:
+    std::deque<T> _que;
 };
 
 class MemoryMap {
@@ -452,14 +486,18 @@ public:
         using reference = typename ItemType::const_reference;
         using pointer = typename ItemType::const_pointer;
 
-        const_iterator(const PoolHashTable* table, offset_type offset)
-            : _table(table), _offset(offset) {}
+        const_iterator(const PoolHashTable* table, offset_type head, offset_type offset)
+            : _table(table), _head(head), _offset(offset) {}
 
     public:
         const_iterator() {}
 
         const_iterator& operator++() {
-            _offset = this->_table->get_iterator_next(_offset);
+            SCHECK(_offset);
+            _offset = _table->get_node(_offset)->get_next();
+            if (!_offset) {
+                _offset = _head = _table->get_next_head(_head);
+            }
             return *this;
         }
 
@@ -487,6 +525,7 @@ public:
 
     private:
         const PoolHashTable* _table = nullptr;
+        offset_type _head = 0;
         offset_type _offset = 0;
     };
 
@@ -500,7 +539,7 @@ public:
         using pointer = typename ItemType::pointer;
 
         iterator& operator++() {
-            this->_offset = this->_table->get_iterator_next(this->_offset);
+            const_iterator::operator++();
             return *this;
         }
 
@@ -571,32 +610,32 @@ public:
     }
 
     iterator find(key_reference key) {
-        return get_iterator(inner_find(key));
+        return inner_find(key);
     }
 
     const_iterator find(key_reference key)const {
-        return get_iterator(inner_find(key));
+        return inner_find(key);
     }
 
     size_t count(key_reference key)const {
-        return find(key) != end();
+        return find(key)._offset != 0;
     }
 
     mapped_reference at(key_reference key) {
-        offset_type offset = inner_find(key);
-        SCHECK(offset);
-        return get_mapped(offset);
+        iterator it = inner_find(key);
+        SCHECK(it._offset);
+        return get_mapped(it._offset);
     }
 
     const_mapped_reference at(key_reference key)const {
-        offset_type offset = inner_find(key);
-        SCHECK(offset);
-        return get_mapped(offset);
+        iterator it = inner_find(key);
+        SCHECK(it._offset);
+        return get_mapped(it._offset);
     }
 
     size_t erase(key_reference key) {
         iterator it = find(key);
-        if (it != end()) {
+        if (it._offset) {
             erase(it);
             return 1;
         }
@@ -636,31 +675,38 @@ public:
         char* temp_item = reinterpret_cast<char*>(alloca(_node_size));
         _item_type.construct(temp_item, std::forward<Args>(args)...);
         key_reference key = _item_type.get_key(temp_item);
-        std::pair<offset_type, bool> itr = inner_find_to_emplace(key);
-        if (itr.second) {
-            _item_type.move_construct(get_item(itr.first), temp_item);
+        iterator it = inner_find(key);
+        if (likely(it._offset)) {
+            _item_type.destruct(temp_item);
+            return {it, false};
         }
-        return {get_iterator(itr.first), itr.second};
+        it = inner_emplace_not_exist(key);
+        _item_type.move_construct(get_item(it._offset), temp_item);
+        return {it, true};
     }
 
     template<class... Args>
     std::pair<iterator, bool> try_emplace(key_reference key, Args&&... args) {
-        std::pair<offset_type, bool> itr = inner_find_to_emplace(key);
-        if (itr.second) {
-            _item_type.construct(get_item(itr.first), 
-                  key, mapped_type(std::forward<Args>(args)...));
+        iterator it = inner_find(key);
+        if (likely(it._offset)) {
+            return {it, false};
         }
-        return {get_iterator(itr.first), itr.second};
+        it = inner_emplace_not_exist(key);
+        _item_type.construct(get_item(it._offset), 
+                key, mapped_type(std::forward<Args>(args)...));
+        return {it, true};
     }
 
     template<class... Args>
     std::pair<iterator, bool> try_emplace(key_type&& key, Args&&... args) {
-        std::pair<offset_type, bool> itr = inner_find_to_emplace(key);
-        if (itr.second) {
-            _item_type.construct(get_item(itr.first), 
-                  std::move(key), mapped_type(std::forward<Args>(args)...));
+        iterator it = inner_find(key);
+        if (likely(it._offset)) {
+            return {it, false};
         }
-        return {get_iterator(itr.first), itr.second};
+        it = inner_emplace_not_exist(key);
+        _item_type.construct(get_item(it._offset), 
+                std::move(key), mapped_type(std::forward<Args>(args)...));
+        return {it, true};
     }
 
     std::pair<iterator, bool> insert(const_reference value) {
@@ -672,27 +718,41 @@ public:
     }
 
     mapped_reference operator[](key_reference key) {
-        return get_mapped(try_emplace(key).first._offset);
+        iterator it = inner_find(key);
+        if (likely(it._offset)) {
+            return get_mapped(it._offset);
+        }
+        it = inner_emplace_not_exist(key);
+        _item_type.construct(get_item(it._offset), key, mapped_type());
+        return get_mapped(it._offset);
     }
 
     mapped_reference operator[](key_type&& key) {
-        return get_mapped(try_emplace(std::move(key)).first._offset);
+        iterator it = inner_find(key);
+        if (likely(it._offset)) {
+            return get_mapped(it._offset);
+        }
+        it = inner_emplace_not_exist(key);
+        _item_type.construct(get_item(it._offset), std::move(key), mapped_type());
+        return get_mapped(it._offset);
     }
 
     const_iterator begin()const {
-        return get_iterator(get_iterator_next(0));
+        offset_type first = get_next_head(0);
+        return iterator(this, first, first);
     }
 
     const_iterator end()const {
-        return get_iterator(0);
+        return iterator(this, 0, 0);
     }
 
     iterator begin() {
-        return get_iterator(get_iterator_next(0));
+        offset_type first = get_next_head(0);
+        return iterator(this, first, first);
     }
 
     iterator end() {
-        return get_iterator(0);
+        return iterator(this, 0, 0);
     }
 
     void debug() {
@@ -793,18 +853,9 @@ private:
 
     void inner_serialize_rehash(size_t n) {
         offset_type count = size();
-        // HEAD first, because HEAD may be access more frequently.
         offset_type offset = _hash_space.probe_offset(0);
         while (offset) {
-            if (get_node(offset)->is_head()) {
-                _item_type.move_serialize(get_item(offset), _serializer);
-            }
-            offset = _hash_space.probe_offset(offset);
-        }
-
-        offset = _hash_space.probe_offset(0);
-        while (offset) {
-            if (!get_node(offset)->is_head()) {
+            if (!get_node(offset)->is_empty()) {
                 _item_type.move_serialize(get_item(offset), _serializer);
             }
             offset = _hash_space.probe_offset(offset);
@@ -818,8 +869,8 @@ private:
         for (offset_type i = 0; i < count; ++i) {
             _item_type.move_deserialize(temp_item, _serializer);
             key_reference key = _item_type.get_key(temp_item);
-            std::pair<offset_type, bool> itr = inner_find_to_emplace(key);
-            _item_type.move_construct(get_item(itr.first), temp_item);
+            iterator it = inner_emplace_not_exist(key);
+            _item_type.move_construct(get_item(it._offset), temp_item);
         }
         _serializer.reset();
     }
@@ -831,80 +882,42 @@ private:
         }
         return std::max(size_t(1), num_buckets);
     }
-
-    offset_type inner_find(key_reference key)const {
+    
+    iterator inner_find(key_reference key)const {
         size_t hash = _item_type.hash_function(key);
-        offset_type offset = _hash_space.find_offset(hash);
-        if (unlikely(get_node(offset)->is_empty())) {
-            return 0;
-        } else {
-            // 0 is end()
-            if (likely(_item_type.key_eq(get_key(offset), key))) {
-                return offset;
-            }
-            offset = get_node(offset)->get_next();
-            while (likely(offset)) {
-                if (likely(_item_type.key_eq(get_key(offset), key))) {
-                    return offset;
+        offset_type head = _hash_space.find_offset(hash);
+        PoolNode* node = get_node(head);
+        if (likely(node->next & MASK)) {
+            offset_type offset = head;
+            do {
+                if (_item_type.key_eq(get_key(offset), key)) {
+                    return iterator(this, head, offset);
                 }
-                offset = get_node(offset)->get_next();
-            }
-            return offset;
-        }
-    }
-
-    offset_type inner_find_v1(key_reference key)const {
-        size_t hash = _item_type.hash_function(key);
-        offset_type offset = _hash_space.find_offset(hash);
-        PoolNode* node = get_node(offset);
-        if (unlikely(node->is_empty())) {
-            return 0;
-        } else {
-            // 0 is end()
-            if (likely(_item_type.key_eq(key, 
-                  _item_type.get_key(reinterpret_cast<char*>(node) + _item_offset)))) {
-                return offset;
-            }
-            offset = node->get_next();
-            node = get_node(offset);
-            while (likely(offset)) {
-                if (likely(_item_type.key_eq(key,
-                      _item_type.get_key(reinterpret_cast<char*>(node) + _item_offset)))) {
-                    return offset;
-                }
-                offset = node->get_next();
                 node = get_node(offset);
-            }
-            return offset;
+            } while (offset = node->get_next());
         }
+        return iterator(this, 0, 0);
     }
 
-    std::pair<offset_type, bool> inner_find_to_emplace(key_reference key) {
+    iterator inner_emplace_not_exist(key_reference key) {
+        if (_num_items >= _max_num_items) {
+            rehash(_hash_space.expand_space());
+        }
         offset_type head = get_hash_head(key);
         PoolNode* node = get_node(head);
         if (node->is_empty()) {
             allocate_node(head);
             node->next = HEAD;
-            return {head, true};
+            return iterator(this, head, head);
         } else if (node->is_head()) {
             offset_type prev = head;
-            if (_item_type.key_eq(get_key(prev), key)) {
-                return {prev, false};
-            }
             while (get_node(prev)->get_next()) {
                 prev = get_node(prev)->get_next();
-                if (_item_type.key_eq(get_key(prev), key)) {
-                    return {prev, false};
-                }
             }
             offset_type probe = probe_node(prev);
-            if (probe == 0 || _num_items >= _max_num_items) {
-                rehash(_hash_space.expand_space());
-                return inner_find_to_emplace(key);
-            }
             allocate_node(probe);
             get_node(prev)->set_next(probe);
-            return {probe, true};
+            return iterator(this, head, probe);
         } else {
             offset_type exchange = get_hash_head(get_key(head));
 
@@ -918,12 +931,6 @@ private:
             }
             
             offset_type probe = probe_node(prev);
-            if (probe == 0 || _num_items >= _max_num_items) {
-                _temp.clear();
-                rehash(_hash_space.expand_space());
-                return inner_find_to_emplace(key);
-            }
-
             allocate_node(probe);
             get_node(prev)->set_next(probe);
             while (!_temp.empty()) {
@@ -933,9 +940,19 @@ private:
             }
 
             exchange = find_node_before(exchange, head);
-            get_node(exchange)->set_next(get_node(head)->get_next());
+            get_node(exchange)->set_next(node->get_next());
             node->next = HEAD;
-            return {head, true};
+            return iterator(this, head, head);
+        }
+    }
+
+    std::pair<iterator, bool> inner_find_to_emplace(key_reference key) {
+        iterator it = inner_find(key);
+        if (it._offset) {
+            return {it, false};
+        } else {
+            it = inner_emplace_not_exist(key);
+            return {it, true};
         }
     }
 
@@ -984,13 +1001,9 @@ private:
         }
     };
 
-    iterator get_iterator(offset_type offset)const {
-        return iterator(this, offset);
-    }
-
-    offset_type get_iterator_next(offset_type offset)const {
+    offset_type get_next_head(offset_type offset)const {
         offset = _hash_space.probe_offset(offset);
-        while (offset && get_node(offset)->is_empty()) {
+        while (offset && !get_node(offset)->is_head()) {
             offset = _hash_space.probe_offset(offset);
         }
         return offset;
@@ -1086,10 +1099,12 @@ private:
 };
 
 template<class Key, class T, class Hash = std::hash<Key>, class Pred = std::equal_to<Key>>
-using pool_hash_map = PoolHashTable<PairItemType<Key, T, Hash, Pred>, HashTableFileSerializer, ArrayHashSpace>;
+using pool_hash_map = PoolHashTable<PairItemType<Key, T, Hash, Pred>, HashTableMemorySerializer<std::pair<Key, T>>, ArrayHashSpace>;
 
 }
 }
 }
+
+#undef POOL_HASH_MAP_INLINE
 
 #endif
