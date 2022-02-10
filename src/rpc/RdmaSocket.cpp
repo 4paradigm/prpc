@@ -77,6 +77,8 @@ void add_read_complete_num(uint32_t& imm_data, int cnt = 1) {
     imm_data += cnt;
 }
 
+
+
 void RdmaSocket::post_read() {
     if (_pending_read_wrs.empty() || _uncomplete_read_cnt == BNUM) {
         return;
@@ -240,6 +242,7 @@ bool RdmaSocket::handle_out_event(std::function<void(RpcMessage&&)> pass) {
     ibv_ack_cq_events(_send_cq, 1);
     post_read();
     send_ack();
+    
     return true;
 }
 

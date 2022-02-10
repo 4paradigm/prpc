@@ -14,6 +14,7 @@ macro(add_test name file)
     gtest_discover_tests(${name})
 endmacro()
 
+
 if (NOT SKIP_BUILD_TEST)
     add_test(channel_test channel_test.cpp)
     add_test(archive_test archive_test.cpp)
@@ -48,6 +49,8 @@ if (NOT SKIP_BUILD_TEST)
     add_test(accumulator_test accumulator_test.cpp)
     add_test(auto_timer_test auto_timer_test.cpp)
     add_test(lrucache_test lrucache_test.cpp)
+    add_test(pool_hash_table_test pool_hash_table_test.cpp)
+    add_test(pool_hash_table_benchmark_test pool_hash_table_benchmark_test.cpp)
 endif()
 
 # 以下test与具体应用场景有关，应在外层测试，不会SKIP BUILD
