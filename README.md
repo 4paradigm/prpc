@@ -10,7 +10,7 @@ prpc is an RPC framework that provides network communication for high-performanc
 ### Docker Build
 
 ```
-docker build -t 4pdosc/prpc-base:0.1.0 -f docker/Dockerfile.base .
+docker build -t 4pdosc/prpc-base:latest -f docker/Dockerfile.base .
 docker build -t 4pdosc/prpc:0.0.0 -f docker/Dockerfile .
 ```
 
