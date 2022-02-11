@@ -364,6 +364,7 @@ template<class K, class T, class HASH> void full_test(pool_hash_map<K, T, HASH>&
     }
     ASSERT_EQ(mp11.size(), 0);
     ASSERT_EQ(mp11.load_factor(), 0);
+    mp11.rehash(0);
     mp11.reserve(mp1.size());
     ASSERT_EQ(mp11.bucket_count(), mp1.bucket_count());
 
@@ -427,7 +428,6 @@ TEST(pool_hash_map, no_object_leak) {
     mp1.clear();
     EXPECT_EQ(g_count, 0);
 }
-
 
 } // namespace core
 } // namespace pico
