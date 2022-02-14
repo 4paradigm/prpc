@@ -219,13 +219,15 @@ TEST(pool_hash_map, erase_if_ok) {
     for (size_t i = 0; i < 1000; ++i) {
         ht[std::to_string(i)] = i;
     }
-    for (auto it = ht.begin(); it != ht.end();) {
+    size_t count = 0;
+    for (auto it = ht.begin(); it != ht.end(); ++count) {
         if (it->second % 2) {
             it = ht.erase(it);
         } else {
             ++it;
         }
     }
+    EXPECT_EQ(count, 1000);
     EXPECT_EQ(ht.size(), 500);
     for (size_t i = 0; i < 1000; i += 2) {
         EXPECT_EQ(ht[std::to_string(i)], i);
@@ -233,6 +235,26 @@ TEST(pool_hash_map, erase_if_ok) {
     EXPECT_EQ(ht.size(), 500);
 }
 
+TEST(pool_hash_table, prioritise_ok) {
+    pool_hash_map<std::string, int> ht;
+    for (size_t i = 0; i < 1000; ++i) {
+        ht[std::to_string(i)] = i;
+    }
+    size_t count = 0;
+    for (auto it = ht.begin(); it != ht.end(); ++it) {
+        ++count;
+        if (rand() % 2) {
+            int i = it->second;
+            EXPECT_EQ(ht.prioritise(it->first)->second, i);
+        }
+    }
+    EXPECT_EQ(count, 1000);
+    EXPECT_EQ(ht.size(), 1000);
+    for (size_t i = 0; i < 1000; ++i) {
+        EXPECT_EQ(ht.prioritise(std::to_string(i))->second, i);
+    }
+    EXPECT_EQ(ht.size(), 1000);
+}
 
 void random(int& x) {
     x = rand() % 10000;
@@ -279,7 +301,7 @@ template<class K, class T, class HASH> void full_test(pool_hash_map<K, T, HASH>&
         if (op == 0) {
             K key2 = key;
             T value2 = value;
-            int detail = rand() % 4;
+            int detail = rand() % 3;
             if (detail == 0) {
                 auto res1 = mp1.insert({key, value});
                 auto res2 = mp2.insert({key, value});
@@ -299,14 +321,6 @@ template<class K, class T, class HASH> void full_test(pool_hash_map<K, T, HASH>&
                 auto res2 = mp2.insert({key2, value2});
                 ASSERT_EQ(res1.second, res2.second);
                 ASSERT_EQ(*res1.first, *res2.first);
-            } else {
-                // result not same with 0 1 2
-                if (move) {
-                    mp1[std::move(key)] = std::move(value);
-                } else {
-                    mp1[key] = value;
-                }
-                mp2[key2] = value2;
             }
         } else if (op == 1) {
             int detail = rand() % 2;
@@ -321,9 +335,9 @@ template<class K, class T, class HASH> void full_test(pool_hash_map<K, T, HASH>&
                 mp2.erase(key);
             }
         } else if (op == 2) {
-            int detail = rand() % 2;
-            if (detail == 0) {
-                auto it1 = mp1.find(key);
+            int detail = rand() % 3;
+            if (detail < 2) {
+                auto it1 = detail ? mp1.find(key) : mp1.prioritise(key);
                 auto it2 = mp2.find(key);
                 if (it2 != mp2.end()) {
                     ASSERT_EQ(it1->second, mp1.at(key));
@@ -333,9 +347,14 @@ template<class K, class T, class HASH> void full_test(pool_hash_map<K, T, HASH>&
                 ASSERT_EQ(mp1.count(key), mp2.count(key));
             }
         } else if (op == 3) {
-            ASSERT_EQ(mp1[key], mp2[key]);
-            mp1[key] = value;
-            mp2[key] = value;
+            K key2 = key;
+            T value2 = value;
+            if (move) {
+                mp1[std::move(key)] = std::move(value);
+            } else {
+                mp1[key] = value;
+            }
+            mp2[key2] = value2;
         }
         ASSERT_EQ(mp1.size(), mp2.size());
     }
