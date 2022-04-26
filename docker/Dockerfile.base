@@ -6,4 +6,4 @@ RUN apt-get update && apt-get install -y libsnappy-dev libprotobuf-dev libprotoc
     zlib1g-dev liblz4-dev libssl-dev libzookeeper-mt-dev libffi-dev libbz2-dev liblzma-dev
 
 ADD third_party /third_party
-RUN bash /third_party/prepare.sh build gflags glog googletest sparsehash zlib snappy lz4 boost yaml jemalloc prometheus-cpp avro-cpp
+RUN bash /third_party/prepare.sh build gflags glog googletest sparsehash zlib snappy lz4 zstd boost yaml jemalloc prometheus-cpp avro-cpp

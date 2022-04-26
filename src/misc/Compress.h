@@ -17,6 +17,9 @@ namespace LZ4 {
 #include "lz4hc.h"
 }
 
+#include <zstd.h>
+
+
 namespace paradigm4 {
 namespace pico {
 namespace core {
@@ -257,6 +260,77 @@ private:
     int _acceleration = 1;
 };
 
+class ZSTDCompressEntity : public CompressEntity {
+    struct Context {
+        Context() {
+            cctx = ZSTD_createCCtx();
+            dctx = ZSTD_createDCtx();
+        }
+
+        ~Context() {
+            ZSTD_freeCCtx(cctx);
+            ZSTD_freeDCtx(dctx);
+        }
+
+        ZSTD_CCtx* cctx = nullptr;
+        ZSTD_DCtx* dctx = nullptr;
+    };
+
+    static const Context& thread_context() {
+        static thread_local Context context;
+        return context;
+    }
+
+public:
+    ZSTDCompressEntity(int compression_level = 1): _compression_level(compression_level) {
+        SCHECK(_compression_level >= 1 && _compression_level <= 19);
+    }
+
+    void raw_compress(BinaryArchive& in, std::string& out) {
+        size_t max_buffer_size = ZSTD_compressBound(in.readable_length()) + sizeof(in.readable_length());
+        out.resize(max_buffer_size);
+        char* out_ptr = (char*)out.data();
+        size_t out_size = out.size();
+        raw_compress(in.cursor(), in.readable_length(), &out_ptr, &out_size);
+        out.resize(out_size);
+    }
+
+    void raw_uncompress(const char* in, size_t in_size, char** out, size_t* out_size) {
+        size_t len;
+        BinaryArchive ar;
+        ar.set_read_buffer((char*)in, in_size);
+        ar.read_back(&len, sizeof(len));
+        size_t compressed_size = in_size - sizeof(len);
+        ar.release();
+        if (*out_size < len) {
+            *out = buf_realloc(*out, len);
+        }
+        *out_size = len;
+        auto ret = ZSTD_decompressDCtx(thread_context().dctx,
+              *out, *out_size, in, compressed_size);
+        SCHECK(ret == len) << "zstd uncompress failed";
+    }
+
+    void raw_compress(const char* in, size_t in_size, char** out, size_t* out_size) {
+        size_t max_buffer_size = ZSTD_compressBound(in_size) + sizeof(in_size);
+        if (*out_size < max_buffer_size) {
+            *out = buf_realloc(*out, max_buffer_size);
+        }
+        *out_size = max_buffer_size;
+        BinaryArchive ar;
+        ar.set_read_buffer(*out, *out_size);
+        *out_size = ZSTD_compressCCtx(thread_context().cctx,
+              *out, *out_size, in, in_size, _compression_level);
+        ar.set_end((char*) (*out + *out_size));
+        ar << in_size;
+        *out_size = ar.length();
+        *out = ar.release();
+    }
+
+private:
+    int _compression_level = 1;
+};
+
 class Compress {
 public:
     Compress() {
@@ -269,6 +343,8 @@ public:
             _c.reset(new SnappyCompressEntity());
         } else if (method == "lz4") {
             _c.reset(new LZ4CompressEntity());
+        } else if (method == "zstd") {
+            _c.reset(new ZSTDCompressEntity());
         } else {
             SLOG(FATAL) << "unknown compress method";
         }

@@ -309,7 +309,6 @@ public:
 };
 
 class ArrayHashSpace {
-    using double_size_t = __uint128_t;
     static constexpr int BITS = 8 * sizeof(size_t);
 public:
     typedef size_t offset_type;

@@ -64,6 +64,26 @@ TEST(compress, lz4_string_ok) {
     }
 }
 
+TEST(compress, ztd_string_ok) {
+    auto c = pico_compress("zstd");
+    for (int i = 0; i < 20; ++i) {
+        if (i == 4) c = pico_compress("zstd:1");
+        if (i == 8) c = pico_compress("zstd:3");
+        if (i == 12) c = pico_compress("zstd:10");
+        if (i == 16) c = pico_compress("zstd:19");
+        Foo foo;
+        foo.data = "I am GENIUS!!asdfasdfasdfasdfasfdasdfasdfasfasdfasda";
+        foo.size = foo.data.length();
+        foo.haha.resize(10);
+        std::string ret;
+        c.compress(foo, ret);
+        Foo foo2;
+        c.uncompress(ret, foo2);
+        EXPECT_TRUE(foo2.data == foo.data);
+        EXPECT_TRUE(foo2.size == foo.size);
+    }
+}
+
 TEST(compress, snappy_raw_buffer_ok) {
     char* buffer = nullptr;
     size_t buffer_size = 0;
@@ -96,7 +116,6 @@ TEST(compress, zlib_raw_buffer_ok) {
     }
 }
 
-
 TEST(compress, lz4_raw_buffer_ok) {
     char* buffer = nullptr;
     size_t buffer_size = 0;
@@ -113,6 +132,21 @@ TEST(compress, lz4_raw_buffer_ok) {
     }
 }
 
+TEST(compress, zstd_raw_buffer_ok) {
+    char* buffer = nullptr;
+    size_t buffer_size = 0;
+    auto c = pico_compress("zstd");
+    for (int i = 0; i < 1; ++i) {
+        Foo foo;
+        foo.data = "I am GENIUS!!";
+        foo.size = foo.data.length();
+        c.compress(foo, &buffer, &buffer_size);
+        Foo foo2;
+        c.uncompress(buffer, buffer_size, foo2);
+        EXPECT_TRUE(foo2.data == foo.data);
+        EXPECT_TRUE(foo2.size == foo.size);
+    }
+}
 
 
 TEST(compress, snappy_buffer_ok) {
@@ -147,6 +181,20 @@ TEST(compress, zlib_buffer_ok) {
 
 TEST(compress, lz4_buffer_ok) {
     auto c = pico_compress("lz4");
+    BinaryArchive ar;
+    for (int i = 0; i < 20; ++i) {
+        Foo foo, foo2;
+        foo.data = "I am GENIUS!!";
+        foo.size = foo.data.length();
+        c.compress(foo, ar);
+        c.uncompress(ar, foo2);
+        EXPECT_TRUE(foo2.data == foo.data);
+        EXPECT_TRUE(foo2.size == foo.size);
+    }
+}
+
+TEST(compress, zstd_buffer_ok) {
+    auto c = pico_compress("zstd");
     BinaryArchive ar;
     for (int i = 0; i < 20; ++i) {
         Foo foo, foo2;
@@ -238,6 +286,46 @@ TEST(compress, zlib_raw_ok) {
     pico_free(c1);
     pico_free(c2);
 }
+
+
+TEST(compress, zstd_raw_ok) {
+    BinaryArchive in, out;
+    auto c = pico_compress("zstd");
+    for (int i = 0; i < 20; ++i) {
+        Foo foo, foo2;
+        foo.data = "I am GENIUS!!";
+        foo.size = foo.data.length();
+        in.clear();
+        in << foo;
+        c.raw_compress(in, out);
+        c.raw_uncompress(out, in);
+        in >> foo2;
+        EXPECT_TRUE(foo2.data == foo.data);
+        EXPECT_TRUE(foo2.size == foo.size);
+    }
+    char* c1 = nullptr;
+    size_t size1 = 0;
+    char* c2 = nullptr;
+    size_t size2 = 0;
+    for (int i = 0; i < 20; ++i) {
+        Foo foo, foo2;
+        foo.data = "I am GENIUS!!";
+        foo.size = foo.data.length();
+        in.clear();
+        in << foo;
+        c.raw_compress((char*)in.cursor(), in.readable_length(), &c1, &size1);
+        c.raw_uncompress(c1, size1, &c2, &size2);
+        BinaryArchive ar;
+        ar.set_read_buffer(c2, size2);
+        ar >> foo2;
+        ar.release();
+        EXPECT_TRUE(foo2.data == foo.data);
+        EXPECT_TRUE(foo2.size == foo.size);
+    }
+    pico_free(c1);
+    pico_free(c2);
+}
+
 
 } // namespace core
 } // namespace pico
