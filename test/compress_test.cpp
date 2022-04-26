@@ -67,10 +67,6 @@ TEST(compress, lz4_string_ok) {
 TEST(compress, ztd_string_ok) {
     auto c = pico_compress("zstd");
     for (int i = 0; i < 20; ++i) {
-        if (i == 4) c = pico_compress("zstd:1");
-        if (i == 8) c = pico_compress("zstd:3");
-        if (i == 12) c = pico_compress("zstd:10");
-        if (i == 16) c = pico_compress("zstd:19");
         Foo foo;
         foo.data = "I am GENIUS!!asdfasdfasdfasdfasfdasdfasdfasfasdfasda";
         foo.size = foo.data.length();
