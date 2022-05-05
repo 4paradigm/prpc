@@ -32,6 +32,7 @@ struct test_string {
     ~test_string() {
         --g_count;
     }
+    test_string& operator=(const test_string& other) = default;
     bool operator==(const test_string& other)const {
         return inner == other.inner;
     }

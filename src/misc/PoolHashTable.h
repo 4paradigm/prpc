@@ -233,6 +233,7 @@ public:
         _size = other._size;
         other._data = 0;
         other._size = 0;
+        return *this;
     }
 
     void remap(size_t size) {
@@ -397,8 +398,6 @@ public:
     }
 
 protected:
-    mutable bool _warned = false;
-
     MemoryMap _mm;
     offset_type _mask = 0;
     offset_type(*_fast_mod)(size_t) = nullptr;
@@ -1119,7 +1118,7 @@ private:
 
     ItemType _item_type;
     Serializer _serializer;
-    HashSpace _hash_space;
+    HashSpace _hash_space; 
 
     double _max_load_factor = 1.0;
     offset_type _num_items = 0;
